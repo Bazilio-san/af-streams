@@ -1,0 +1,15 @@
+version: "3.3"
+
+services:
+  redis_bullmq:
+    container_name: redis
+    image: "redis:alpine"
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      interval: 60s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "6379:6379"
+    expose:
+      - 6379

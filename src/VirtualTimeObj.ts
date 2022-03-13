@@ -5,9 +5,9 @@ import { rs, c } from './utils/color';
 
 export interface IVirtualTimeObjOptions {
   startTime: number,
-  speed: number,
-  loopTimeMillis: number,
   eventEmitter: EventEmitter,
+  speed?: number,
+  loopTimeMillis?: number,
   echo?: IEcho,
 }
 

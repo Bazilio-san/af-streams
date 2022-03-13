@@ -4,15 +4,15 @@ import { DateTime } from 'luxon';
 import * as cron from 'cron';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
-import { StartTimeRedis } from './StartTimeRedis';
-import getVirtualTimeObj, { VirtualTimeObj } from './VirtualTimeObj';
+import { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
+import getVirtualTimeObj, { IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
 import { padL } from './utils/utils';
 import getDb from './db/db';
 import {
   blue, bold, boldOff, c, g, lBlue, lc, lm, m, rs,
 } from './utils/color';
 import {
-  IEcho, ILoggerEx, IRecordsComposite, ISender, ISenderConfig, ISenderConstructorOptions, IStreamConfig, TConfig, TDbRecord, TEventRecord,
+  IDbConstructorOptions, IEcho, ILoggerEx, IRecordsComposite, ISender, ISenderConfig, ISenderConstructorOptions, IStreamConfig, TConfig, TDbRecord, TEventRecord,
 } from './interfaces';
 import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
@@ -29,23 +29,24 @@ export interface IStreamConstructorOptions {
   exitOnError: Function,
   eventEmitter: EventEmitter,
 
-  speed: number,
-  loopTimeMillis: number,
+  speed?: number,
+  loopTimeMillis?: number,
   prepareEvent?: Function,
+  testMode?: boolean,
 }
 
 export class Stream {
-  private bufferLookAheadMs: number;
+  public readonly bufferLookAheadMs: number;
 
-  private lastRecordTs: number;
+  public lastRecordTs: number;
 
-  private recordsBuffer: RecordsBuffer;
+  public recordsBuffer: RecordsBuffer;
 
-  private lastTimeRecords: LastTimeRecords;
+  public lastTimeRecords: LastTimeRecords;
 
   private busy: number;
 
-  private virtualTimeObj: VirtualTimeObj;
+  public virtualTimeObj: VirtualTimeObj;
 
   private sendTimer: any;
 
@@ -120,7 +121,7 @@ export class Stream {
 
   async init () {
     const {
-      senderConfig, eventEmitter, echo, logger, config, streamConfig, speed, loopTimeMillis, exitOnError,
+      senderConfig, eventEmitter, echo, logger, config, streamConfig, speed, loopTimeMillis, exitOnError, testMode,
     } = this.options;
 
     const senderConstructorOptions: ISenderConstructorOptions = {
@@ -140,17 +141,42 @@ export class Stream {
     }
     const { host, port } = config.redis;
     const { src: { dbOptions, dbConfig }, streamId } = streamConfig;
-    const startTimeRedis = new StartTimeRedis({ host, port, streamId, eventEmitter, exitOnError, logger });
+    const startTimeRedisOptions: IStartTimeRedisOptions = {
+      host,
+      port,
+      streamId,
+      eventEmitter,
+      exitOnError,
+      logger,
+    };
+    const startTimeRedis = new StartTimeRedis(startTimeRedisOptions);
     const startTime = await startTimeRedis.getStartTimeFromRedis();
-    this.virtualTimeObj = getVirtualTimeObj({ startTime, speed, loopTimeMillis, eventEmitter });
-    this.db = await getDb({ streamConfig, logger, exitOnError, dbOptions, dbConfig });
-    await this._loadNextPortion();
-    this._fetchLoop();
-    this._printInfoLoop();
-    // Дополнительный внешний цикл вызовов на случай прерывания цепочки внутренних вызовов _sendLoop()
-    setInterval(() => {
-      this._sendLoop().then(() => null);
-    }, 1000);
+
+    const virtualTimeObjOptions: IVirtualTimeObjOptions = {
+      startTime,
+      speed,
+      loopTimeMillis,
+      eventEmitter,
+    };
+    this.virtualTimeObj = getVirtualTimeObj(virtualTimeObjOptions);
+
+    if (!testMode) {
+      const dbConstructorOptions: IDbConstructorOptions = {
+        streamConfig,
+        logger,
+        exitOnError,
+        dbOptions,
+        dbConfig,
+      };
+      this.db = await getDb(dbConstructorOptions);
+      await this._loadNextPortion();
+      this._fetchLoop();
+      this._printInfoLoop();
+      // Дополнительный внешний цикл вызовов на случай прерывания цепочки внутренних вызовов _sendLoop()
+      setInterval(() => {
+        this._sendLoop().then(() => null);
+      }, 1000);
+    }
     return this;
   }
 

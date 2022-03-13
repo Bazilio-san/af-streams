@@ -1,7 +1,7 @@
 import * as os from 'os';
 import * as crypto from 'crypto';
 
-const findSmallestIndexLinear = (arr: any[], x: number, timeFieldName: string) => {
+export const findSmallestIndexLinear = (arr: any[], x: number, timeFieldName: string) => {
   if (!arr.length) {
     return -1;
   }
@@ -15,7 +15,7 @@ const findSmallestIndexLinear = (arr: any[], x: number, timeFieldName: string) =
   return arr.length - 1;
 };
 
-const findSmallestIndexBinary = (arr: any[], x: number, timeFieldName: string) => {
+export const findSmallestIndexBinary = (arr: any[], x: number, timeFieldName: string) => {
   let start = 0;
   let end = arr.length - 1;
   let ans = -1;

@@ -1,4 +1,4 @@
-const U = require('../../dist/utils');
+import * as U from '../../src/utils/utils';
 
 const data = require('./data.json');
 
@@ -6,7 +6,7 @@ const data2 = [
   { ts: 10 },
 ];
 
-const data3 = [];
+const data3: any[] = [];
 
 describe('Utils. findSmallestIndex[Binary]()', () => {
   describe('arr1', () => {
@@ -21,7 +21,7 @@ describe('Utils. findSmallestIndex[Binary]()', () => {
       [50, 15],
     ].forEach(([ts, expected]) => {
       test(`ts: ${ts}, result: ${expected}`, () => {
-        const result = U.findSmallestIndex(data, ts, 'ts');
+        const result = U.findSmallestIndexLinear(data, ts, 'ts');
         expect(result).toEqual(expected);
         const resultB = U.findSmallestIndexBinary(data, ts, 'ts');
         expect(resultB).toEqual(expected);
@@ -36,7 +36,7 @@ describe('Utils. findSmallestIndex[Binary]()', () => {
       [18, 0],
     ].forEach(([ts, expected]) => {
       test(`ts: ${ts}, result: ${expected}`, () => {
-        const result = U.findSmallestIndex(data2, ts, 'ts');
+        const result = U.findSmallestIndexLinear(data2, ts, 'ts');
         expect(result).toEqual(expected);
         const resultB = U.findSmallestIndexBinary(data2, ts, 'ts');
         expect(resultB).toEqual(expected);
@@ -50,7 +50,7 @@ describe('Utils. findSmallestIndex[Binary]()', () => {
       [18, -1],
     ].forEach(([ts, expected]) => {
       test(`ts: ${ts}, result: ${expected}`, () => {
-        const result = U.findSmallestIndex(data3, ts, 'ts');
+        const result = U.findSmallestIndexLinear(data3, ts, 'ts');
         expect(result).toEqual(expected);
         const resultB = U.findSmallestIndexBinary(data3, ts, 'ts');
         expect(resultB).toEqual(expected);
