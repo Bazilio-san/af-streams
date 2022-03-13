@@ -1,0 +1,33 @@
+module.exports = {
+  testEnvironment: 'node',
+  moduleFileExtensions: [
+    'ts',
+    'tsx',
+    'js',
+  ],
+  transform: { '^.+\\.tsx?$': 'ts-jest' },
+  testRegex: [
+    '__tests__.+\\.spec\\.ts',
+  ],
+  testPathIgnorePatterns: [
+    '/.git/',
+    '/.idea/',
+    '/.run/',
+    '/_logs/',
+    '/_misc/',
+    '/_tmp/',
+    '/api/',
+    '/build/',
+    '/coverage/',
+    '/config/',
+    '/docker/',
+    '/i18n/',
+    '/node_modules/',
+    '/sql/',
+  ],
+  globals: { 'ts-jest': { tsconfig: 'tsconfig.json' } },
+  // testSequencer: '<rootDir>/__tests__/test-sequencer.ts',
+  globalSetup: '<rootDir>/__tests__/global-setup.ts',
+  globalTeardown: '<rootDir>/__tests__/global-teardown.ts',
+  testTimeout: 100_000,
+};

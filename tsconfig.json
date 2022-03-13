@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json.schemastore.org/tsconfig",
+  "compileOnSave": true,
+  "compilerOptions": {
+    "lib": [
+      "es2019",
+      "esnext.bigint",
+      "es2020.string",
+      "es2020.symbol.wellknown"
+    ],
+    "target": "es2019",
+    "module": "commonjs",
+    "types": [
+      "node",
+      "jest"
+    ],
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "strict": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "outDir": "dist"
+  },
+  "include": [
+    "api/**/*.ts",
+    "__tests__/**/*.ts"
+  ],
+  "exclude": [
+    ".git",
+    ".idea",
+    ".run",
+    "_logs",
+    "_tmp",
+    "coverage",
+    "config",
+    "docker",
+    "i18n",
+    "node_modules",
+    "sql",
+    "**/dist",
+    "**/_misc"
+  ]
+}
