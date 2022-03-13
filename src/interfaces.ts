@@ -99,9 +99,7 @@ export interface IMsSqlConfig extends sql.config {
   trustServerCertificate?: boolean
 }
 
-export interface IPostgresConfig extends pg.PoolConfig {
-  dialect: 'mssql' | 'pg',
-}
+export interface IPostgresConfig extends pg.PoolConfig {}
 
 export interface IStreamConfig {
   streamId: string,

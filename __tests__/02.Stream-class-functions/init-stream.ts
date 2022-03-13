@@ -20,7 +20,7 @@ async function initStream (): Promise<Stream> {
         table: 'test',
         idFields: ['tradeno', 'seccode', 'buysell'],
         tsField: 'tradetime',
-        dbOptions: { dialect: 'pg' },
+        dbOptions: {},
         dbConfig: {
           dialect: 'pg',
           host: 'localhost',
