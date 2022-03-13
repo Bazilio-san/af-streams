@@ -1,6 +1,6 @@
 {
   "name": "af-stream",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Data stream from database table",
   "main": "./dist/cjs/src/index.js",
   "module": "./dist/esm/index.js",
@@ -21,6 +21,7 @@
     "lint": "eslint . --ext .ts ",
     "lint:fix": "eslint . --ext .ts --fix",
     "test": "jest --config jest.config.js",
+    "release": "np --yolo",
     "prepack": "npm run clean && npm run build"
   },
   "dependencies": {
