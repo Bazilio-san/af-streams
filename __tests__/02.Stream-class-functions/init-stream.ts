@@ -51,7 +51,7 @@ async function initStream (): Promise<Stream> {
     },
     timezone: 'GMT',
     redis: {
-      host: 'msa-cepe01-ap02.office.finam.ru',
+      host: process.env.REDIS_HOST || 'localhost',
       port: 6379,
     },
     serviceName: 'test',
