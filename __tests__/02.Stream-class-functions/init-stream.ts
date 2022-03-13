@@ -49,14 +49,12 @@ async function initStream (): Promise<Stream> {
       emitSingleEvent: true,
       // emitId: 'test-emit',
     },
-    config: {
-      timezone: 'GMT',
-      redis: {
-        host: 'msa-cepe01-ap02.office.finam.ru',
-        port: 6379,
-      },
-      service: { fromService: 'test' },
+    timezone: 'GMT',
+    redis: {
+      host: 'msa-cepe01-ap02.office.finam.ru',
+      port: 6379,
     },
+    serviceName: 'test',
     logger,
     echo,
     exitOnError,

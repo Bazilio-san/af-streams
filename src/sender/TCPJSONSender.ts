@@ -23,7 +23,7 @@ class TCPJSONSender extends AbstractSender {
   async connect (): Promise<boolean> {
     const self = this;
     const { echo, logger } = this.options;
-    const { port = -1, host = 'unknown' } = self.config;
+    const { port = -1, host = 'unknown' } = self.senderConfig;
     return new Promise((resolve) => {
       if (self.isConnected()) {
         resolve(true);

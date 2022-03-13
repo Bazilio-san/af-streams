@@ -45,17 +45,6 @@ export interface ILoggerEx {
   isLevel: Function,
 }
 
-export interface TConfig {
-  timezone: string,
-  redis: {
-    host: string,
-    port: string | number
-  },
-  service?: {
-    fromService?: string
-  }
-}
-
 export interface TAccessPoint {
   consulServiceName: string;
   id: string;
@@ -79,7 +68,7 @@ export interface ISenderConfig {
 
 export interface ISenderConstructorOptions {
   senderConfig: ISenderConfig,
-  config: TConfig,
+  serviceName: string,
   logger: ILoggerEx,
   echo: IEcho,
   exitOnError: Function,

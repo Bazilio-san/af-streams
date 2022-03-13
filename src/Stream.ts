@@ -12,7 +12,7 @@ import {
   blue, bold, boldOff, c, g, lBlue, lc, lm, m, rs,
 } from './utils/color';
 import {
-  IDbConstructorOptions, IEcho, ILoggerEx, IRecordsComposite, ISender, ISenderConfig, ISenderConstructorOptions, IStreamConfig, TConfig, TDbRecord, TEventRecord,
+  IDbConstructorOptions, IEcho, ILoggerEx, IRecordsComposite, ISender, ISenderConfig, ISenderConstructorOptions, IStreamConfig, TDbRecord, TEventRecord,
 } from './interfaces';
 import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
@@ -23,7 +23,12 @@ const YMDTms = 'yyyy-LL-ddTHH:mm:ss.SSS';
 export interface IStreamConstructorOptions {
   streamConfig: IStreamConfig,
   senderConfig: ISenderConfig,
-  config: TConfig
+  serviceName: string,
+  timezone: string,
+  redis: {
+    host: string,
+    port: string | number
+  },
   logger: ILoggerEx,
   echo: IEcho,
   exitOnError: Function,
@@ -121,16 +126,16 @@ export class Stream {
 
   async init () {
     const {
-      senderConfig, eventEmitter, echo, logger, config, streamConfig, speed, loopTimeMillis, exitOnError, testMode,
+      senderConfig, eventEmitter, echo, logger, redis, serviceName, streamConfig, speed, loopTimeMillis, exitOnError, testMode,
     } = this.options;
 
     const senderConstructorOptions: ISenderConstructorOptions = {
       senderConfig,
+      serviceName,
       echo,
       logger,
       exitOnError,
       eventEmitter,
-      config,
     };
     this.sender = await getSender(senderConstructorOptions);
 
@@ -139,7 +144,7 @@ export class Stream {
       exitOnError('No connection to sender');
       return;
     }
-    const { host, port } = config.redis;
+    const { host, port } = redis;
     const { src: { dbOptions, dbConfig }, streamId } = streamConfig;
     const startTimeRedisOptions: IStartTimeRedisOptions = {
       host,
@@ -271,7 +276,7 @@ export class Stream {
   }
 
   _fetchLoop () {
-    const { options: { config: { timezone } = {}, streamConfig } } = this;
+    const { options: { timezone, streamConfig } } = this;
     cron.job(`0/${streamConfig.fetchIntervalSec || 10} * * * * *`, async () => {
       if (this.busy === 0 || this.busy > 5) {
         this.busy = 1;
@@ -290,7 +295,7 @@ export class Stream {
   }
 
   _printInfoLoop () {
-    const { config: { timezone } = {}, streamConfig, logger } = this.options;
+    const { timezone, streamConfig, logger } = this.options;
     cron.job(`0/${streamConfig.printInfoIntervalSec || 30} * * * * *`, () => {
       const rowsSent = `rows sent: ${bold}${padL(this.totalRowsSent, 6)}${boldOff}${rs}`;
       logger.info(`${lBlue}${streamConfig.streamId}${rs} ${rowsSent} / ${this.virtualTimeObj.getString()}`);

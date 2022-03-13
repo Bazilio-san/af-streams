@@ -2,7 +2,7 @@
 import { IRecordsComposite, ISenderConfig, ISenderConstructorOptions } from '../interfaces';
 
 class AbstractSender {
-  public config: ISenderConfig;
+  public senderConfig: ISenderConfig;
 
   public options: ISenderConstructorOptions;
 
@@ -10,7 +10,7 @@ class AbstractSender {
     const { senderConfig } = options;
     const { type, host, port } = senderConfig;
     this.options = options;
-    this.config = senderConfig;
+    this.senderConfig = senderConfig;
     if (type !== 'console') {
       if (host == null) {
         throw new Error(`No host specified in senders.${type} configuration`);

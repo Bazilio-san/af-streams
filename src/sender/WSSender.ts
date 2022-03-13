@@ -51,15 +51,14 @@ class WSSender extends AbstractSender {
 
   async connect (): Promise<boolean> {
     const { address, mConsulServiceName, token, options } = this;
-    const { echo, logger, config } = options;
+    const { echo, logger, serviceName } = options;
 
     const mAddress = `${lBlue}${address}${reset}`;
 
     echo.info(`Connect to ${cyan}WEB SOCKET${reset} on ${lBlue}${address}${reset}`);
 
     const opt = {
-      // cfg.service устанавливается в af-consul
-      query: { fromService: config.service?.fromService }, // VVT
+      query: { fromService: serviceName }, // VVT
       auth: { token },
       extraHeaders: { authorization: token },
     };
