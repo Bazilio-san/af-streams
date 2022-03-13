@@ -5,7 +5,7 @@ import * as cron from 'cron';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
-import getVirtualTimeObj, { IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
+import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
 import { padL } from './utils/utils';
 import getDb from './db/db';
 import {
@@ -18,7 +18,7 @@ import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
 import getSender from './sender/get-sender';
 
-export const YMDTms = 'yyyy-LL-ddTHH:mm:ss.SSS';
+const YMDTms = 'yyyy-LL-ddTHH:mm:ss.SSS';
 
 export interface IStreamConstructorOptions {
   streamConfig: IStreamConfig,

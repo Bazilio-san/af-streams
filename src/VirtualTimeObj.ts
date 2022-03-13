@@ -86,11 +86,9 @@ export class VirtualTimeObj {
 }
 
 let virtualTimeObj: VirtualTimeObj;
-const getVirtualTimeObj = (options: IVirtualTimeObjOptions): VirtualTimeObj => {
+export const getVirtualTimeObj = (options: IVirtualTimeObjOptions): VirtualTimeObj => {
   if (!virtualTimeObj) {
     virtualTimeObj = new VirtualTimeObj(options);
   }
   return virtualTimeObj;
 };
-
-export default getVirtualTimeObj;

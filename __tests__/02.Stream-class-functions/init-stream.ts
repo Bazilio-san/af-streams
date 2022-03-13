@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import * as EventEmitter from 'events';
 import { DateTime } from 'luxon';
-import { IStreamConstructorOptions, Stream } from '../../src/Stream';
+import { IStreamConstructorOptions, Stream } from '../../src';
 import { echo, exitOnError, logger } from '../lib/logger';
 import { TDbRecord, TEventRecord } from '../../src/interfaces';
 
@@ -72,7 +72,6 @@ async function initStream (): Promise<Stream> {
     },
     testMode: true,
   };
-  // const virtualTimeObj = getVirtualTimeObj({ startTime: Date.now() });
   const stream = new Stream(streamConstructorOptions);
   try {
     await stream.init();

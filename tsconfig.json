@@ -22,10 +22,10 @@
     "suppressImplicitAnyIndexErrors": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
-    "outDir": "dist"
+    "outDir": "dist/cjs"
   },
   "include": [
-    "api/**/*.ts",
+    "src/**/*.ts",
     "__tests__/**/*.ts"
   ],
   "exclude": [
