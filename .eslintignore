@@ -1,5 +1,4 @@
 /dist
 /node_modules
 /_misc
-/**/*.d.ts
 /**/*.min.js
