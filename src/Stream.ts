@@ -168,14 +168,14 @@ export class Stream {
     const startTimeRedis = new StartTimeRedis(startTimeRedisOptions);
     const { isUsedSavedStartTime, startTime } = await startTimeRedis.getStartTime();
 
-    const info = `=================== Stream =====================
+    const info = `${g}=========================== Stream =============================
 ${g}Time zone:                ${m}${this.options.timezone}
 ${g}Стартовать с начала:      ${m}${useStartTimeFromRedisCache ? 'НЕТ' : 'ДА'}
-${g}Стартовое время:          ${m}${DateTime.fromMillis(startTime).toFormat('yyy-MM-dd HH:mm:ss.SSS')}${isUsedSavedStartTime ? `${y}${bold} ВЗЯТО ИЗ КЕША${boldOff}${rs}${g}` : ''}
-${g}Скорость:                 ${m}${speed}X
-${g}LOOP_TIME:                ${m}${loopTimeMillis ? `${loopTimeMillis / 1000} сек` : '-'}
+${g}Стартовое время:          ${m}${DateTime.fromMillis(startTime).toISO()}${isUsedSavedStartTime ? `${y}${bold} ВЗЯТО ИЗ КЕША${boldOff}${rs}${g}` : ''}
+${g}Скорость:                 ${m}${speed}x
+${g}Цикличность:              ${m}${loopTimeMillis ? `${loopTimeMillis / 1000} сек` : '-'}
 ${g}Периодичность опроса БД:  ${m}${streamConfig.fetchIntervalSec} сек
-${g}=======================================================================`;
+${g}================================================================`;
     echo(info);
 
     const virtualTimeObjOptions: IVirtualTimeObjOptions = {

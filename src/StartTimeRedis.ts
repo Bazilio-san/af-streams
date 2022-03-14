@@ -80,19 +80,19 @@ export class StartTimeRedis {
 
   getStartTimeFromENV (): number {
     const { logger } = this.options;
-    const { START_TIME = '', START_BEFORE = '' } = process.env;
-    const dt = DateTime.fromISO(START_TIME);
-    if (START_TIME) {
+    const { STREAM_START_TIME = '', STREAM_START_BEFORE = '' } = process.env;
+    const dt = DateTime.fromISO(STREAM_START_TIME);
+    if (STREAM_START_TIME) {
       if (dt.isValid) {
         return dt.toMillis();
       }
-      logger.error(`Start time is incorrect. START_TIME: ${START_TIME}`);
+      logger.error(`Start time is incorrect. STREAM_START_TIME: ${STREAM_START_TIME}`);
     }
-    if (START_BEFORE) {
-      if (timeParamRE.test(START_BEFORE)) {
-        return Date.now() - getTimeParamMillis(START_BEFORE);
+    if (STREAM_START_BEFORE) {
+      if (timeParamRE.test(STREAM_START_BEFORE)) {
+        return Date.now() - getTimeParamMillis(STREAM_START_BEFORE);
       }
-      logger.error(`Start time is incorrect. START_BEFORE: ${START_BEFORE}`);
+      logger.error(`Start time is incorrect. STREAM_START_BEFORE: ${STREAM_START_BEFORE}`);
     }
     return 0;
   }

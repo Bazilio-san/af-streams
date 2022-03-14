@@ -31,12 +31,20 @@ class EmitterSender extends AbstractSender {
 
   async sendEvents (recordsComposite: IRecordsComposite): Promise<boolean> {
     const { eventsPacket } = recordsComposite;
+    if (!eventsPacket.length) {
+      return false;
+    }
+    const packet = eventsPacket.splice(0, eventsPacket.length);
+    const pl = packet.length;
+    recordsComposite.sentBufferLength = pl;
+    recordsComposite.sendCount = pl;
+    recordsComposite.last = packet[pl - 1];
     if (this.emitSingleEvent) {
-      recordsComposite.eventsPacket.forEach((event: TEventRecord) => {
+      packet.eventsPacket.forEach((event: TEventRecord) => {
         this.eventEmitter.emit(this.emitId, event);
       });
     } else {
-      this.eventEmitter.emit(this.emitId, eventsPacket);
+      this.eventEmitter.emit(this.emitId, packet);
     }
     return true;
   }
