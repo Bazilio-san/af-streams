@@ -60,6 +60,7 @@ async function initStream (): Promise<Stream> {
     exitOnError,
     eventEmitter,
     speed: 1,
+    useStartTimeFromRedisCache: false,
     // loopTimeMillis: 0,
     prepareEvent: function prepareEvent (dbRecord: TDbRecord): TEventRecord {
       const eventRecord = { ...dbRecord };
