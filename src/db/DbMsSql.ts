@@ -52,11 +52,11 @@ export class DbMsSql {
     const { fieldsTypes, src } = streamConfig;
     const { schema, table, tsField, idFields } = src;
 
-    this.fieldsList = Object.keys(fieldsTypes).map(([fName]) => `[${fName}]`).join(', ');
+    this.fieldsList = Object.keys(fieldsTypes).map((fName) => `[${fName}]`).join(', ');
     this.schemaAndTable = `[${schema}].[${table}]`;
     this.tsField = tsField;
     this.idFields = idFields;
-    this.sortBy = [tsField, ...idFields].map((f) => `, [${f}]`).join(',');
+    this.sortBy = [tsField, ...idFields].map((f) => `[${f}]`).join(',');
     this.pool = null;
     this.request = null;
   }

@@ -11,7 +11,7 @@ class AbstractSender {
     const { type, host, port } = senderConfig;
     this.options = options;
     this.senderConfig = senderConfig;
-    if (type !== 'console') {
+    if (['tcp', 'ws'].includes(type)) {
       if (host == null) {
         throw new Error(`No host specified in senders.${type} configuration`);
       }

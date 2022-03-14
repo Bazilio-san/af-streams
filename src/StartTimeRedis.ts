@@ -2,10 +2,11 @@
 import EventEmitter from 'events';
 import { createClient, RedisClientType, RedisDefaultModules, RedisModules, RedisScripts } from 'redis';
 import { DateTime } from 'luxon';
-import { getStreamKey } from './utils/utils';
+import { getStreamKey, getTimeParamMillis, timeParamRE } from './utils/utils';
 import { ILoggerEx } from './interfaces';
 
 export interface IStartTimeRedisOptions {
+  useStartTimeFromRedisCache: boolean,
   host: string,
   port: string | number,
   streamId: string,
@@ -15,31 +16,27 @@ export interface IStartTimeRedisOptions {
 }
 
 export class StartTimeRedis {
+  private readonly options: IStartTimeRedisOptions;
+
   private readonly client: RedisClientType<RedisDefaultModules & RedisModules, RedisScripts>;
-
-  private readonly exitOnError: Function;
-
-  private logger: ILoggerEx;
 
   private readonly streamKey: string;
 
   constructor (options: IStartTimeRedisOptions) {
-    const { host, port, streamId, eventEmitter, exitOnError, logger } = options;
-    this.exitOnError = exitOnError;
-    this.logger = logger;
-    const url = `redis://${host}:${port}`;
+    this.options = options;
+    const url = `redis://${options.host}:${options.port}`;
     console.log(`==================== Redis are expected at ${url} ========================`);
     this.client = createClient({ url });
     this.client.on('error', (err: Error | any) => {
       console.error('Redis Client Error');
-      exitOnError(err);
+      options.exitOnError(err);
     });
-    const streamKey = getStreamKey(streamId);
+    const streamKey = getStreamKey(options.streamId);
     this.streamKey = streamKey;
-    eventEmitter.on('save-last-ts', async (ts: number) => {
+    options.eventEmitter.on('save-last-ts', async (ts: number) => {
       const redisClient = await this.getRedisClient();
       redisClient?.set(streamKey, ts).catch((err: Error | any) => {
-        logger.error(err);
+        options.logger.error(err);
       });
     });
   }
@@ -51,11 +48,11 @@ export class StartTimeRedis {
     try {
       await this.client.connect();
     } catch (err: Error | any) {
-      this.logger.error('Failed to initialize Redis client');
-      this.exitOnError(err);
+      this.options.logger.error('Failed to initialize Redis client');
+      this.options.exitOnError(err);
     }
     if (!this.client.isOpen) {
-      this.exitOnError('Failed to initialize Redis client');
+      this.options.exitOnError('Failed to initialize Redis client');
     }
     return this.client;
   }
@@ -66,18 +63,50 @@ export class StartTimeRedis {
     try {
       startTime = await redisClient.get(this.streamKey);
     } catch (err) {
-      this.logger.error(err);
-      return 0;
-    }
-    if (!startTime) {
+      this.options.logger.error(err);
       return 0;
     }
     startTime = Number(startTime);
-    if (!startTime || !DateTime.fromMillis(startTime).isValid) {
-      this.logger.error(`Cache stored data is not a unix timestamp: ${startTime}`);
+    if (!startTime) {
       return 0;
     }
-    this.logger.info(`Get time of last sent entry: ${DateTime.fromMillis(startTime).toISO()} from the Redis cache using key ${this.streamKey}`);
+    if (!DateTime.fromMillis(startTime).isValid) {
+      this.options.logger.error(`Cache stored data is not a unix timestamp: ${startTime}`);
+      return 0;
+    }
+    this.options.logger.info(`Get time of last sent entry: ${DateTime.fromMillis(startTime).toISO()} from the Redis cache using key ${this.streamKey}`);
     return startTime;
+  }
+
+  getStartTimeFromENV (): number {
+    const { logger } = this.options;
+    const { START_TIME = '', START_BEFORE = '' } = process.env;
+    const dt = DateTime.fromISO(START_TIME);
+    if (START_TIME) {
+      if (dt.isValid) {
+        return dt.toMillis();
+      }
+      logger.error(`Start time is incorrect. START_TIME: ${START_TIME}`);
+    }
+    if (START_BEFORE) {
+      if (timeParamRE.test(START_BEFORE)) {
+        return Date.now() - getTimeParamMillis(START_BEFORE);
+      }
+      logger.error(`Start time is incorrect. START_BEFORE: ${START_BEFORE}`);
+    }
+    return 0;
+  }
+
+  async getStartTime (): Promise<{ isUsedSavedStartTime: boolean, startTime: number }> {
+    // инициализируем соединение с Redis для последующего сохранения состояния
+    await this.getRedisClient();
+    let startTime = 0;
+    let isUsedSavedStartTime = false;
+    if (this.options.useStartTimeFromRedisCache) {
+      startTime = await this.getStartTimeFromRedis();
+      isUsedSavedStartTime = !!startTime;
+    }
+    startTime = startTime || this.getStartTimeFromENV() || Date.now();
+    return { isUsedSavedStartTime, startTime };
   }
 }

@@ -47,12 +47,11 @@ export class DbPostgres {
 
     const { fieldsTypes, src } = streamConfig;
     const { schema, table, tsField, idFields } = src;
-
-    this.fieldsList = Object.keys(fieldsTypes).map(([fName]) => `"${fName}"`).join(', ');
+    this.fieldsList = Object.keys(fieldsTypes).map((fName) => `"${fName}"`).join(', ');
     this.schemaAndTable = `"${schema}"."${table}"`;
     this.tsField = tsField;
     this.idFields = idFields;
-    this.sortBy = [tsField, ...idFields].map((f) => `, "${f}"`).join(',');
+    this.sortBy = [tsField, ...idFields].map((f) => `"${f}"`).join(',');
     this.pool = null;
   }
 
@@ -87,8 +86,8 @@ export class DbPostgres {
   async init () {
     const { schemaAndTable, options: { exitOnError, streamConfig: { streamId, fieldsTypes } } } = this;
     const fieldsArray = Object.keys(fieldsTypes);
-    const { fields } = await this.query(`SELECT TOP (1) *
-                                     FROM ${schemaAndTable}`);
+    const { fields } = await this.query(`SELECT *
+                                         FROM ${schemaAndTable} LIMIT 1`);
     const columnsArray = fields.map(({ name }) => name);
     const unknownFields = fieldsArray.filter((name) => !columnsArray.includes(name));
     if (unknownFields.length) {

@@ -9,7 +9,7 @@ import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './Vir
 import { padL } from './utils/utils';
 import getDb from './db/db';
 import {
-  blue, bold, boldOff, c, g, lBlue, lc, lm, m, rs,
+  blue, bold, boldOff, c, g, lBlue, lc, lm, m, rs, y,
 } from './utils/color';
 import {
   IDbConstructorOptions, IEcho, ILoggerEx, IRecordsComposite, ISender, ISenderConfig, ISenderConstructorOptions, IStreamConfig, TDbRecord, TEventRecord,
@@ -17,8 +17,6 @@ import {
 import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
 import getSender from './sender/get-sender';
-
-const YMDTms = 'yyyy-LL-ddTHH:mm:ss.SSS';
 
 export interface IStreamConstructorOptions {
   streamConfig: IStreamConfig,
@@ -34,6 +32,7 @@ export interface IStreamConstructorOptions {
   exitOnError: Function,
   eventEmitter: EventEmitter,
 
+  useStartTimeFromRedisCache: boolean,
   speed?: number,
   loopTimeMillis?: number,
   prepareEvent?: Function,
@@ -126,7 +125,18 @@ export class Stream {
 
   async init () {
     const {
-      senderConfig, eventEmitter, echo, logger, redis, serviceName, streamConfig, speed, loopTimeMillis, exitOnError, testMode,
+      senderConfig,
+      eventEmitter,
+      echo,
+      logger,
+      redis,
+      serviceName,
+      streamConfig,
+      useStartTimeFromRedisCache,
+      speed,
+      loopTimeMillis,
+      exitOnError,
+      testMode,
     } = this.options;
 
     const senderConstructorOptions: ISenderConstructorOptions = {
@@ -147,6 +157,7 @@ export class Stream {
     const { host, port } = redis;
     const { src: { dbOptions, dbConfig }, streamId } = streamConfig;
     const startTimeRedisOptions: IStartTimeRedisOptions = {
+      useStartTimeFromRedisCache,
       host,
       port,
       streamId,
@@ -155,13 +166,24 @@ export class Stream {
       logger,
     };
     const startTimeRedis = new StartTimeRedis(startTimeRedisOptions);
-    const startTime = await startTimeRedis.getStartTimeFromRedis();
+    const { isUsedSavedStartTime, startTime } = await startTimeRedis.getStartTime();
+
+    const info = `=================== Stream =====================
+${g}Time zone:                ${m}${this.options.timezone}
+${g}Стартовать с начала:      ${m}${useStartTimeFromRedisCache ? 'НЕТ' : 'ДА'}
+${g}Стартовое время:          ${m}${DateTime.fromMillis(startTime).toFormat('yyy-MM-dd HH:mm:ss.SSS')}${isUsedSavedStartTime ? `${y}${bold} ВЗЯТО ИЗ КЕША${boldOff}${rs}${g}` : ''}
+${g}Скорость:                 ${m}${speed}X
+${g}LOOP_TIME:                ${m}${loopTimeMillis ? `${loopTimeMillis / 1000} сек` : '-'}
+${g}Периодичность опроса БД:  ${m}${streamConfig.fetchIntervalSec} сек
+${g}=======================================================================`;
+    echo(info);
 
     const virtualTimeObjOptions: IVirtualTimeObjOptions = {
       startTime,
       speed,
       loopTimeMillis,
       eventEmitter,
+      exitOnError,
     };
     this.virtualTimeObj = getVirtualTimeObj(virtualTimeObjOptions);
 
@@ -264,8 +286,8 @@ export class Stream {
     if (((recordsBuffer.getMsDistance()) > bufferLookAheadMs)) {
       return;
     }
-    const from = DateTime.fromMillis(startTs).toFormat(YMDTms); // Включая
-    const to = DateTime.fromMillis(endTs).toFormat(YMDTms); // Включая
+    const from = DateTime.fromMillis(startTs).toISO(); // Включая
+    const to = DateTime.fromMillis(endTs).toISO(); // Включая
     try {
       const recordset = await this.db.getPortionOfData(from, to);
       this._addPortionToBuffer(recordset);

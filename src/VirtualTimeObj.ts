@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import EventEmitter from 'events';
 import { IEcho } from './interfaces';
-import { rs, c } from './utils/color';
+import { c, rs } from './utils/color';
 
 export interface IVirtualTimeObjOptions {
   startTime: number,
@@ -9,9 +9,12 @@ export interface IVirtualTimeObjOptions {
   speed?: number,
   loopTimeMillis?: number,
   echo?: IEcho,
+  exitOnError: Function,
 }
 
 export class VirtualTimeObj {
+  private options: IVirtualTimeObjOptions;
+
   private speed: number;
 
   private loopTimeMillis: number;
@@ -37,6 +40,7 @@ export class VirtualTimeObj {
   constructor (options: IVirtualTimeObjOptions) {
     const { startTime, speed, loopTimeMillis = 0, eventEmitter, echo } = options;
 
+    this.options = options;
     this.speed = Number(speed) || 1;
     this.loopTimeMillis = loopTimeMillis;
     this.virtualStartTs = +startTime; // метка времени, с которого надо начать выгрузку данных
