@@ -56,21 +56,18 @@ export class DbPostgres {
   }
 
   private async getPool () {
-    // if (this.pool?.connected || this.pool?.connecting) { // VVQ ?.connected
-    //   return this.pool;
-    // }
     if (this.pool) {
       return this.pool;
     }
     this.pool = new Pool(this.cfg);
-    // if (this.pool?.close) { VVQ
-    //   await this.pool.close();
-    // }
     return this.pool;
   }
 
   async close () {
-    const self = this; // VVQ
+    const self = this;
+    return new Promise((resolve) => {
+      self.pool?.end().then(() => resolve(true));
+    });
   }
 
   async closeAndExit () {
