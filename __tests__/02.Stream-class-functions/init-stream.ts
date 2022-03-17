@@ -19,7 +19,7 @@ async function initStream (): Promise<Stream> {
         table: 'test',
         idFields: ['tradeno', 'seccode', 'buysell'],
         tsField: 'tradetime',
-        timezone: 'GMT',
+        timezoneOfTsField: 'GMT',
         dbOptions: {},
         dbConfig: {
           dialect: 'pg',

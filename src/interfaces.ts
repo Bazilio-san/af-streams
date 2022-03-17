@@ -1,6 +1,6 @@
 import EventEmitter from 'events';
 
-export type TEventRecord = { [fieldName: string]: any };
+export type TEventRecord = { [fieldName: string | symbol]: any };
 export type Nullable<T> = T | null;
 
 /**
@@ -77,7 +77,7 @@ export interface ISender {
   connect: Function
 }
 
-export type TDbRecord = { [fieldName: string]: any };
+export type TDbRecord = { [fieldName: string | symbol]: any };
 export type TYMDms = string; // 'YYYY-MM-DDTHH:mm:ss.SSS'
 
 export type TFieldType = string;

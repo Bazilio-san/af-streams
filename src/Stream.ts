@@ -12,17 +12,26 @@ import {
   blue, bold, boldOff, c, g, lBlue, lc, lm, m, rs, y,
 } from './utils/color';
 import {
-  IDbConstructorOptions, IEcho, ILoggerEx, IRecordsComposite, ISender, ISenderConfig, ISenderConstructorOptions, IStreamConfig, TDbRecord, TEventRecord,
+  IDbConstructorOptions,
+  IEcho,
+  ILoggerEx,
+  IRecordsComposite,
+  ISender,
+  ISenderConfig,
+  ISenderConstructorOptions,
+  IStreamConfig,
+  TDbRecord,
+  TEventRecord,
 } from './interfaces';
 import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
 import getSender from './sender/get-sender';
+import { TS_FIELD } from './constants';
 
 export interface IStreamConstructorOptions {
   streamConfig: IStreamConfig,
   senderConfig: ISenderConfig,
   serviceName: string,
-  timezone: string,
   redis: {
     host: string,
     port: string | number
@@ -36,6 +45,7 @@ export interface IStreamConstructorOptions {
   speed?: number,
   loopTime?: string | number,
   prepareEvent?: Function,
+  tsFieldToTimestampConversion?: Function,
   testMode?: boolean,
 }
 
@@ -43,6 +53,8 @@ export class Stream {
   public readonly bufferLookAheadMs: number;
 
   public lastRecordTs: number;
+
+  private loopTimeMillis: number;
 
   public recordsBuffer: RecordsBuffer;
 
@@ -60,6 +72,8 @@ export class Stream {
 
   private totalRowsSent: number;
 
+  private readonly tsFieldToTimestampConversion: Function;
+
   private readonly prepareEvent: Function;
 
   private isSilly: boolean;
@@ -72,27 +86,28 @@ export class Stream {
 
   private sender: ISender;
 
-  private tsField: string;
-
-  private readonly timezoneOfTsField: string;
-
   constructor (options: IStreamConstructorOptions) {
-    const { streamConfig, prepareEvent } = options;
-    this.options = options;
-    this.prepareEvent = typeof prepareEvent === 'function' ? prepareEvent.bind(this) : (dbRecord: TDbRecord) => dbRecord;
-
+    const { streamConfig, prepareEvent, tsFieldToTimestampConversion, loopTime = 0 } = options;
     const { fetchIntervalSec, bufferMultiplier, src } = streamConfig;
+    src.timezoneOfTsField = src.timezoneOfTsField || 'GMT';
+    const zone = src.timezoneOfTsField;
+    this.options = options;
+    this.tsFieldToTimestampConversion = typeof tsFieldToTimestampConversion === 'function'
+      ? tsFieldToTimestampConversion.bind(this)
+      : (tsValue: string | Date | number) => (typeof tsValue === 'string' ? DateTime.fromISO(tsValue, { zone }).toMillis() : Number(tsValue));
+    this.prepareEvent = typeof prepareEvent === 'function'
+      ? prepareEvent.bind(this)
+      : (dbRecord: TDbRecord) => dbRecord;
 
-    const { tsField, idFields, timezoneOfTsField } = src;
+    const { idFields } = src;
     this.bufferLookAheadMs = ((fetchIntervalSec || 10) * 1000 * (bufferMultiplier || 30));
 
     this.sender = {} as ISender;
     this.db = {} as DbMsSql | DbPostgres;
-    this.tsField = tsField;
-    this.timezoneOfTsField = timezoneOfTsField || 'GMT';
     this.lastRecordTs = 0;
 
-    this.recordsBuffer = new RecordsBuffer(tsField);
+    this.loopTimeMillis = getTimeParamMillis(loopTime);
+    this.recordsBuffer = new RecordsBuffer();
     /*
      A set of hashes of string identification fields, along with a timestamp
      equal to the largest value in the last received packet.
@@ -108,7 +123,7 @@ export class Stream {
           WHERE [${tsField}] >= '${from}' AND [${tsField}] <= '${to}'
      To ensure that duplicates are excluded, after receiving the data, we delete from there those that are in lastTimeRecords
      */
-    this.lastTimeRecords = new LastTimeRecords(tsField, idFields);
+    this.lastTimeRecords = new LastTimeRecords(idFields);
 
     this.virtualTimeObj = {} as VirtualTimeObj;
 
@@ -128,6 +143,7 @@ export class Stream {
   }
 
   async init () {
+    const { options, loopTimeMillis } = this;
     const {
       senderConfig,
       eventEmitter,
@@ -137,19 +153,16 @@ export class Stream {
       serviceName,
       streamConfig,
       useStartTimeFromRedisCache,
-      loopTime = 0,
       exitOnError,
       testMode,
-    } = this.options;
+    } = options;
 
-    let { speed } = this.options;
+    let { speed } = options;
     if (/^[\d.]+$/.test(String(speed))) {
       speed = Math.min(Math.max(0.2, parseFloat(String(speed))), 500);
     } else {
       speed = 1;
     }
-
-    const loopTimeMillis = getTimeParamMillis(loopTime);
 
     const senderConstructorOptions: ISenderConstructorOptions = {
       senderConfig,
@@ -167,7 +180,7 @@ export class Stream {
       return;
     }
     const { host, port } = redis;
-    const { src: { dbOptions, dbConfig }, streamId } = streamConfig;
+    const { src: { dbOptions, dbConfig, timezoneOfTsField }, streamId, fetchIntervalSec } = streamConfig;
     const startTimeRedisOptions: IStartTimeRedisOptions = {
       useStartTimeFromRedisCache,
       host,
@@ -181,12 +194,12 @@ export class Stream {
     const { isUsedSavedStartTime, startTime } = await startTimeRedis.getStartTime();
 
     const info = `${g}=========================== Stream =============================
-${g}Time field TZ:         ${m}${this.timezoneOfTsField}
+${g}Time field TZ:         ${m}${timezoneOfTsField}
 ${g}Start from beginning:  ${m}${useStartTimeFromRedisCache ? 'NOT' : 'YES'}
 ${g}Start time:            ${m}${DateTime.fromMillis(startTime).toISO()}${isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
 ${g}Speed:                 ${m}${speed}x
 ${g}Cyclicity:             ${m}${loopTimeMillis ? `${loopTimeMillis / 1000} sec` : '-'}
-${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec
+${g}Db polling frequency:  ${m}${fetchIntervalSec} sec
 ${g}================================================================`;
     echo(info);
 
@@ -225,12 +238,11 @@ ${g}================================================================`;
     return this.recordsBuffer.findSmallestIndex(virtualTime);
   }
 
-  packetInfo (count: number, fromRecord?: TEventRecord | null, toRecord?: TEventRecord | null) {
+  static packetInfo (count: number, fromRecord?: TEventRecord | null, toRecord?: TEventRecord | null) {
     if (count && fromRecord && toRecord) {
       const HMS = 'HH:mm:ss.SSS';
-      const { tsField } = this;
-      const from = fromRecord[tsField];
-      const to = toRecord[tsField];
+      const from = fromRecord[TS_FIELD];
+      const to = toRecord[TS_FIELD];
       const fromLu = DateTime.fromMillis(from);
       const timeRange = `${fromLu.toFormat('LL-dd')} ${fromLu.toFormat(HMS)} - ${DateTime.fromMillis(to).toFormat(HMS)}`;
       return `r: ${padL(count, 5)} / ${timeRange} / ${padL(`${to - from} ms`, 10)}`;
@@ -239,32 +251,36 @@ ${g}================================================================`;
   }
 
   prepareEventsPacket (dbRecordOrRecordset: TDbRecord[]): TEventRecord[] {
+    const { options: { streamConfig: { src: { tsField } } }, prepareEvent, tsFieldToTimestampConversion } = this;
     if (!Array.isArray(dbRecordOrRecordset)) {
       if (!dbRecordOrRecordset || typeof dbRecordOrRecordset !== 'object') {
         return [];
       }
       dbRecordOrRecordset = [dbRecordOrRecordset];
     }
-    return dbRecordOrRecordset.map((record) => this.prepareEvent(record));
+    return dbRecordOrRecordset.map((record) => {
+      record[TS_FIELD] = tsFieldToTimestampConversion(record[tsField]);
+      return prepareEvent(record);
+    });
   }
 
   _addPortionToBuffer (recordset: TDbRecord[]) {
-    const { recordsBuffer, tsField, isSilly } = this;
+    const { recordsBuffer, isSilly, loopTimeMillis } = this;
     const { length: loaded = 0 } = recordset;
     let skipped = 0;
     let toUse = loaded;
     if (loaded) {
       const forBuffer = this.prepareEventsPacket(recordset);
 
-      if (process.env.LOOP_TIME) {
+      if (loopTimeMillis) {
         const bias = Date.now() - this.virtualTimeObj.realStartTsLoopSafe;
         forBuffer.forEach((row) => {
-          row._ts = row[tsField] + bias;
+          row._ts = row[TS_FIELD] + bias;
           row.loopNumber = this.virtualTimeObj.loopNumber;
         });
       }
 
-      const lastRecordTsBeforeCheck = forBuffer[forBuffer.length - 1][tsField];
+      const lastRecordTsBeforeCheck = forBuffer[forBuffer.length - 1][TS_FIELD];
 
       this.lastTimeRecords.subtractLastTimeRecords(forBuffer);
 
@@ -357,13 +373,13 @@ ${g}================================================================`;
         };
         sender.sendEvents(recordsComposite).then(() => {
           const { last, sendCount = 0, sentBufferLength } = recordsComposite;
-          const lastTs = last?.[this.tsField];
+          const lastTs = last?.[TS_FIELD];
           if (lastTs) {
             eventEmitter.emit('save-last-ts', lastTs);
           }
           this.totalRowsSent += sendCount;
           if (isDebug) {
-            debugMessage += ` SENT: ${c}${this.packetInfo(sendCount, first, last)}`;
+            debugMessage += ` SENT: ${c}${Stream.packetInfo(sendCount, first, last)}`;
             debugMessage += ` / ${padL(sentBufferLength, 6)}b`;
             debugMessage += ` / r.tot: ${bold}${padL(this.totalRowsSent, 6)}${boldOff}${rs}`;
           }
@@ -396,7 +412,7 @@ ${g}================================================================`;
       }
     }
     if (isDebug) {
-      console.log(`${debugMessage}\t${m}BUFFER: ${this.packetInfo(rb.length, rb.first, rb.last)}`);
+      console.log(`${debugMessage}\t${m}BUFFER: ${Stream.packetInfo(rb.length, rb.first, rb.last)}`);
     }
   }
 

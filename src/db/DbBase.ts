@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,no-unused-vars */
+/* eslint-disable class-methods-use-this */
 import { IDbConstructorOptions, TDbRecord, TYMDms } from '../interfaces';
 
 export class DbBase {
@@ -53,27 +53,19 @@ export class DbBase {
   }
 
   async getPool (): Promise<any> {
-    const self = this;
     return null;
   }
 
   async close (): Promise<boolean> {
-    const self = this;
     return true;
   }
 
-  async closeAndExit (): Promise<void> {
-    await this.close();
-    process.exit(0);
-  }
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-unused-vars
   async query (strSQL: string): Promise<any> {
-    const self = this;
     return null;
   }
 
   async _getColumnsNames (): Promise<string[]> {
-    const self = this;
     return [];
   }
 

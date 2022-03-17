@@ -54,8 +54,7 @@ export class DbPostgres extends DbBase {
   }
 
   async _getColumnsNames (): Promise<string[]> {
-    const { fields } = await this.query(`SELECT *
-                                         FROM ${this.schemaAndTable} LIMIT 1`);
+    const { fields } = await this.query(`${'SELECT'} * FROM ${this.schemaAndTable} LIMIT 1`);
     return fields.map((field: any) => field.name);
   }
 }

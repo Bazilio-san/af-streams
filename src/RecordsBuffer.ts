@@ -1,9 +1,8 @@
 import { findSmallestIndex } from './utils/utils';
 import { TEventRecord } from './interfaces';
+import { TS_FIELD } from './constants';
 
 export class RecordsBuffer {
-  private tsField: string;
-
   public buffer: any[];
 
   public first: TEventRecord | null;
@@ -14,8 +13,7 @@ export class RecordsBuffer {
 
   public lastTs: number;
 
-  constructor (tsField: string) {
-    this.tsField = tsField;
+  constructor () {
     this.buffer = [];
     this.first = null;
     this.last = null;
@@ -25,11 +23,11 @@ export class RecordsBuffer {
   }
 
   setEdges () {
-    const { buffer: rb, tsField } = this;
+    const { buffer: rb } = this;
     this.first = rb[0] || null;
     this.last = rb.length ? rb[rb.length - 1] : null;
-    this.firstTs = this.first?.[tsField] || 0;
-    this.lastTs = this.last?.[tsField] || 0;
+    this.firstTs = this.first?.[TS_FIELD] || 0;
+    this.lastTs = this.last?.[TS_FIELD] || 0;
   }
 
   add (forBuffer: TEventRecord[]) {
@@ -61,20 +59,16 @@ export class RecordsBuffer {
     this.lastTs = 0;
   }
 
-  getBuffer () {
-    return this.buffer;
-  }
-
   get length () {
     return this.buffer.length;
   }
 
   // Greatest index of a value less than the specified
   findSmallestIndex (virtualTime: number) {
-    const { buffer: rb, tsField } = this;
+    const { buffer: rb } = this;
     if (!rb.length) {
       return -1;
     }
-    return findSmallestIndex(rb, virtualTime, tsField);
+    return findSmallestIndex(rb, virtualTime);
   }
 }

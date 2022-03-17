@@ -88,8 +88,7 @@ export class DbMsSql extends DbBase {
   }
 
   async _getColumnsNames (): Promise<string[]> {
-    const result = await this.query(`SELECT TOP (1) *
-                                     FROM ${this.schemaAndTable}`);
+    const result = await this.query(`${'SELECT'} TOP (1) * FROM ${this.schemaAndTable}`);
     const { columns } = result.recordset;
     return Object.keys(columns);
   }

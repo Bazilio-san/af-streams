@@ -1,7 +1,8 @@
 import * as os from 'os';
 import * as crypto from 'crypto';
+import { TS_FIELD } from '../constants';
 
-export const findSmallestIndexLinear = (arr: any[], x: number, timeFieldName: string) => {
+export const findSmallestIndexLinear = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
   if (!arr.length) {
     return -1;
   }
@@ -15,7 +16,7 @@ export const findSmallestIndexLinear = (arr: any[], x: number, timeFieldName: st
   return arr.length - 1;
 };
 
-export const findSmallestIndexBinary = (arr: any[], x: number, timeFieldName: string) => {
+export const findSmallestIndexBinary = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
   let start = 0;
   let end = arr.length - 1;
   let ans = -1;
@@ -34,7 +35,7 @@ export const findSmallestIndexBinary = (arr: any[], x: number, timeFieldName: st
   return ans;
 };
 
-export const findSmallestIndex = (arr: any[], x: number, timeFieldName: string) => {
+export const findSmallestIndex = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
   if (arr.length < 50000) {
     return findSmallestIndexLinear(arr, x, timeFieldName);
   }
@@ -53,6 +54,7 @@ export const getInstanceKey = () => {
 
 export const getStreamKey = (stringId: string) => getInstanceKey() + stringId;
 
+/*
 export const padR = (str: any, strLength: number, padSymbol: string = ' ') => {
   str = String(str || '');
   if (str.length < strLength) {
@@ -60,6 +62,7 @@ export const padR = (str: any, strLength: number, padSymbol: string = ' ') => {
   }
   return str;
 };
+*/
 
 export const padL = (str: any, strLength: number, padSymbol: string = ' ') => {
   str = String(str || '');
@@ -131,9 +134,11 @@ export const getTimeParamMillis = (val: string | number): number => {
   return sec * 1000;
 };
 
+/*
 export const getBool = (v: any): boolean => {
   if (typeof v === 'string') {
     return /^(true|1|yes)$/i.test(v);
   }
   return !!v;
 };
+*/
