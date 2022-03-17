@@ -35,7 +35,7 @@ export class DbMsSql extends DbBase {
         Object.assign(mssqlDbOptions[propName], dbOptions[propName]);
       }
     });
-    this.cfg = { ...mssqlDbOptions, ...dbConfig, server: dbConfig.host } as IMsSqlConfig;
+    this.cfg = { ...mssqlDbOptions, ...dbConfig, server: dbConfig.server || dbConfig.host } as IMsSqlConfig;
     this.request = null;
   }
 

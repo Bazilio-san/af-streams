@@ -88,7 +88,8 @@ export type TFields = TFieldsTypes | TFieldList;
 
 export interface IDbConfig {
   dialect: 'mssql' | 'pg',
-  host: string,
+  host?: string,
+  server?: string,
   port: number,
   database: string,
   user: string,
@@ -125,12 +126,31 @@ export interface IMsSqlConfig {
   connectionTimeout?: number | undefined;
 }
 
-export interface IPostgresConfig {
+export interface IPostgresClientConfig {
   user?: string | undefined;
   database?: string | undefined;
-  password?: string | undefined;
+  password?: string | (() => string | Promise<string>) | undefined;
   port?: number | undefined;
   host?: string | undefined;
+  connectionString?: string | undefined;
+  keepAlive?: boolean | undefined;
+  statement_timeout?: false | number | undefined;
+  parseInputDatesAsUTC?: boolean | undefined;
+  ssl?: any
+  keepAliveInitialDelayMillis?: number | undefined;
+  idle_in_transaction_session_timeout?: number | undefined;
+  application_name?: string | undefined;
+  connectionTimeoutMillis?: number | undefined;
+  options?: string | undefined;
+}
+
+export interface IPostgresConfig extends IPostgresClientConfig {
+  max?: number | undefined;
+  min?: number | undefined;
+  idleTimeoutMillis?: number | undefined;
+  log?: ((...messages: any[]) => void) | undefined;
+  allowExitOnIdle?: boolean | undefined;
+  maxUses?: number | undefined;
 }
 
 export interface IStreamConfig {
