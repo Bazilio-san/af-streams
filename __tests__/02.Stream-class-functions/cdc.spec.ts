@@ -1,11 +1,12 @@
 import initStream from './init-stream';
-import { Stream } from '../../src/Stream';
+import { Stream } from '../../src';
 import { Nullable, TEventRecord } from '../../src/interfaces';
+import { TS_FIELD } from '../../src/constants';
 
 let stream: Stream;
 
 const convertToDbRecord = (item: Nullable<TEventRecord>) => {
-  const { tradeno, tradetime, orderno, shortname, seccode, buysell } = item || {};
+  const { [TS_FIELD]: tsf, tradeno, tradetime, orderno, shortname, seccode, buysell } = item || {};
   return {
     tradeno: String(tradeno),
     tradetime: (new Date(tradetime)).toISOString(),
@@ -13,9 +14,17 @@ const convertToDbRecord = (item: Nullable<TEventRecord>) => {
     shortname,
     seccode,
     buysell,
+    [TS_FIELD]: tsf,
   };
 };
 
+const removeSymbolTs = (item: Nullable<TEventRecord>) => {
+  const item2 = { ...item };
+  delete item2[TS_FIELD];
+  return item2;
+};
+
+const removeSymbolTsArr = (arr: TEventRecord[]) => arr.map(removeSymbolTs);
 const convertRecordsToExpected = (arr: TEventRecord[]) => arr.map(convertToDbRecord);
 
 describe('Test CDC', () => {
@@ -73,7 +82,7 @@ describe('Test CDC', () => {
       expect(convertToDbRecord(stream.recordsBuffer.last)).toEqual(last);
 
       const resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);
-      expect(resBuffer).toEqual(expected[1]);
+      expect(removeSymbolTsArr(resBuffer)).toEqual(expected[1]);
     });
 
     test('test 3', () => {
@@ -89,7 +98,7 @@ describe('Test CDC', () => {
       expect(convertToDbRecord(stream.recordsBuffer.last)).toEqual(last);
 
       const resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);
-      expect(resBuffer).toEqual(expected[2]);
+      expect(removeSymbolTsArr(resBuffer)).toEqual(expected[2]);
     });
   });
 
@@ -106,7 +115,7 @@ describe('Test CDC', () => {
       stream._addPortionToBuffer(portions[1]);
       stream._addPortionToBuffer(portions[2]);
       const resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);
-      expect(resBuffer).toEqual(expected);
+      expect(removeSymbolTsArr(resBuffer)).toEqual(expected);
     });
   });
 
@@ -158,7 +167,7 @@ describe('Test CDC', () => {
       expect(stream.lastTimeRecords.getLtr()).toEqual(ltr[2]);
 
       resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);
-      expect(resBuffer).toEqual(expected[2]);
+      expect(removeSymbolTsArr(resBuffer)).toEqual(expected[2]);
     });
 
     test('test 3', () => {
@@ -166,7 +175,7 @@ describe('Test CDC', () => {
       expect(stream.lastTimeRecords.getLtr()).toEqual(ltr[3]);
 
       resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);
-      expect(resBuffer).toEqual(expected[3]);
+      expect(removeSymbolTsArr(resBuffer)).toEqual(expected[3]);
     });
   });
 });
