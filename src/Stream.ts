@@ -141,6 +141,8 @@ export class Stream {
     let { speed } = this.options;
     if (/^[\d.]+$/.test(String(speed))) {
       speed = Math.min(Math.max(0.2, parseFloat(String(speed))), 500);
+    } else {
+      speed = 1;
     }
 
     const loopTimeMillis = getTimeParamMillis(loopTime);
