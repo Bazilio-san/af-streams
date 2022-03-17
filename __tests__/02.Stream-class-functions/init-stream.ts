@@ -19,6 +19,7 @@ async function initStream (): Promise<Stream> {
         table: 'test',
         idFields: ['tradeno', 'seccode', 'buysell'],
         tsField: 'tradetime',
+        timezone: 'GMT',
         dbOptions: {},
         dbConfig: {
           dialect: 'pg',
@@ -48,7 +49,6 @@ async function initStream (): Promise<Stream> {
       emitSingleEvent: true,
       // emitId: 'test-emit',
     },
-    timezone: 'GMT',
     redis: {
       host: process.env.REDIS_HOST || 'localhost',
       port: 6379,
@@ -63,7 +63,7 @@ async function initStream (): Promise<Stream> {
     // loopTime: 5min,
     prepareEvent: function prepareEvent (dbRecord: TDbRecord): TEventRecord {
       const eventRecord = { ...dbRecord };
-      eventRecord.tradetime = DateTime.fromISO(dbRecord.tradetime).toMillis();
+      eventRecord.tradetime = DateTime.fromISO(dbRecord.tradetime, { zone: 'GMT' }).toMillis();
       eventRecord.tradeno = Number(dbRecord.tradeno);
       eventRecord.orderno = Number(dbRecord.orderno);
       return eventRecord;

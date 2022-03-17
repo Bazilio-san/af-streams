@@ -33,8 +33,8 @@ export class LastTimeRecords {
     const { tsField, lastTs } = this;
     const ts = rb[index - 1][tsField];
     if (lastTs !== ts) {
-      // В пакете есть записи с новыми временными метками, нежели та, что есть в
-      // lastTimeRecords. Это значит lastTimeRecords надо сбросить.
+      // There are records in the batch with new timestamps than the one in
+      // lastTimeRecords. This means lastTimeRecords must be reset.
       this.flush(ts);
     }
     while (index > -1 && rb[--index]?.[tsField] === ts) {

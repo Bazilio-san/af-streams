@@ -163,10 +163,12 @@ Connection established with WEBSOCKET ${mConsulServiceName} on ${mAddress}
       const packet = eventsPacket.splice(0, MAX_PACKET_SIZE);
       const pl = packet.length;
       if (pl) {
-        // сигнатура принимающей стороны
-        // socket.on(socketRequestId, (request, callback) => {
-        //   callback({ result: true });
-        // });
+        /*
+        // receiving side signature:
+        socket.on(socketRequestId, (request, callback) => {
+          callback({ result: true });
+        });
+        */
         const { error, result } = await this.remoteSocket(this.socketRequestId, packet);
         stop = !result;
         if (stop) {

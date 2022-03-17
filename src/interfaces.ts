@@ -4,26 +4,25 @@ export type TEventRecord = { [fieldName: string]: any };
 export type Nullable<T> = T | null;
 
 /**
- * Данные из БД вместе с сопутствующей информацией,
- * для отправки в WSO2 по TCP в виде JSON
+ * Data from the database, along with related information, to be sent to WSO2 over TCP as JSON
  */
 export interface IRecordsComposite {
-  sessionId: string, // ID сессии
-  streamId: string, // ID потока
-  eventsPacket: TEventRecord[] | TEventRecord, // одно или более подготовленных событий
-  tcpHeaderLength?: number, // длина заголовка при отправке TCP пакета
-  isSingleRecordAsObject?: boolean, // отправлять одну запись как объект, а не один элемент массива
-  first?: TEventRecord, // первая отправленная запись пакета
-  last?: TEventRecord, // последняя отправленная запись пакета
-  sendCount?: number, // кол-во отправленных записей (событий)
-  sentBufferLength?: number, // суммарный размер отправленных данных
+  sessionId: string,
+  streamId: string,
+  eventsPacket: TEventRecord[] | TEventRecord, // one or more prepared events
+  tcpHeaderLength?: number, // header length when sending a TCP packet
+  isSingleRecordAsObject?: boolean, // send a single entry as an object, not a single array element
+  first?: TEventRecord, // first packet record sent
+  last?: TEventRecord, // last packet record sent
+  sendCount?: number, // number of sent records (events)
+  sentBufferLength?: number, // total size of sent data
 }
 
-/** Сведения для сборки TCP сообщения WSO2 */
+/** Information for assembling TCP WSO2 messages */
 export interface IEventComposite {
-  sessionId: string, // ID сессии
-  streamId: string, // ID потока
-  json: string, // стерилизованный объект, содержащий одно или более событий
+  sessionId: string,
+  streamId: string,
+  json: string, // sterilized object containing one or more events
 }
 
 export interface IEcho extends Function {
@@ -161,6 +160,7 @@ export interface IStreamConfig {
     schema: string,
     table: string,
     idFields: string[],
+    timezoneOfTsField?: string,
     tsField: string,
     dbOptions: IMsSqlConfig | IPostgresConfig,
     dbConfig: IDbConfig,

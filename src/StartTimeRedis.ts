@@ -74,14 +74,17 @@ export class StartTimeRedis {
       this.options.logger.error(`Cache stored data is not a unix timestamp: ${startTime}`);
       return 0;
     }
-    this.options.logger.info(`Get time of last sent entry: ${DateTime.fromMillis(startTime).toISO()} from the Redis cache using key ${this.streamKey}`);
+    this.options.logger.info(`Get time of last sent entry: ${
+      DateTime.fromMillis(startTime).toISO({ includeOffset: true })
+    } from the Redis cache using key ${this.streamKey}`);
     return startTime;
   }
 
+  // !!!Attention!!! STREAM_START_TIME - time in GMT
   getStartTimeFromENV (): number {
     const { logger } = this.options;
     const { STREAM_START_TIME = '', STREAM_START_BEFORE = '' } = process.env;
-    const dt = DateTime.fromISO(STREAM_START_TIME);
+    const dt = DateTime.fromISO(STREAM_START_TIME, { zone: 'GMT' });
     if (STREAM_START_TIME) {
       if (dt.isValid) {
         return dt.toMillis();
@@ -98,7 +101,7 @@ export class StartTimeRedis {
   }
 
   async getStartTime (): Promise<{ isUsedSavedStartTime: boolean, startTime: number }> {
-    // инициализируем соединение с Redis для последующего сохранения состояния
+    // initialize connection with Redis to save state later
     await this.getRedisClient();
     let startTime = 0;
     let isUsedSavedStartTime = false;

@@ -4,7 +4,7 @@ import { IEcho } from './interfaces';
 import { c, rs } from './utils/color';
 
 export interface IVirtualTimeObjOptions {
-  startTime: number,
+  startTime: number, // timestamp millis
   eventEmitter: EventEmitter,
   speed?: number,
   loopTimeMillis?: number,
@@ -43,13 +43,13 @@ export class VirtualTimeObj {
     this.options = options;
     this.speed = Number(speed) || 1;
     this.loopTimeMillis = loopTimeMillis;
-    this.virtualStartTs = +startTime; // метка времени, с которого надо начать выгрузку данных
+    this.virtualStartTs = +startTime; // timestamp millis from which to start uploading data
     this.loopTimeMillsEnd = loopTimeMillis && (this.virtualStartTs + loopTimeMillis);
     this.realStartTs = Date.now();
     this.realStartTsLoopSafe = Date.now();
     this.loopNumber = 0;
-    this.ready = false; // признак того, что все источники готовы выдать данные
-    this.isCurrentTime = false; // признак того, что виртуальное время догнало реальное
+    this.ready = false; // flag: all sources are ready to give data
+    this.isCurrentTime = false; // flag: virtual time has caught up with real time
     this.eventEmitter = eventEmitter;
     this.debug = echo ? echo.debug.bind(echo) : (m: string) => {
       // eslint-disable-next-line no-console
@@ -68,7 +68,7 @@ export class VirtualTimeObj {
       vt = virtualStartTs;
       this.realStartTs = now;
       this.loopNumber++;
-      this.debug(`======== Новый цикл, начиная с ${this.getString()}`);
+      this.debug(`======== New cycle from ${this.getString()}`);
       this.eventEmitter.emit('virtual-time-loop-back');
       return vt;
     }

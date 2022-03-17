@@ -74,6 +74,8 @@ export class Stream {
 
   private tsField: string;
 
+  private readonly timezoneOfTsField: string;
+
   constructor (options: IStreamConstructorOptions) {
     const { streamConfig, prepareEvent } = options;
     this.options = options;
@@ -81,28 +83,30 @@ export class Stream {
 
     const { fetchIntervalSec, bufferMultiplier, src } = streamConfig;
 
-    const { tsField, idFields } = src;
+    const { tsField, idFields, timezoneOfTsField } = src;
     this.bufferLookAheadMs = ((fetchIntervalSec || 10) * 1000 * (bufferMultiplier || 30));
 
     this.sender = {} as ISender;
     this.db = {} as DbMsSql | DbPostgres;
     this.tsField = tsField;
+    this.timezoneOfTsField = timezoneOfTsField || 'GMT';
     this.lastRecordTs = 0;
 
     this.recordsBuffer = new RecordsBuffer(tsField);
     /*
-     Набор хешей из идентификационных полей строк, вместе с временной меткой, равной наибольшему значению, в последнем полученном пакете.
-     Служит для отбрасывания из следующей порции тех данных, что уже загружены.
+     A set of hashes of string identification fields, along with a timestamp
+     equal to the largest value in the last received packet.
+     Serves to discard from the next portion of the data that has already been loaded.
 
-     Это необходимо в случае, если для одной временной метки может быть несколько записей.
-     Пример:
+     This is necessary if there can be several entries for one timestamp.
+     EXAMPLE:
       tradeno    tradetime                    orderno  seccode                buysell  client
       38686190  2022-02-07 10:29:55.0000000  3420385   FSTOSS300901C00000010  B        MCU1100
       38686190  2022-02-07 10:29:55.0000000  3420375   FSTOSS300901C00000010  S        MCU57801
 
-     Чтобы гарантированно не потерять данные, запрашиваем их с нахлестом временной метки
+     In order to guarantee not to lose data, we request them with a timestamp overlap
           WHERE [${tsField}] >= '${from}' AND [${tsField}] <= '${to}'
-     Чтобы гарантированно исключить дубли, после получения данных, удаляем оттуда те, что есть в lastTimeRecords
+     To ensure that duplicates are excluded, after receiving the data, we delete from there those that are in lastTimeRecords
      */
     this.lastTimeRecords = new LastTimeRecords(tsField, idFields);
 
@@ -177,12 +181,12 @@ export class Stream {
     const { isUsedSavedStartTime, startTime } = await startTimeRedis.getStartTime();
 
     const info = `${g}=========================== Stream =============================
-${g}Time zone:                ${m}${this.options.timezone}
-${g}Стартовать с начала:      ${m}${useStartTimeFromRedisCache ? 'НЕТ' : 'ДА'}
-${g}Стартовое время:          ${m}${DateTime.fromMillis(startTime).toISO()}${isUsedSavedStartTime ? `${y}${bold} ВЗЯТО ИЗ КЕША${boldOff}${rs}${g}` : ''}
-${g}Скорость:                 ${m}${speed}x
-${g}Цикличность:              ${m}${loopTimeMillis ? `${loopTimeMillis / 1000} сек` : '-'}
-${g}Периодичность опроса БД:  ${m}${streamConfig.fetchIntervalSec} сек
+${g}Time field TZ:         ${m}${this.timezoneOfTsField}
+${g}Start from beginning:  ${m}${useStartTimeFromRedisCache ? 'NOT' : 'YES'}
+${g}Start time:            ${m}${DateTime.fromMillis(startTime).toISO()}${isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
+${g}Speed:                 ${m}${speed}x
+${g}Cyclicity:             ${m}${loopTimeMillis ? `${loopTimeMillis / 1000} sec` : '-'}
+${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec
 ${g}================================================================`;
     echo(info);
 
@@ -207,7 +211,7 @@ ${g}================================================================`;
       await this._loadNextPortion();
       this._fetchLoop();
       this._printInfoLoop();
-      // Дополнительный внешний цикл вызовов на случай прерывания цепочки внутренних вызовов _sendLoop()
+      // Additional external call loop in case of interruption of the chain of internal calls _sendLoop()
       setInterval(() => {
         this._sendLoop().then(() => null);
       }, 1000);
@@ -215,7 +219,7 @@ ${g}================================================================`;
     return this;
   }
 
-  // Наибольший индекс значения, меньшего, чем указанное
+  // Greatest index of a value less than the specified
   findEndIndex () {
     const virtualTime = this.virtualTimeObj.getVirtualTs();
     return this.recordsBuffer.findSmallestIndex(virtualTime);
@@ -294,8 +298,8 @@ ${g}================================================================`;
     if (((recordsBuffer.getMsDistance()) > bufferLookAheadMs)) {
       return;
     }
-    const from = DateTime.fromMillis(startTs).toISO(); // Включая
-    const to = DateTime.fromMillis(endTs).toISO(); // Включая
+    const from = DateTime.fromMillis(startTs).toISO(); // Including
+    const to = DateTime.fromMillis(endTs).toISO(); // Including
     try {
       const recordset = await this.db.getPortionOfData(from, to);
       this._addPortionToBuffer(recordset);
@@ -306,7 +310,7 @@ ${g}================================================================`;
   }
 
   _fetchLoop () {
-    const { options: { timezone, streamConfig } } = this;
+    const { options: { streamConfig } } = this;
     cron.job(`0/${streamConfig.fetchIntervalSec || 10} * * * * *`, async () => {
       if (this.busy === 0 || this.busy > 5) {
         this.busy = 1;
@@ -320,16 +324,16 @@ ${g}================================================================`;
       } else {
         this.busy++;
       }
-    }, null, true, timezone, undefined, false);
+    }, null, true, 'GMT', undefined, false);
     // onComplete, start, timeZone, context, runOnInit
   }
 
   _printInfoLoop () {
-    const { timezone, streamConfig, logger } = this.options;
+    const { streamConfig, logger } = this.options;
     cron.job(`0/${streamConfig.printInfoIntervalSec || 30} * * * * *`, () => {
       const rowsSent = `rows sent: ${bold}${padL(this.totalRowsSent, 6)}${boldOff}${rs}`;
       logger.info(`${lBlue}${streamConfig.streamId}${rs} ${rowsSent} / ${this.virtualTimeObj.getString()}`);
-    }, null, true, timezone, undefined, false);
+    }, null, true, 'GMT', undefined, false);
     // onComplete, start, timeZone, context, runOnInit
   }
 

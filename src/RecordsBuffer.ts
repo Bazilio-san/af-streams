@@ -69,7 +69,7 @@ export class RecordsBuffer {
     return this.buffer.length;
   }
 
-  // Наибольший индекс значения, меньшего, чем указанное
+  // Greatest index of a value less than the specified
   findSmallestIndex (virtualTime: number) {
     const { buffer: rb, tsField } = this;
     if (!rb.length) {

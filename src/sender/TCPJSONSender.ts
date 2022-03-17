@@ -174,7 +174,7 @@ Connection established with ${msg}
     }
     let { sessionId } = recordsComposite;
     if (!sessionId) {
-      sessionId = `sid${+(new Date())}`; // VVQ добавить \00\00 перед sid
+      sessionId = `sid${+(new Date())}`; // VVQ add \00\00 before sid
     }
     const MAX_DATA_SIZE = MAX_PACKET_SIZE - this.getTcpHeaderLength({ sessionId, streamId }) - 1;
     let stop = false;
