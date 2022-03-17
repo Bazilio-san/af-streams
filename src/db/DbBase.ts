@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars,no-unused-vars */
-import * as pg from 'pg';
-import * as sql from 'mssql';
 import { IDbConstructorOptions, TDbRecord, TYMDms } from '../interfaces';
 
 export class DbBase {
@@ -54,7 +52,7 @@ export class DbBase {
     this.sortBy = [tsField, ...idFields].map((f) => `${ld}${f}${rd}`).join(',');
   }
 
-  async getPool (): Promise<sql.ConnectionPool | pg.Pool | null> {
+  async getPool (): Promise<any> {
     const self = this;
     return null;
   }

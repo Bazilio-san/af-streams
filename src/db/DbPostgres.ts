@@ -1,8 +1,8 @@
-import { Pool, PoolConfig } from 'pg';
+import * as pg from 'pg';
 import { IDbConstructorOptions, IPostgresConfig } from '../interfaces';
 import { DbBase } from './DbBase';
 
-const postgresDefaults: PoolConfig = {
+const postgresDefaults: pg.PoolConfig = {
   // all valid client config options are also valid here
   // in addition here are the pool specific configuration parameters:
   // number of milliseconds to wait before timing out when connecting a new client
@@ -20,7 +20,7 @@ const postgresDefaults: PoolConfig = {
 };
 
 export class DbPostgres extends DbBase {
-  public pool: Pool | null;
+  public pool: pg.Pool | null;
 
   public cfg: IPostgresConfig;
 
@@ -37,7 +37,7 @@ export class DbPostgres extends DbBase {
     if (this.pool) {
       return this.pool;
     }
-    this.pool = new Pool(this.cfg);
+    this.pool = new pg.Pool(this.cfg);
     return this.pool;
   }
 

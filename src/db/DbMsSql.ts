@@ -49,7 +49,7 @@ export class DbMsSql extends DbBase {
     this.pool = null;
     const { logger } = this.options;
     try {
-      this.pool = new sql.ConnectionPool(this.cfg);
+      this.pool = new sql.ConnectionPool(this.cfg as sql.config);
       if (typeof this.pool !== 'object') {
         logger.error(`Cant create mssql connection pool: ${this.dbInfo}`);
         process.exit(0);

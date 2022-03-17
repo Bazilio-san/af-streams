@@ -1,5 +1,3 @@
-import * as sql from 'mssql';
-import * as pg from 'pg';
 import EventEmitter from 'events';
 
 export type TEventRecord = { [fieldName: string]: any };
@@ -21,11 +19,11 @@ export interface IRecordsComposite {
   sentBufferLength?: number, // суммарный размер отправленных данных
 }
 
-/** Сведения для сборки TCP сообщения для WSO2 */
-export interface IEventComposite { // VVR
+/** Сведения для сборки TCP сообщения WSO2 */
+export interface IEventComposite {
   sessionId: string, // ID сессии
   streamId: string, // ID потока
-  json: string, // серилизованный объект, содержащий одно или более событий
+  json: string, // стерилизованный объект, содержащий одно или более событий
 }
 
 export interface IEcho extends Function {
@@ -97,11 +95,43 @@ export interface IDbConfig {
   password: string,
 }
 
-export interface IMsSqlConfig extends sql.config {
-  trustServerCertificate?: boolean
+export interface IMsSqlConfig {
+  driver?: string | undefined;
+  user?: string | undefined;
+  password?: string | undefined;
+  server: string;
+  port?: number | undefined;
+  domain?: string | undefined;
+  database?: string | undefined;
+  arrayRowMode?: boolean | undefined;
+  beforeConnect?: Function
+  options?: {
+    beforeConnect?: void | undefined;
+    connectionString?: string | undefined;
+    enableArithAbort?: boolean | undefined;
+    instanceName?: string | undefined;
+    trustedConnection?: boolean | undefined;
+    useUTC?: boolean | undefined;
+  };
+  pool: {
+    max: number,
+    min: number,
+    idleTimeoutMillis: number
+  },
+  trustServerCertificate?: boolean | undefined,
+  stream?: boolean | undefined;
+  parseJSON?: boolean | undefined;
+  requestTimeout?: number | undefined;
+  connectionTimeout?: number | undefined;
 }
 
-export interface IPostgresConfig extends pg.PoolConfig {}
+export interface IPostgresConfig {
+  user?: string | undefined;
+  database?: string | undefined;
+  password?: string | undefined;
+  port?: number | undefined;
+  host?: string | undefined;
+}
 
 export interface IStreamConfig {
   streamId: string,
