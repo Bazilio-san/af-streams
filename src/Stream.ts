@@ -6,7 +6,7 @@ import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
 import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
-import { padL } from './utils/utils';
+import { getTimeParamMillis, padL } from './utils/utils';
 import getDb from './db/db';
 import {
   blue, bold, boldOff, c, g, lBlue, lc, lm, m, rs, y,
@@ -34,7 +34,7 @@ export interface IStreamConstructorOptions {
 
   useStartTimeFromRedisCache: boolean,
   speed?: number,
-  loopTimeMillis?: number,
+  loopTime?: string | number,
   prepareEvent?: Function,
   testMode?: boolean,
 }
@@ -133,11 +133,17 @@ export class Stream {
       serviceName,
       streamConfig,
       useStartTimeFromRedisCache,
-      speed,
-      loopTimeMillis,
+      loopTime = 0,
       exitOnError,
       testMode,
     } = this.options;
+
+    let { speed } = this.options;
+    if (/^[\d.]+$/.test(String(speed))) {
+      speed = Math.min(Math.max(0.2, parseFloat(String(speed))), 500);
+    }
+
+    const loopTimeMillis = getTimeParamMillis(loopTime);
 
     const senderConstructorOptions: ISenderConstructorOptions = {
       senderConfig,

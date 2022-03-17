@@ -60,7 +60,7 @@ async function initStream (): Promise<Stream> {
     eventEmitter,
     speed: 1,
     useStartTimeFromRedisCache: false,
-    // loopTimeMillis: 0,
+    // loopTime: 5min,
     prepareEvent: function prepareEvent (dbRecord: TDbRecord): TEventRecord {
       const eventRecord = { ...dbRecord };
       eventRecord.tradetime = DateTime.fromISO(dbRecord.tradetime).toMillis();
