@@ -1,5 +1,5 @@
 /* eslint-disable class-methods-use-this */
-import { IDbConstructorOptions, TDbRecord, TYMDms } from '../interfaces';
+import { IDbConstructorOptions, TDbRecord } from '../interfaces';
 
 export class DbBase {
   public readonly options: IDbConstructorOptions;
@@ -78,12 +78,12 @@ export class DbBase {
     }
   }
 
-  async getPortionOfData (from: TYMDms, to: TYMDms): Promise<TDbRecord[]> {
-    const { tsField, ld, rd } = this;
+  async getPortionOfData (fromMillis: number, toMills: number): Promise<TDbRecord[]> {
+    const { tsField, ld, rd, options: { millis2dbFn } } = this;
     const strSQL = `SELECT ${this.fieldsList}
                     FROM ${this.schemaAndTable}
-                    WHERE ${ld}${tsField}${rd} >= '${from}'
-                      AND ${ld}${tsField}${rd} <= '${to}'
+                    WHERE ${ld}${tsField}${rd} >= ${millis2dbFn(fromMillis)}
+                      AND ${ld}${tsField}${rd} <= ${millis2dbFn(toMills)}
                     ORDER BY ${this.sortBy}`;
     const result = await this.query(strSQL);
     return result?.[this.recordsetPropName] || [];

@@ -174,5 +174,6 @@ export interface IDbConstructorOptions {
   logger: ILoggerEx,
   exitOnError: Function,
   dbOptions: IMsSqlConfig | IPostgresConfig,
-  dbConfig: IDbConfig
+  dbConfig: IDbConfig,
+  millis2dbFn: Function
 }

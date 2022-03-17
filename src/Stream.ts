@@ -1,7 +1,7 @@
-/* eslint-disable no-console */
 import EventEmitter from 'events';
 import { DateTime } from 'luxon';
 import * as cron from 'cron';
+import { ToISOTimeOptions } from 'luxon/src/datetime';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
@@ -12,16 +12,7 @@ import {
   blue, bold, boldOff, c, g, lBlue, lc, lm, m, rs, y,
 } from './utils/color';
 import {
-  IDbConstructorOptions,
-  IEcho,
-  ILoggerEx,
-  IRecordsComposite,
-  ISender,
-  ISenderConfig,
-  ISenderConstructorOptions,
-  IStreamConfig,
-  TDbRecord,
-  TEventRecord,
+  IDbConstructorOptions, IEcho, ILoggerEx, IRecordsComposite, ISender, ISenderConfig, ISenderConstructorOptions, IStreamConfig, TDbRecord, TEventRecord,
 } from './interfaces';
 import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
@@ -45,9 +36,12 @@ export interface IStreamConstructorOptions {
   speed?: number,
   loopTime?: string | number,
   prepareEvent?: Function,
-  tsFieldToTimestampConversion?: Function,
+  tsFieldToMillis?: Function,
+  millis2dbFn?: Function,
   testMode?: boolean,
 }
+
+const millis2iso = (millis: number, options?: ToISOTimeOptions): string => DateTime.fromMillis(millis).toISO(options);
 
 export class Stream {
   public readonly bufferLookAheadMs: number;
@@ -72,9 +66,11 @@ export class Stream {
 
   private totalRowsSent: number;
 
-  private readonly tsFieldToTimestampConversion: Function;
+  private readonly tsFieldToMillis: Function;
 
   private readonly prepareEvent: Function;
+
+  private readonly millis2dbFn: Function;
 
   private isSilly: boolean;
 
@@ -87,17 +83,30 @@ export class Stream {
   private sender: ISender;
 
   constructor (options: IStreamConstructorOptions) {
-    const { streamConfig, prepareEvent, tsFieldToTimestampConversion, loopTime = 0 } = options;
+    const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0 } = options;
     const { fetchIntervalSec, bufferMultiplier, src } = streamConfig;
     src.timezoneOfTsField = src.timezoneOfTsField || 'GMT';
     const zone = src.timezoneOfTsField;
     this.options = options;
-    this.tsFieldToTimestampConversion = typeof tsFieldToTimestampConversion === 'function'
-      ? tsFieldToTimestampConversion.bind(this)
-      : (tsValue: string | Date | number) => (typeof tsValue === 'string' ? DateTime.fromISO(tsValue, { zone }).toMillis() : Number(tsValue));
+
+    const tsFieldToMillisDefault = (tsValue: string | Date | number) => {
+      if (typeof tsValue === 'string') {
+        return DateTime.fromISO(tsValue, { zone }).toMillis();
+      }
+      return Number(tsValue);
+    };
+
+    this.tsFieldToMillis = typeof tsFieldToMillis === 'function'
+      ? tsFieldToMillis.bind(this)
+      : tsFieldToMillisDefault;
+
     this.prepareEvent = typeof prepareEvent === 'function'
       ? prepareEvent.bind(this)
       : (dbRecord: TDbRecord) => dbRecord;
+
+    this.millis2dbFn = typeof millis2dbFn === 'function'
+      ? millis2dbFn.bind(this)
+      : (millis: number) => `'${millis2iso(millis)}'`;
 
     const { idFields } = src;
     this.bufferLookAheadMs = ((fetchIntervalSec || 10) * 1000 * (bufferMultiplier || 30));
@@ -143,7 +152,7 @@ export class Stream {
   }
 
   async init () {
-    const { options, loopTimeMillis } = this;
+    const { options, loopTimeMillis, millis2dbFn } = this;
     const {
       senderConfig,
       eventEmitter,
@@ -196,7 +205,7 @@ export class Stream {
     const info = `${g}=========================== Stream =============================
 ${g}Time field TZ:         ${m}${timezoneOfTsField}
 ${g}Start from beginning:  ${m}${useStartTimeFromRedisCache ? 'NOT' : 'YES'}
-${g}Start time:            ${m}${DateTime.fromMillis(startTime).toISO()}${isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
+${g}Start time:            ${m}${millis2iso(startTime)}${isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
 ${g}Speed:                 ${m}${speed}x
 ${g}Cyclicity:             ${m}${loopTimeMillis ? `${loopTimeMillis / 1000} sec` : '-'}
 ${g}Db polling frequency:  ${m}${fetchIntervalSec} sec
@@ -219,6 +228,7 @@ ${g}================================================================`;
         exitOnError,
         dbOptions,
         dbConfig,
+        millis2dbFn,
       };
       this.db = await getDb(dbConstructorOptions);
       await this._loadNextPortion();
@@ -235,6 +245,14 @@ ${g}================================================================`;
   // Greatest index of a value less than the specified
   findEndIndex () {
     const virtualTime = this.virtualTimeObj.getVirtualTs();
+    /*
+    if (this.isSilly) {
+      const { buffer: rb } = this.recordsBuffer;
+      const firstISO = rb.length ? millis2iso(rb[0][TS_FIELD]) : '-';
+      const lastISO = rb.length > 1 ? millis2iso(rb[rb.length - 1][TS_FIELD]) : '-';
+        this.options.echo(`findEndIndex() ${c}virtualTime: ${m}${millis2iso(virtualTime)}${rs} [${m}${firstISO}${rs} - ${m}${lastISO}${rs}]`);
+    }
+    */
     return this.recordsBuffer.findSmallestIndex(virtualTime);
   }
 
@@ -251,7 +269,7 @@ ${g}================================================================`;
   }
 
   prepareEventsPacket (dbRecordOrRecordset: TDbRecord[]): TEventRecord[] {
-    const { options: { streamConfig: { src: { tsField } } }, prepareEvent, tsFieldToTimestampConversion } = this;
+    const { options: { streamConfig: { src: { tsField } } }, prepareEvent, tsFieldToMillis } = this;
     if (!Array.isArray(dbRecordOrRecordset)) {
       if (!dbRecordOrRecordset || typeof dbRecordOrRecordset !== 'object') {
         return [];
@@ -259,7 +277,7 @@ ${g}================================================================`;
       dbRecordOrRecordset = [dbRecordOrRecordset];
     }
     return dbRecordOrRecordset.map((record) => {
-      record[TS_FIELD] = tsFieldToTimestampConversion(record[tsField]);
+      record[TS_FIELD] = tsFieldToMillis(record[tsField]);
       return prepareEvent(record);
     });
   }
@@ -297,13 +315,13 @@ ${g}================================================================`;
       }
     }
     if (isSilly) {
-      console.log(`${lBlue}${this.options.streamConfig.streamId} ${this.virtualTimeObj.getString()
+      this.options.echo(`${lBlue}${this.options.streamConfig.streamId} ${this.virtualTimeObj.getString()
       } l/s/u: ${lm}${loaded}${blue}/${lc}${skipped}${blue}/${g}${toUse}${rs}`);
     }
   }
 
   async _loadNextPortion () {
-    const { recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs } = this;
+    const { recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs, isSilly } = this;
     const virtualTimeObj = vtObj as VirtualTimeObj;
     const startTs = lastRecordTs ? Number(lastRecordTs) : virtualTimeObj.virtualStartTs;
     const endTs = (lastRecordTs ? virtualTimeObj.getVirtualTs() : startTs) + bufferLookAheadMs;
@@ -314,10 +332,13 @@ ${g}================================================================`;
     if (((recordsBuffer.getMsDistance()) > bufferLookAheadMs)) {
       return;
     }
-    const from = DateTime.fromMillis(startTs).toISO(); // Including
-    const to = DateTime.fromMillis(endTs).toISO(); // Including
+    if (isSilly) {
+      this.options.echo(`_loadNextPortion() ${c}virtualTime: ${m}${
+        millis2iso(this.virtualTimeObj.getVirtualTs())}${rs
+      } from: ${m}${millis2iso(startTs)}${rs} to ${m}${millis2iso(endTs)}${rs}`);
+    }
     try {
-      const recordset = await this.db.getPortionOfData(from, to);
+      const recordset = await this.db.getPortionOfData(startTs, endTs);
       this._addPortionToBuffer(recordset);
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
@@ -412,7 +433,7 @@ ${g}================================================================`;
       }
     }
     if (isDebug) {
-      console.log(`${debugMessage}\t${m}BUFFER: ${Stream.packetInfo(rb.length, rb.first, rb.last)}`);
+      this.options.echo(`${debugMessage}\t${m}BUFFER: ${Stream.packetInfo(rb.length, rb.first, rb.last)}`);
     }
   }
 
