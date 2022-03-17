@@ -1,9 +1,8 @@
 import * as dotenv from 'dotenv';
 import * as EventEmitter from 'events';
 import { DateTime } from 'luxon';
-import { IStreamConstructorOptions, Stream } from '../../src';
+import { IStreamConstructorOptions, Stream, TDbRecord, TEventRecord } from '../../src';
 import { echo, exitOnError, logger } from '../lib/logger';
-import { TDbRecord, TEventRecord } from '../../src/interfaces';
 
 const eventEmitter = new EventEmitter();
 
@@ -30,7 +29,7 @@ async function initStream (): Promise<Stream> {
           database: 'myDb',
         },
       },
-      fieldsTypes: {
+      fields: {
         tradeno: 'long',
         tradetime: 'long',
         orderno: 'long',

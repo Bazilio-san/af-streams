@@ -1,5 +1,6 @@
 import * as sql from 'mssql';
-import { IDbConstructorOptions, IMsSqlConfig, TDbRecord, TYMDms } from '../interfaces';
+import { IDbConstructorOptions, IMsSqlConfig } from '../interfaces';
+import { DbBase } from './DbBase';
 
 const mssqlDefaults: IMsSqlConfig = {
   options: { enableArithAbort: false },
@@ -16,30 +17,18 @@ const mssqlDefaults: IMsSqlConfig = {
   server: '',
 };
 
-export class DbMsSql {
-  private readonly options: IDbConstructorOptions;
+export class DbMsSql extends DbBase {
+  public pool: sql.ConnectionPool | null;
 
-  private pool: sql.ConnectionPool | null;
+  public cfg: IMsSqlConfig;
 
-  private readonly cfg: IMsSqlConfig;
-
-  public dbInfo: string;
-
-  private fieldsList: string;
-
-  public schemaAndTable: string;
-
-  private tsField: string;
-
-  private idFields: string[] | any[];
-
-  private sortBy: string;
-
-  private request: sql.Request | null;
+  public request: sql.Request | null;
 
   constructor (options: IDbConstructorOptions) {
-    this.options = options;
-    const { streamConfig, dbOptions, dbConfig } = options;
+    super(options);
+
+    this.pool = null;
+    const { dbOptions, dbConfig } = options;
     const mssqlDbOptions = { ...mssqlDefaults, ...(dbOptions || {}) };
     ['options', 'pool'].forEach((propName) => {
       if (typeof dbOptions?.[propName] === 'object') {
@@ -47,21 +36,10 @@ export class DbMsSql {
       }
     });
     this.cfg = { ...mssqlDbOptions, ...dbConfig, server: dbConfig.host } as IMsSqlConfig;
-    this.dbInfo = `${dbConfig.user}@[${dbConfig.host}:${dbConfig.port}].[${dbConfig.database}]`;
-
-    const { fieldsTypes, src } = streamConfig;
-    const { schema, table, tsField, idFields } = src;
-
-    this.fieldsList = Object.keys(fieldsTypes).map((fName) => `[${fName}]`).join(', ');
-    this.schemaAndTable = `[${schema}].[${table}]`;
-    this.tsField = tsField;
-    this.idFields = idFields;
-    this.sortBy = [tsField, ...idFields].map((f) => `[${f}]`).join(',');
-    this.pool = null;
     this.request = null;
   }
 
-  private async getPool () {
+  async getPool () {
     if (this.pool?.connected || this.pool?.connecting) {
       return this.pool;
     }
@@ -92,51 +70,27 @@ export class DbMsSql {
     }
   }
 
-  async close () {
+  async close (): Promise<boolean> {
     if (this.pool?.close) {
       await this.pool.close();
       this.options.logger.info(`Mssql connection pool for "${this.dbInfo}" closed`);
+      return true;
     }
+    return false;
   }
 
-  async closeAndExit () {
-    await this.close();
-    process.exit(0);
-  }
-
-  async getRequest () {
+  async query (strSQL: string) {
     if (!this.request) {
       const pool = await this.getPool();
       this.request = new sql.Request(pool);
     }
-    return this.request;
+    return this.request.query(strSQL);
   }
 
-  async query (strSQL: string) {
-    const request = await this.getRequest();
-    return request.query(strSQL);
-  }
-
-  async init () {
-    const { schemaAndTable, options: { exitOnError, streamConfig: { streamId, fieldsTypes } } } = this;
-    const fieldsArray = Object.keys(fieldsTypes);
+  async _getColumnsNames (): Promise<string[]> {
     const result = await this.query(`SELECT TOP (1) *
-                                     FROM ${schemaAndTable}`);
+                                     FROM ${this.schemaAndTable}`);
     const { columns } = result.recordset;
-    const unknownFields = fieldsArray.filter((fName) => !columns[fName]);
-    if (unknownFields.length) {
-      return exitOnError(`Table ${schemaAndTable} is missing fields specified in the ${streamId} stream configuration:\n\t${unknownFields.join('\n\t')} `);
-    }
-  }
-
-  async getPortionOfData (from: TYMDms, to: TYMDms): Promise<TDbRecord[]> {
-    const { schemaAndTable, tsField, sortBy, fieldsList } = this;
-    const strSQL = `SELECT ${fieldsList}
-                    FROM ${schemaAndTable}
-                    WHERE [${tsField}] >= '${from}'
-                      AND [${tsField}] <= '${to}'
-                    ORDER BY ${sortBy}`;
-    const result = await this.query(strSQL);
-    return result?.recordset || [];
+    return Object.keys(columns);
   }
 }

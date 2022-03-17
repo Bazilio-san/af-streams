@@ -85,6 +85,8 @@ export type TYMDms = string; // 'YYYY-MM-DDTHH:mm:ss.SSS'
 
 export type TFieldType = string;
 export type TFieldsTypes = { [fieldName: string]: TFieldType };
+export type TFieldList = string[];
+export type TFields = TFieldsTypes | TFieldList;
 
 export interface IDbConfig {
   dialect: 'mssql' | 'pg',
@@ -113,7 +115,7 @@ export interface IStreamConfig {
     dbOptions: IMsSqlConfig | IPostgresConfig,
     dbConfig: IDbConfig,
   }
-  fieldsTypes: TFieldsTypes,
+  fields: TFields,
   printInfoIntervalSec?: number,
 }
 

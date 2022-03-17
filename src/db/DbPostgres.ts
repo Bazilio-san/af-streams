@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,no-unused-vars */
 import { Pool, PoolConfig } from 'pg';
-import { IDbConstructorOptions, IPostgresConfig, TDbRecord, TYMDms } from '../interfaces';
+import { IDbConstructorOptions, IPostgresConfig } from '../interfaces';
+import { DbBase } from './DbBase';
 
 const postgresDefaults: PoolConfig = {
   // all valid client config options are also valid here
@@ -19,43 +19,21 @@ const postgresDefaults: PoolConfig = {
   query_timeout: 30000, // number of milliseconds before a query call will timeout, default is no timeout
 };
 
-export class DbPostgres {
-  private readonly options: IDbConstructorOptions;
+export class DbPostgres extends DbBase {
+  public pool: Pool | null;
 
-  private pool: Pool | null;
-
-  private readonly cfg: IPostgresConfig;
-
-  public dbInfo: string;
-
-  private fieldsList: string;
-
-  public schemaAndTable: string;
-
-  private tsField: string;
-
-  private idFields: string[] | any[];
-
-  private sortBy: string;
+  public cfg: IPostgresConfig;
 
   constructor (options: IDbConstructorOptions) {
-    this.options = options;
-    const { streamConfig, dbOptions, dbConfig } = options;
+    super(options);
+
+    this.pool = null;
+    const { dbOptions, dbConfig } = options;
     const postgresDbOptions = { ...postgresDefaults, ...(dbOptions || {}) };
     this.cfg = { ...postgresDbOptions, ...dbConfig } as IPostgresConfig;
-    this.dbInfo = `${dbConfig.user}@"${dbConfig.host}:${dbConfig.port}"."${dbConfig.database}"`;
-
-    const { fieldsTypes, src } = streamConfig;
-    const { schema, table, tsField, idFields } = src;
-    this.fieldsList = Object.keys(fieldsTypes).map((fName) => `"${fName}"`).join(', ');
-    this.schemaAndTable = `"${schema}"."${table}"`;
-    this.tsField = tsField;
-    this.idFields = idFields;
-    this.sortBy = [tsField, ...idFields].map((f) => `"${f}"`).join(',');
-    this.pool = null;
   }
 
-  private async getPool () {
+  async getPool () {
     if (this.pool) {
       return this.pool;
     }
@@ -63,16 +41,11 @@ export class DbPostgres {
     return this.pool;
   }
 
-  async close () {
+  async close (): Promise<boolean> {
     const self = this;
     return new Promise((resolve) => {
       self.pool?.end().then(() => resolve(true));
     });
-  }
-
-  async closeAndExit () {
-    await this.close();
-    process.exit(0);
   }
 
   async query (strSQL: string) {
@@ -80,26 +53,9 @@ export class DbPostgres {
     return pool.query(strSQL);
   }
 
-  async init () {
-    const { schemaAndTable, options: { exitOnError, streamConfig: { streamId, fieldsTypes } } } = this;
-    const fieldsArray = Object.keys(fieldsTypes);
+  async _getColumnsNames (): Promise<string[]> {
     const { fields } = await this.query(`SELECT *
-                                         FROM ${schemaAndTable} LIMIT 1`);
-    const columnsArray = fields.map(({ name }) => name);
-    const unknownFields = fieldsArray.filter((name) => !columnsArray.includes(name));
-    if (unknownFields.length) {
-      return exitOnError(`Table ${schemaAndTable} is missing fields specified in the ${streamId} stream configuration:\n\t${unknownFields.join('\n\t')} `);
-    }
-  }
-
-  async getPortionOfData (from: TYMDms, to: TYMDms): Promise<TDbRecord[]> {
-    const { schemaAndTable, tsField, sortBy, fieldsList } = this;
-    const strSQL = `SELECT ${fieldsList}
-                    FROM ${schemaAndTable}
-                    WHERE "${tsField}" >= '${from}'
-                      AND "${tsField}" <= '${to}'
-                    ORDER BY ${sortBy}`;
-    const result = await this.query(strSQL);
-    return result?.rows || [];
+                                         FROM ${this.schemaAndTable} LIMIT 1`);
+    return fields.map((field: any) => field.name);
   }
 }
