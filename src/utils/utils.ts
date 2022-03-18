@@ -54,7 +54,6 @@ export const getInstanceKey = () => {
 
 export const getStreamKey = (stringId: string) => getInstanceKey() + stringId;
 
-/*
 export const padR = (str: any, strLength: number, padSymbol: string = ' ') => {
   str = String(str || '');
   if (str.length < strLength) {
@@ -62,7 +61,6 @@ export const padR = (str: any, strLength: number, padSymbol: string = ' ') => {
   }
   return str;
 };
-*/
 
 export const padL = (str: any, strLength: number, padSymbol: string = ' ') => {
   str = String(str || '');
