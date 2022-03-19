@@ -17,4 +17,10 @@ export {
   findSmallestIndexBinary,
   findIndexOfNearestSmallFromRight,
 } from './utils/find-nearest-index';
+export {
+  findSmallestIndexARR,
+  findSmallestIndexLinearARR,
+  findSmallestIndexBinaryARR,
+  findIndexOfNearestSmallFromRightARR,
+} from './utils/find-nearest-index-arr';
 export { TS_FIELD } from './constants';

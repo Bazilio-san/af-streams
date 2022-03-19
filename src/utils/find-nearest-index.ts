@@ -8,7 +8,7 @@ export const findSmallestIndexLinear = (arr: any[], x: number, timeFieldName: st
   if (index > -1) {
     return index - 1;
   }
-  if (arr[0][timeFieldName] > x) { // This condition is never met
+  if (x < arr[0][timeFieldName]) {
     return -1;
   }
   return arr.length - 1;

@@ -1,6 +1,6 @@
 {
   "name": "@bazilio-san/af-stream",
-  "version": "1.0.23",
+  "version": "1.0.24",
   "description": "Data stream from database table",
   "main": "./dist/cjs/src/index.js",
   "module": "./dist/esm/index.js",
