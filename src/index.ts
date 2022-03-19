@@ -22,5 +22,6 @@ export {
   findSmallestIndexLinearARR,
   findSmallestIndexBinaryARR,
   findIndexOfNearestSmallFromRightARR,
+  findSmallestIndexArrAuto,
 } from './utils/find-nearest-index-arr';
 export { TS_FIELD } from './constants';

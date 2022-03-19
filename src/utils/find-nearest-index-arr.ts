@@ -44,8 +44,24 @@ export const findSmallestIndexBinaryARR = (arr: number[], x: number) => {
 };
 
 export const findSmallestIndexARR = (arr: number[], x: number, fromRight: boolean = false) => {
+  if (!arr.length) {
+    return -1;
+  }
   if (arr.length < 2000) {
     return fromRight ? findIndexOfNearestSmallFromRightARR(arr, x) : findSmallestIndexLinearARR(arr, x);
   }
   return findSmallestIndexBinaryARR(arr, x);
+};
+
+export const findSmallestIndexArrAuto = (arr: number[], x: number) => {
+  const { length } = arr;
+  if (!length) {
+    return -1;
+  }
+  if (length > 2000) {
+    return findSmallestIndexBinaryARR(arr, x);
+  }
+  return ((arr[length - 1] - arr[0]) / 2) < x
+    ? findIndexOfNearestSmallFromRightARR(arr, x)
+    : findSmallestIndexLinearARR(arr, x);
 };

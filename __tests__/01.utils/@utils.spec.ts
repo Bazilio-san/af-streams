@@ -1,6 +1,8 @@
 import {
   findIndexOfNearestSmallFromRight,
   findIndexOfNearestSmallFromRightARR,
+  findSmallestIndexARR,
+  findSmallestIndexArrAuto,
   findSmallestIndexBinary,
   findSmallestIndexBinaryARR,
   findSmallestIndexLinear,
@@ -117,12 +119,11 @@ describe('findSmallestIndex', () => {
       ].forEach(([ts, expected]) => {
         test(`ts: ${ts}, result: ${expected}`, () => {
           const data_ = data.map(({ ts: t }: any) => t);
-          const result = findSmallestIndexLinearARR(data_, ts);
-          expect(result).toEqual(expected);
-          const resultB = findSmallestIndexBinaryARR(data_, ts);
-          expect(resultB).toEqual(expected);
-          const resultC = findIndexOfNearestSmallFromRightARR(data_, ts);
-          expect(resultC).toEqual(expected);
+          expect(findSmallestIndexLinearARR(data_, ts)).toEqual(expected);
+          expect(findSmallestIndexBinaryARR(data_, ts)).toEqual(expected);
+          expect(findIndexOfNearestSmallFromRightARR(data_, ts)).toEqual(expected);
+          expect(findSmallestIndexARR(data_, ts)).toEqual(expected);
+          expect(findSmallestIndexArrAuto(data_, ts)).toEqual(expected);
         });
       });
     });
@@ -135,12 +136,11 @@ describe('findSmallestIndex', () => {
       ].forEach(([ts, expected]) => {
         test(`ts: ${ts}, result: ${expected}`, () => {
           const data2_ = [10];
-          const result = findSmallestIndexLinearARR(data2_, ts);
-          expect(result).toEqual(expected);
-          const resultB = findSmallestIndexBinaryARR(data2_, ts);
-          expect(resultB).toEqual(expected);
-          const resultC = findIndexOfNearestSmallFromRightARR(data2_, ts);
-          expect(resultC).toEqual(expected);
+          expect(findSmallestIndexLinearARR(data2_, ts)).toEqual(expected);
+          expect(findSmallestIndexBinaryARR(data2_, ts)).toEqual(expected);
+          expect(findIndexOfNearestSmallFromRightARR(data2_, ts)).toEqual(expected);
+          expect(findSmallestIndexARR(data2_, ts)).toEqual(expected);
+          expect(findSmallestIndexArrAuto(data2_, ts)).toEqual(expected);
         });
       });
     });
@@ -151,12 +151,11 @@ describe('findSmallestIndex', () => {
         [18, -1],
       ].forEach(([ts, expected]) => {
         test(`ts: ${ts}, result: ${expected}`, () => {
-          const result = findSmallestIndexLinearARR([], ts);
-          expect(result).toEqual(expected);
-          const resultB = findSmallestIndexBinaryARR([], ts);
-          expect(resultB).toEqual(expected);
-          const resultC = findIndexOfNearestSmallFromRightARR([], ts);
-          expect(resultC).toEqual(expected);
+          expect(findSmallestIndexLinearARR([], ts)).toEqual(expected);
+          expect(findSmallestIndexBinaryARR([], ts)).toEqual(expected);
+          expect(findIndexOfNearestSmallFromRightARR([], ts)).toEqual(expected);
+          expect(findSmallestIndexARR([], ts)).toEqual(expected);
+          expect(findSmallestIndexArrAuto([], ts)).toEqual(expected);
         });
       });
     });
