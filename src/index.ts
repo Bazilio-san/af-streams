@@ -5,13 +5,16 @@ export { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
 export { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
 export { TDbRecord, TEventRecord, IDbConfig } from './interfaces';
 export {
-  findSmallestIndex,
-  findSmallestIndexLinear,
-  findSmallestIndexBinary,
   getTimeParamMillis,
   timeParamRE,
   padL,
   padR,
   sleep,
 } from './utils/utils';
+export {
+  findSmallestIndex,
+  findSmallestIndexLinear,
+  findSmallestIndexBinary,
+  findIndexOfNearestSmallFromRight,
+} from './utils/find-nearest-index';
 export { TS_FIELD } from './constants';

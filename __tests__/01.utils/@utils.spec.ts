@@ -1,4 +1,4 @@
-import * as U from '../../src/utils/utils';
+import * as fni from '../../src/utils/find-nearest-index';
 import { TS_FIELD } from '../../src';
 
 const data = require('./data.json');
@@ -16,22 +16,23 @@ const perf = () => {
 
     let start = Date.now();
     loops.forEach(() => {
-      U.findSmallestIndexLinear(arr, ts);
+      fni.findSmallestIndexLinear(arr, ts);
     });
     const t1 = Date.now() - start;
 
     start = Date.now();
     loops.forEach(() => {
-      U.findSmallestIndexBinary(arr, ts);
+      fni.findSmallestIndexBinary(arr, ts);
     });
     const t2 = Date.now() - start;
 
     start = Date.now();
     loops.forEach(() => {
-      U.findIndexOfNearestSmallFromRight(arr, ts);
+      fni.findIndexOfNearestSmallFromRight(arr, ts);
     });
     const t3 = Date.now() - start;
 
+    // eslint-disable-next-line no-console
     console.log(`Length: ${arrLen} , Linear: ${t1}, Binary: ${t2}, Right: ${t3}`);
   });
 };
@@ -50,11 +51,11 @@ describe('Utils. findSmallestIndex[Binary]()', () => {
       [50, 15],
     ].forEach(([ts, expected]) => {
       test(`ts: ${ts}, result: ${expected}`, () => {
-        const result = U.findSmallestIndexLinear(data, ts, 'ts');
+        const result = fni.findSmallestIndexLinear(data, ts, 'ts');
         expect(result).toEqual(expected);
-        const resultB = U.findSmallestIndexBinary(data, ts, 'ts');
+        const resultB = fni.findSmallestIndexBinary(data, ts, 'ts');
         expect(resultB).toEqual(expected);
-        const resultC = U.findIndexOfNearestSmallFromRight(data, ts, 'ts');
+        const resultC = fni.findIndexOfNearestSmallFromRight(data, ts, 'ts');
         expect(resultC).toEqual(expected);
       });
     });
@@ -67,11 +68,11 @@ describe('Utils. findSmallestIndex[Binary]()', () => {
       [18, 0],
     ].forEach(([ts, expected]) => {
       test(`ts: ${ts}, result: ${expected}`, () => {
-        const result = U.findSmallestIndexLinear(data2, ts, 'ts');
+        const result = fni.findSmallestIndexLinear(data2, ts, 'ts');
         expect(result).toEqual(expected);
-        const resultB = U.findSmallestIndexBinary(data2, ts, 'ts');
+        const resultB = fni.findSmallestIndexBinary(data2, ts, 'ts');
         expect(resultB).toEqual(expected);
-        const resultC = U.findIndexOfNearestSmallFromRight(data2, ts, 'ts');
+        const resultC = fni.findIndexOfNearestSmallFromRight(data2, ts, 'ts');
         expect(resultC).toEqual(expected);
       });
     });
@@ -83,11 +84,11 @@ describe('Utils. findSmallestIndex[Binary]()', () => {
       [18, -1],
     ].forEach(([ts, expected]) => {
       test(`ts: ${ts}, result: ${expected}`, () => {
-        const result = U.findSmallestIndexLinear(data3, ts, 'ts');
+        const result = fni.findSmallestIndexLinear(data3, ts, 'ts');
         expect(result).toEqual(expected);
-        const resultB = U.findSmallestIndexBinary(data3, ts, 'ts');
+        const resultB = fni.findSmallestIndexBinary(data3, ts, 'ts');
         expect(resultB).toEqual(expected);
-        const resultC = U.findIndexOfNearestSmallFromRight(data3, ts, 'ts');
+        const resultC = fni.findIndexOfNearestSmallFromRight(data3, ts, 'ts');
         expect(resultC).toEqual(expected);
       });
     });

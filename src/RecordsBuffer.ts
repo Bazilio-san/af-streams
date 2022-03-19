@@ -1,4 +1,4 @@
-import { findSmallestIndex } from './utils/utils';
+import { findSmallestIndex } from './utils/find-nearest-index';
 import { TEventRecord } from './interfaces';
 import { TS_FIELD } from './constants';
 
