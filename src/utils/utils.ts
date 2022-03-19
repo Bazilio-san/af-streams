@@ -16,6 +16,18 @@ export const findSmallestIndexLinear = (arr: any[], x: number, timeFieldName: st
   return arr.length - 1;
 };
 
+export const findIndexOfNearestSmallFromRight = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
+  let pos = arr.length;
+  if (pos) {
+    while (--pos >= 0) {
+      if (arr[pos][timeFieldName] < x) {
+        return pos;
+      }
+    }
+  }
+  return -1;
+};
+
 export const findSmallestIndexBinary = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
   let start = 0;
   let end = arr.length - 1;
@@ -35,9 +47,9 @@ export const findSmallestIndexBinary = (arr: any[], x: number, timeFieldName: st
   return ans;
 };
 
-export const findSmallestIndex = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
-  if (arr.length < 50000) {
-    return findSmallestIndexLinear(arr, x, timeFieldName);
+export const findSmallestIndex = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD, fromRight: boolean = false) => {
+  if (arr.length < 2000) {
+    return fromRight ? findIndexOfNearestSmallFromRight(arr, x, timeFieldName) : findSmallestIndexLinear(arr, x, timeFieldName);
   }
   return findSmallestIndexBinary(arr, x, timeFieldName);
 };
