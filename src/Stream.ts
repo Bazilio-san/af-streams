@@ -82,6 +82,8 @@ export class Stream {
 
   private sender: ISender;
 
+  private initialized: boolean = false;
+
   constructor (options: IStreamConstructorOptions) {
     const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0 } = options;
     const { fetchIntervalSec, bufferMultiplier, src } = streamConfig;
@@ -151,7 +153,7 @@ export class Stream {
     this.isDebug = options.logger.isLevel('debug');
   }
 
-  async init () {
+  async init (): Promise<Stream | undefined> {
     const { options, loopTimeMillis, millis2dbFn } = this;
     const {
       senderConfig,
@@ -231,14 +233,22 @@ ${g}================================================================`;
         millis2dbFn,
       };
       this.db = await getDb(dbConstructorOptions);
-      await this._loadNextPortion();
-      this._fetchLoop();
-      this._printInfoLoop();
-      // Additional external call loop in case of interruption of the chain of internal calls _sendLoop()
-      setInterval(() => {
-        this._sendLoop().then(() => null);
-      }, 1000);
     }
+    this.initialized = true;
+    return this;
+  }
+
+  async start (): Promise<Stream> {
+    if (!this.initialized) {
+      await this.init();
+    }
+    await this._loadNextPortion();
+    this._fetchLoop();
+    this._printInfoLoop();
+    // Additional external call loop in case of interruption of the chain of internal calls _sendLoop()
+    setInterval(() => {
+      this._sendLoop().then(() => null);
+    }, 1000);
     return this;
   }
 
