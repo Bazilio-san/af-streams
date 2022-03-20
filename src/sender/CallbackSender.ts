@@ -2,7 +2,7 @@ import AbstractSender from './AbstractSender';
 import { IRecordsComposite, ISenderConstructorOptions, TEventRecord } from '../interfaces';
 
 class CallbackSender extends AbstractSender {
-  private readonly eventCallback: Function;
+  public eventCallback: Function;
 
   constructor (options: ISenderConstructorOptions) {
     super(options);
