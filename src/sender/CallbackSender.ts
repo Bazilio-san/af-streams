@@ -2,16 +2,16 @@ import AbstractSender from './AbstractSender';
 import { IRecordsComposite, ISenderConstructorOptions, TEventRecord } from '../interfaces';
 
 class CallbackSender extends AbstractSender {
-  private readonly callback: Function;
+  private readonly eventCallback: Function;
 
   constructor (options: ISenderConstructorOptions) {
     super(options);
 
-    const { callback } = options.senderConfig;
-    if (typeof callback !== 'function') {
-      options.exitOnError(`Missing callback function when instantiating CallbackSender class`);
+    const { eventCallback } = options.senderConfig;
+    if (typeof eventCallback !== 'function') {
+      options.exitOnError(`Missing event callback function when instantiating CallbackSender class`);
     }
-    this.callback = callback as Function;
+    this.eventCallback = eventCallback as Function;
   }
 
   async connect () {
@@ -31,7 +31,7 @@ class CallbackSender extends AbstractSender {
     recordsComposite.last = packet[pl - 1];
 
     packet.forEach((row: TEventRecord) => {
-      this.callback(row);
+      this.eventCallback(row);
     });
     return true;
   }

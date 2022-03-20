@@ -45,7 +45,7 @@ async function initStream (): Promise<Stream> {
       // host: 'localhost',
       // port: 1,
       // accessPoint: null
-      // callback?: Function,
+      // eventCallback?: Function,
       emitSingleEvent: true,
       // emitId: 'test-emit',
     },

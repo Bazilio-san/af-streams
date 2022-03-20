@@ -58,7 +58,7 @@ export interface ISenderConfig {
   host?: string,
   port?: number
   accessPoint?: TAccessPoint
-  callback?: Function,
+  eventCallback?: Function,
   emitSingleEvent?: boolean,
   emitId?: string,
 }
