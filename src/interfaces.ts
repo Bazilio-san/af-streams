@@ -75,6 +75,7 @@ export interface ISenderConstructorOptions {
 export interface ISender {
   sendEvents: Function,
   connect: Function
+  eventCallback?: Function,
 }
 
 export type TDbRecord = { [fieldName: string | symbol]: any };

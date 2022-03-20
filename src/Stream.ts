@@ -459,4 +459,8 @@ ${g}================================================================`;
       self._sendLoop();
     }, this.sendInterval);
   }
+
+  setEventCallback (eventCallback: Function) {
+    this.sender.eventCallback = eventCallback;
+  }
 }
