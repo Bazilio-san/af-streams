@@ -45,9 +45,15 @@ export const findSmallestIndexBinary = (arr: any[], x: number, timeFieldName: st
   return ans;
 };
 
-export const findSmallestIndex = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD, fromRight: boolean = false) => {
-  if (arr.length < 2000) {
-    return fromRight ? findIndexOfNearestSmallFromRight(arr, x, timeFieldName) : findSmallestIndexLinear(arr, x, timeFieldName);
+export const findSmallestIndex = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
+  const { length } = arr;
+  if (!length) {
+    return -1;
   }
-  return findSmallestIndexBinary(arr, x, timeFieldName);
+  if (arr.length > 2000) {
+    return findSmallestIndexBinary(arr, x, timeFieldName);
+  }
+  return ((arr[length - 1] - arr[0]) / 2) < x
+    ? findIndexOfNearestSmallFromRight(arr, x, timeFieldName)
+    : findSmallestIndexLinear(arr, x, timeFieldName);
 };

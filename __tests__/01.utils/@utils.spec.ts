@@ -2,7 +2,6 @@ import {
   findIndexOfNearestSmallFromRight,
   findIndexOfNearestSmallFromRightARR,
   findSmallestIndexARR,
-  findSmallestIndexArrAuto,
   findSmallestIndexBinary,
   findSmallestIndexBinaryARR,
   findSmallestIndexLinear,
@@ -123,7 +122,6 @@ describe('findSmallestIndex', () => {
           expect(findSmallestIndexBinaryARR(data_, ts)).toEqual(expected);
           expect(findIndexOfNearestSmallFromRightARR(data_, ts)).toEqual(expected);
           expect(findSmallestIndexARR(data_, ts)).toEqual(expected);
-          expect(findSmallestIndexArrAuto(data_, ts)).toEqual(expected);
         });
       });
     });
@@ -140,7 +138,6 @@ describe('findSmallestIndex', () => {
           expect(findSmallestIndexBinaryARR(data2_, ts)).toEqual(expected);
           expect(findIndexOfNearestSmallFromRightARR(data2_, ts)).toEqual(expected);
           expect(findSmallestIndexARR(data2_, ts)).toEqual(expected);
-          expect(findSmallestIndexArrAuto(data2_, ts)).toEqual(expected);
         });
       });
     });
@@ -155,7 +152,6 @@ describe('findSmallestIndex', () => {
           expect(findSmallestIndexBinaryARR([], ts)).toEqual(expected);
           expect(findIndexOfNearestSmallFromRightARR([], ts)).toEqual(expected);
           expect(findSmallestIndexARR([], ts)).toEqual(expected);
-          expect(findSmallestIndexArrAuto([], ts)).toEqual(expected);
         });
       });
     });
