@@ -178,3 +178,5 @@ export interface IDbConstructorOptions {
   dbConfig: IDbConfig,
   millis2dbFn: Function
 }
+
+export type TSlot = [leftIndex: number | null, foundIndex: number | null, rightIndex: number | null]

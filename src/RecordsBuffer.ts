@@ -1,4 +1,4 @@
-import { findSmallestIndex } from './utils/find-nearest-index';
+import { findIndexOfNearestSmaller } from './utils/find-index-of-nearest-smaller';
 import { TEventRecord } from './interfaces';
 import { TS_FIELD } from './constants';
 
@@ -64,11 +64,11 @@ export class RecordsBuffer {
   }
 
   // Greatest index of a value less than the specified
-  findSmallestIndex (virtualTime: number) {
+  findIndexOfNearestSmaller (virtualTime: number) {
     const { buffer: rb } = this;
     if (!rb.length) {
       return -1;
     }
-    return findSmallestIndex(rb, virtualTime);
+    return findIndexOfNearestSmaller(rb, virtualTime);
   }
 }

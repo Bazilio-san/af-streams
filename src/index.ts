@@ -3,7 +3,7 @@ export { LastTimeRecords } from './LastTimeRecords';
 export { RecordsBuffer } from './RecordsBuffer';
 export { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
 export { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
-export { TDbRecord, TEventRecord, IDbConfig } from './interfaces';
+export { TDbRecord, TEventRecord, IDbConfig, TSlot } from './interfaces';
 export {
   getTimeParamMillis,
   timeParamRE,
@@ -12,15 +12,31 @@ export {
   sleep,
 } from './utils/utils';
 export {
-  findSmallestIndex,
-  findSmallestIndexLinear,
-  findSmallestIndexBinary,
-  findIndexOfNearestSmallFromRight,
-} from './utils/find-nearest-index';
+  findIndexOfNearestSmallerLEFT,
+  findIndexOfNearestSmallerRIGHT,
+  findIndexOfNearestSmallerBINARY,
+  findIndexOfNearestSmaller,
+  // Deprecated
+  findIndexOfNearestSmallerLEFT as findSmallestIndexLinear, // compatibility
+  // Deprecated
+  findIndexOfNearestSmallerRIGHT as findIndexOfNearestSmallFromRight, // compatibility
+  // Deprecated
+  findIndexOfNearestSmallerBINARY as findSmallestIndexBinary, // compatibility
+  // Deprecated
+  findIndexOfNearestSmaller as findSmallestIndex, // compatibility
+} from './utils/find-index-of-nearest-smaller';
 export {
-  findSmallestIndexARR,
-  findSmallestIndexLinearARR,
-  findSmallestIndexBinaryARR,
-  findIndexOfNearestSmallFromRightARR,
-} from './utils/find-nearest-index-arr';
+  findIndexOfNearestSmallerInNumArrayLEFT, // findIndexOfNearestSmallerInNumArrayLEFT
+  findIndexOfNearestSmallerInNumArrayRIGHT, // findIndexOfNearestSmallerInNumArrayRIGHT
+  findIndexOfNearestSmallerInNumArrayBINARY, // findIndexOfNearestSmallerInNumArrayBINARY
+  findIndexOfNearestSmallerInNumArray, // findIndexOfNearestSmallerInNumArray
+  // Deprecated
+  findIndexOfNearestSmallerInNumArray as findSmallestIndexARR2, // compatibility
+  // Deprecated
+  findIndexOfNearestSmallerInNumArrayBINARY as findSmallestIndexBinaryARR2, // compatibility
+  // Deprecated
+  findIndexOfNearestSmallerInNumArrayRIGHT as findIndexOfNearestSmallFromRightARR2, // compatibility
+  // Deprecated
+  findIndexOfNearestSmallerInNumArrayLEFT as findSmallestIndexLinearARR2, // compatibility
+} from './utils/find-index-of-nearest-smaller-in-num-array';
 export { TS_FIELD } from './constants';

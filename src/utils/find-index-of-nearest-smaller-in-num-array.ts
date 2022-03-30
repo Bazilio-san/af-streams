@@ -1,4 +1,4 @@
-export const findSmallestIndexLinearARR = (arr: number[], x: number) => {
+export const findIndexOfNearestSmallerInNumArrayLEFT = (arr: number[], x: number) => {
   if (!arr.length) {
     return -1;
   }
@@ -12,7 +12,7 @@ export const findSmallestIndexLinearARR = (arr: number[], x: number) => {
   return arr.length - 1;
 };
 
-export const findIndexOfNearestSmallFromRightARR = (arr: number[], x: number) => {
+export const findIndexOfNearestSmallerInNumArrayRIGHT = (arr: number[], x: number) => {
   let pos = arr.length;
   if (pos) {
     while (--pos >= 0) {
@@ -24,7 +24,7 @@ export const findIndexOfNearestSmallFromRightARR = (arr: number[], x: number) =>
   return -1;
 };
 
-export const findSmallestIndexBinaryARR = (arr: number[], x: number) => {
+export const findIndexOfNearestSmallerInNumArrayBINARY = (arr: number[], x: number) => {
   let start = 0;
   let end = arr.length - 1;
   let ans = -1;
@@ -43,15 +43,15 @@ export const findSmallestIndexBinaryARR = (arr: number[], x: number) => {
   return ans;
 };
 
-export const findSmallestIndexARR = (arr: number[], x: number) => {
+export const findIndexOfNearestSmallerInNumArray = (arr: number[], x: number) => {
   const { length } = arr;
   if (!length) {
     return -1;
   }
   if (length > 2000) {
-    return findSmallestIndexBinaryARR(arr, x);
+    return findIndexOfNearestSmallerInNumArrayBINARY(arr, x);
   }
   return ((arr[length - 1] - arr[0]) / 2) < x
-    ? findIndexOfNearestSmallFromRightARR(arr, x)
-    : findSmallestIndexLinearARR(arr, x);
+    ? findIndexOfNearestSmallerInNumArrayRIGHT(arr, x)
+    : findIndexOfNearestSmallerInNumArrayLEFT(arr, x);
 };

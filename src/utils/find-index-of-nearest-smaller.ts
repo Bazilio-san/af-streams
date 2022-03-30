@@ -1,6 +1,7 @@
+/* eslint-disable camelcase */
 import { TS_FIELD } from '../constants';
 
-export const findSmallestIndexLinear = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
+export const findIndexOfNearestSmallerLEFT = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
   if (!arr.length) {
     return -1;
   }
@@ -14,7 +15,7 @@ export const findSmallestIndexLinear = (arr: any[], x: number, timeFieldName: st
   return arr.length - 1;
 };
 
-export const findIndexOfNearestSmallFromRight = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
+export const findIndexOfNearestSmallerRIGHT = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
   let pos = arr.length;
   if (pos) {
     while (--pos >= 0) {
@@ -26,7 +27,7 @@ export const findIndexOfNearestSmallFromRight = (arr: any[], x: number, timeFiel
   return -1;
 };
 
-export const findSmallestIndexBinary = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
+export const findIndexOfNearestSmallerBINARY = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
   let start = 0;
   let end = arr.length - 1;
   let ans = -1;
@@ -45,15 +46,15 @@ export const findSmallestIndexBinary = (arr: any[], x: number, timeFieldName: st
   return ans;
 };
 
-export const findSmallestIndex = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
+export const findIndexOfNearestSmaller = (arr: any[], x: number, timeFieldName: string | symbol = TS_FIELD) => {
   const { length } = arr;
   if (!length) {
     return -1;
   }
   if (arr.length > 2000) {
-    return findSmallestIndexBinary(arr, x, timeFieldName);
+    return findIndexOfNearestSmallerBINARY(arr, x, timeFieldName);
   }
   return ((arr[length - 1] - arr[0]) / 2) < x
-    ? findIndexOfNearestSmallFromRight(arr, x, timeFieldName)
-    : findSmallestIndexLinear(arr, x, timeFieldName);
+    ? findIndexOfNearestSmallerRIGHT(arr, x, timeFieldName)
+    : findIndexOfNearestSmallerLEFT(arr, x, timeFieldName);
 };

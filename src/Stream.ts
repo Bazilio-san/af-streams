@@ -263,7 +263,7 @@ ${g}================================================================`;
         this.options.echo(`findEndIndex() ${c}virtualTime: ${m}${millis2iso(virtualTime)}${rs} [${m}${firstISO}${rs} - ${m}${lastISO}${rs}]`);
     }
     */
-    return this.recordsBuffer.findSmallestIndex(virtualTime);
+    return this.recordsBuffer.findIndexOfNearestSmaller(virtualTime);
   }
 
   static packetInfo (count: number, fromRecord?: TEventRecord | null, toRecord?: TEventRecord | null) {
