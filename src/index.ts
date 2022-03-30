@@ -39,4 +39,16 @@ export {
   // Deprecated
   findIndexOfNearestSmallerInNumArrayLEFT as findSmallestIndexLinearARR2, // compatibility
 } from './utils/find-index-of-nearest-smaller-in-num-array';
+export {
+  findSlotIntLEFT,
+  findSlotIntRIGHT,
+  findSlotIntBINARY,
+  findSlotInt,
+} from './utils/find-slot-int';
+export {
+  findSlotFloatLEFT,
+  findSlotFloatRIGHT,
+  findSlotFloatBINARY,
+  findSlotFloat,
+} from './utils/find-slot-float';
 export { TS_FIELD } from './constants';
