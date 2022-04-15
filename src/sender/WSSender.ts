@@ -69,9 +69,9 @@ class WSSender extends AbstractSender {
     return new Promise((resolve) => {
       socketClient.on('connect', () => {
         echo.info(`
-========================= Web Socket Sender =================================
+====================== Web Socket Sender =======================
 Connection established with WEBSOCKET ${mConsulServiceName} on ${mAddress}
-=============================================================================`);
+================================================================`);
         resolve(true);
       });
 

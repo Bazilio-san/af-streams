@@ -5,9 +5,9 @@ import { IRecordsComposite, TEventRecord } from '../interfaces';
 class ConsoleSender extends AbstractSender {
   async connect () {
     console.log(`
-================================================
+================================================================
 Stream logging to console
-================================================
+================================================================
 `);
     return true;
   }

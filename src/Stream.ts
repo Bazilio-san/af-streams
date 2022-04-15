@@ -204,7 +204,7 @@ export class Stream {
     const startTimeRedis = new StartTimeRedis(startTimeRedisOptions);
     const { isUsedSavedStartTime, startTime } = await startTimeRedis.getStartTime();
 
-    const info = `${g}=========================== Stream =============================
+    const info = `${g}========================== [AF STREAM] =========================
 ${g}Time field TZ:         ${m}${timezoneOfTsField}
 ${g}Start from beginning:  ${m}${useStartTimeFromRedisCache ? 'NOT' : 'YES'}
 ${g}Start time:            ${m}${millis2iso(startTime)}${isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}

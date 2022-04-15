@@ -25,7 +25,7 @@ class EmitterSender extends AbstractSender {
   }
 
   async connect () {
-    this.options.echo.info(`=================== Emitter Sender is Ready ====================`);
+    this.options.echo.info(`=================== Emitter Sender is Ready ===================`);
     return true;
   }
 

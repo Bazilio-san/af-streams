@@ -15,7 +15,7 @@ class CallbackSender extends AbstractSender {
   }
 
   async connect () {
-    this.options.echo.info(`=================== Callback Sender is Ready ====================`);
+    this.options.echo.info(`=================== Callback Sender is Ready ===================`);
     return true;
   }
 
