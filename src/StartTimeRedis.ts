@@ -25,7 +25,7 @@ export class StartTimeRedis {
   constructor (options: IStartTimeRedisOptions) {
     this.options = options;
     const url = `redis://${options.host}:${options.port}`;
-    console.log(`==================== Redis are expected at ${url} ========================`);
+    console.log(`[AF-STREAM]: Redis are expected at ${url}`);
     this.client = createClient({ url });
     this.client.on('error', (err: Error | any) => {
       console.error('Redis Client Error');

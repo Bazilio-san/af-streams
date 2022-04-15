@@ -68,7 +68,7 @@ export class VirtualTimeObj {
       vt = virtualStartTs;
       this.realStartTs = now;
       this.loopNumber++;
-      this.debug(`======== New cycle from ${this.getString()}`);
+      this.debug(`[AF-STREAM]: New cycle from ${this.getString()}`);
       this.eventEmitter.emit('virtual-time-loop-back');
       return vt;
     }
