@@ -30,14 +30,6 @@ export {
   findIndexOfNearestSmallerInNumArrayRIGHT,
   findIndexOfNearestSmallerInNumArrayBINARY,
   findIndexOfNearestSmallerInNumArray,
-  // Deprecated
-  findIndexOfNearestSmallerInNumArray as findSmallestIndexARR2, // compatibility
-  // Deprecated
-  findIndexOfNearestSmallerInNumArrayBINARY as findSmallestIndexBinaryARR2, // compatibility
-  // Deprecated
-  findIndexOfNearestSmallerInNumArrayRIGHT as findIndexOfNearestSmallFromRightARR2, // compatibility
-  // Deprecated
-  findIndexOfNearestSmallerInNumArrayLEFT as findSmallestIndexLinearARR2, // compatibility
 } from './utils/find-index-of-nearest-smaller-in-num-array';
 export {
   findSlotIntLEFT,
