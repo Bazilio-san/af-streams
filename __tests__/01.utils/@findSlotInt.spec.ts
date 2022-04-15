@@ -1,13 +1,8 @@
 import { findSlotIntData } from './find-slot-int.data';
-import { TSlot } from '../../src';
-import { findSlotInt, findSlotIntBINARY, findSlotIntLEFT, findSlotIntRIGHT } from '../../src/utils/find-slot-int';
-import { findSlotFloatData, SIGMA } from './find-slot-float.data';
 import {
-  findSlotFloat,
-  findSlotFloatBINARY,
-  findSlotFloatLEFT,
-  findSlotFloatRIGHT,
-} from '../../src/utils/find-slot-float';
+  findSlotFloat, findSlotFloatBINARY, findSlotFloatLEFT, findSlotFloatRIGHT, findSlotInt, findSlotIntBINARY, findSlotIntLEFT, findSlotIntRIGHT, TSlot,
+} from '../../src';
+import { findSlotFloatData, SIGMA } from './find-slot-float.data';
 
 describe('findSlot **', () => {
   describe('findSlotInt *', () => {

@@ -101,6 +101,15 @@ export const findSlotIntBINARY = (arr: number[], x: number): TSlot => {
   ];
 };
 
+/**
+ * Searches for a place for an integer (x) in an array of integers (arr) sorted in ascending order.
+ * Returns an array of 3 indices:
+ [
+  <index of nearest smaller number | null>,
+  <index of number equal to desired | null>,
+  <index of nearest larger number | null>
+ ]
+ */
 export const findSlotInt = (arr: number[], x: number): TSlot => {
   const { length } = arr;
   if (!length) {

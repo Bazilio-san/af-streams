@@ -107,6 +107,16 @@ export const findSlotFloatBINARY = (arr: number[], x: number, SIGMA: number): TS
   ];
 };
 
+/**
+ * Searches for a place for a float number (x) in an array of float numbers (arr) sorted in ascending order.
+ * Returns an array of 3 indices:
+ [
+ <index of nearest smaller number | null>,
+ <index of number equal to desired | null>,
+ <index of nearest larger number | null>
+ ]
+ Numbers are compared using SIGMA: if the numbers differ by less than SIGMA, then they are considered equal.
+ */
 export const findSlotFloat = (arr: number[], x: number, SIGMA: number): TSlot => {
   const { length } = arr;
   if (!length) {

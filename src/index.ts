@@ -26,10 +26,10 @@ export {
   findIndexOfNearestSmaller as findSmallestIndex, // compatibility
 } from './utils/find-index-of-nearest-smaller';
 export {
-  findIndexOfNearestSmallerInNumArrayLEFT, // findIndexOfNearestSmallerInNumArrayLEFT
-  findIndexOfNearestSmallerInNumArrayRIGHT, // findIndexOfNearestSmallerInNumArrayRIGHT
-  findIndexOfNearestSmallerInNumArrayBINARY, // findIndexOfNearestSmallerInNumArrayBINARY
-  findIndexOfNearestSmallerInNumArray, // findIndexOfNearestSmallerInNumArray
+  findIndexOfNearestSmallerInNumArrayLEFT,
+  findIndexOfNearestSmallerInNumArrayRIGHT,
+  findIndexOfNearestSmallerInNumArrayBINARY,
+  findIndexOfNearestSmallerInNumArray,
   // Deprecated
   findIndexOfNearestSmallerInNumArray as findSmallestIndexARR2, // compatibility
   // Deprecated
