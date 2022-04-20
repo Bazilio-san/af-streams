@@ -31,7 +31,7 @@ export class VirtualTimeObj {
 
   public ready: boolean;
 
-  private isCurrentTime: boolean;
+  public isCurrentTime: boolean;
 
   private eventEmitter: EventEmitter;
 
@@ -73,6 +73,7 @@ export class VirtualTimeObj {
       return vt;
     }
     if (vt >= now) {
+      this.eventEmitter.emit('virtual-time-is-synchronized-with-current');
       this.isCurrentTime = true;
       return now;
     }
