@@ -7,13 +7,13 @@ const mssqlDefaults: IMsSqlConfig = {
   pool: {
     max: 10,
     min: 1,
-    idleTimeoutMillis: 300000,
+    idleTimeoutMillis: 300_000,
   },
   trustServerCertificate: true,
   stream: false,
   parseJSON: false,
-  requestTimeout: 1800000,
-  connectionTimeout: 3600000,
+  requestTimeout: 1_800_000,
+  connectionTimeout: 3_600_000,
   server: '',
 };
 

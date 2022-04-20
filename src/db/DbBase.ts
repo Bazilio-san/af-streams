@@ -22,6 +22,8 @@ export class DbBase {
 
   private rd: string;
 
+  private noLock: string = '';
+
   private readonly recordsetPropName: string;
 
   constructor (options: IDbConstructorOptions) {
@@ -31,6 +33,7 @@ export class DbBase {
       this.ld = '[';
       this.rd = ']';
       this.recordsetPropName = 'recordset';
+      this.noLock = ' WITH(NOLOCK) ';
     } else {
       this.ld = '"';
       this.rd = '"';
@@ -81,7 +84,7 @@ export class DbBase {
   async getPortionOfData (fromMillis: number, toMills: number): Promise<TDbRecord[]> {
     const { tsField, ld, rd, options: { millis2dbFn } } = this;
     const strSQL = `SELECT ${this.fieldsList}
-                    FROM ${this.schemaAndTable}
+                    FROM ${this.schemaAndTable} ${this.noLock}
                     WHERE ${ld}${tsField}${rd} >= ${millis2dbFn(fromMillis)}
                       AND ${ld}${tsField}${rd} <= ${millis2dbFn(toMills)}
                     ORDER BY ${this.sortBy}`;
