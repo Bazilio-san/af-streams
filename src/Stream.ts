@@ -350,6 +350,7 @@ ${g}================================================================`;
     try {
       const recordset = await this.db.getPortionOfData(startTs, endTs);
       this._addPortionToBuffer(recordset);
+      this.options.eventEmitter?.emit('after-load-next-portion', { startTs, endTs });
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
       this.options.exitOnError(err);
