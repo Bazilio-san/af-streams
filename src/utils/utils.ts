@@ -22,7 +22,7 @@ export const padR = (str: any, strLength: number, padSymbol: string = ' ') => {
 };
 
 export const padL = (str: any, strLength: number, padSymbol: string = ' ') => {
-  str = String(str || '');
+  str = String(str == null ? '' : str);
   if (str.length < strLength) {
     str = padSymbol.repeat(Math.min(Math.max(0, strLength - str.length), 10000)) + str;
   }

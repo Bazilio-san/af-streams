@@ -378,7 +378,7 @@ ${g}================================================================`;
   _printInfoLoop () {
     const { streamConfig, logger } = this.options;
     cron.job(`0/${streamConfig.printInfoIntervalSec || 30} * * * * *`, () => {
-      const rowsSent = `rows sent: ${bold}${padL(this.totalRowsSent, 6)}${boldOff}${rs}`;
+      const rowsSent = `rows sent: ${bold}${padL(this.totalRowsSent || 0, 6)}${boldOff}${rs}`;
       logger.info(`${lBlue}${streamConfig.streamId}${rs} ${rowsSent} / ${this.virtualTimeObj.getString()}`);
     }, null, true, 'GMT', undefined, false);
     // onComplete, start, timeZone, context, runOnInit
