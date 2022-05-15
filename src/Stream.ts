@@ -48,6 +48,8 @@ export class Stream {
 
   public lastRecordTs: number;
 
+  public lastEndTs: number = 0;
+
   private loopTimeMillis: number;
 
   public recordsBuffer: RecordsBuffer;
@@ -148,6 +150,7 @@ export class Stream {
       this.recordsBuffer.flush();
       this.lastTimeRecords.flush();
       this.totalRowsSent = 0;
+      this.lastEndTs = 0;
     });
     this.isSilly = options.logger.isLevel('silly');
     this.isDebug = options.logger.isLevel('debug');
@@ -331,9 +334,9 @@ ${g}================================================================`;
   }
 
   async _loadNextPortion () {
-    const { recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs, isSilly } = this;
+    const { recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs, lastEndTs, isSilly } = this;
     const virtualTimeObj = vtObj as VirtualTimeObj;
-    const startTs = lastRecordTs ? Number(lastRecordTs) : virtualTimeObj.virtualStartTs;
+    const startTs = Math.max(lastEndTs, lastRecordTs ? Number(lastRecordTs) : virtualTimeObj.virtualStartTs);
     const endTs = (lastRecordTs ? virtualTimeObj.getVirtualTs() : startTs) + bufferLookAheadMs;
 
     if (startTs >= endTs) {
@@ -350,6 +353,7 @@ ${g}================================================================`;
     try {
       const recordset = await this.db.getPortionOfData(startTs, endTs);
       this._addPortionToBuffer(recordset);
+      this.lastEndTs = endTs;
       this.options.eventEmitter?.emit('after-load-next-portion', { startTs, endTs });
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
