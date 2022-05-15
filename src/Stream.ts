@@ -372,6 +372,7 @@ ${g}================================================================`;
       } from: ${m}${millis2iso(startTs)}${rs} to ${m}${millis2iso(endTs)}${rs}`);
     }
     try {
+      this.options.eventEmitter?.emit('before-load-next-portion', { startTs, endTs });
       const recordset = await this.db.getPortionOfData(startTs, endTs);
       this._addPortionToBuffer(recordset);
       this.lastEndTs = endTs;
