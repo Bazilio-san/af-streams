@@ -160,6 +160,7 @@ export class Stream {
       this.lastTimeRecords.flush();
       this.totalRowsSent = 0;
       this.lastEndTs = 0;
+      this.isFirstLoad = true;
     });
     this.isSilly = options.logger.isLevel('silly');
     this.isDebug = options.logger.isLevel('debug');
@@ -351,6 +352,7 @@ ${g}================================================================`;
     if (this.isFirstLoad) {
       startTs = virtualTimeObj.virtualStartTs;
       endTs = startTs + bufferLookAheadMs;
+      this.isFirstLoad = false;
     } else {
       startTs = Number(lastRecordTs);
       if (this.loadPortionFrom === 'LAST_END') {
