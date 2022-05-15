@@ -335,7 +335,7 @@ ${g}================================================================`;
       }
     }
     if (isSilly) {
-      this.options.echo(`${lBlue}${this.options.streamConfig.streamId} ${this.virtualTimeObj.getString()
+      this.options.echo(`${lBlue}${this.options.streamConfig.streamId}${rs} vt: ${this.virtualTimeObj.getString()
       } loaded/skipped/used: ${lm}${loaded}${blue}/${lc}${skipped}${blue}/${g}${toUse}${rs}`);
     }
   }
@@ -356,8 +356,7 @@ ${g}================================================================`;
       return;
     }
     if (isSilly) {
-      this.options.echo(`_loadNextPortion() ${c}virtualTime: ${m}${
-        millis2iso(this.virtualTimeObj.getVirtualTs())}${rs
+      this.options.echo(`${c}_loadNextPortion()${rs} vt: ${m}${this.virtualTimeObj.getString()}${rs
       } from: ${m}${millis2iso(startTs)}${rs} to ${m}${millis2iso(endTs)}${rs}`);
     }
     try {
