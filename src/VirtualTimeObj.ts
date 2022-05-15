@@ -15,7 +15,7 @@ export interface IVirtualTimeObjOptions {
 export class VirtualTimeObj {
   private options: IVirtualTimeObjOptions;
 
-  private speed: number;
+  public speed: number;
 
   private loopTimeMillis: number;
 
@@ -23,7 +23,7 @@ export class VirtualTimeObj {
 
   private loopTimeMillsEnd: 0 | number;
 
-  private realStartTs: number;
+  public realStartTs: number;
 
   public realStartTsLoopSafe: number;
 
