@@ -38,6 +38,7 @@ export interface IStreamConstructorOptions {
   prepareEvent?: Function,
   tsFieldToMillis?: Function,
   millis2dbFn?: Function,
+  loadPortionFrom?: 'LAST_END' | 'LAST_RECORD_TS',
   testMode?: boolean,
 }
 
@@ -49,6 +50,8 @@ export class Stream {
   public lastRecordTs: number;
 
   public lastEndTs: number = 0;
+
+  public loadPortionFrom: 'LAST_END' | 'LAST_RECORD_TS' = 'LAST_RECORD_TS';
 
   private loopTimeMillis: number;
 
@@ -87,7 +90,7 @@ export class Stream {
   private initialized: boolean = false;
 
   constructor (options: IStreamConstructorOptions) {
-    const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0 } = options;
+    const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0, loadPortionFrom } = options;
     const { fetchIntervalSec, bufferMultiplier, src } = streamConfig;
     src.timezoneOfTsField = src.timezoneOfTsField || 'GMT';
     const zone = src.timezoneOfTsField;
@@ -117,6 +120,10 @@ export class Stream {
 
     this.sender = {} as ISender;
     this.db = {} as DbMsSql | DbPostgres;
+    this.lastRecordTs = 0;
+    if (loadPortionFrom === 'LAST_END') {
+      this.loadPortionFrom = 'LAST_END';
+    }
     this.lastRecordTs = 0;
 
     this.loopTimeMillis = getTimeParamMillis(loopTime);
@@ -336,7 +343,10 @@ ${g}================================================================`;
   async _loadNextPortion () {
     const { recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs, lastEndTs, isSilly } = this;
     const virtualTimeObj = vtObj as VirtualTimeObj;
-    const startTs = Math.max(lastEndTs, lastRecordTs ? Number(lastRecordTs) : virtualTimeObj.virtualStartTs);
+    let startTs = lastRecordTs ? Number(lastRecordTs) : virtualTimeObj.virtualStartTs;
+    if (this.loadPortionFrom === 'LAST_END') {
+      startTs = Math.max(lastEndTs, startTs);
+    }
     const endTs = (lastRecordTs ? virtualTimeObj.getVirtualTs() : startTs) + bufferLookAheadMs;
 
     if (startTs >= endTs) {
