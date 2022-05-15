@@ -86,7 +86,7 @@ export class VirtualTimeObj {
   }
 
   getString () {
-    return `${c}:: ${DateTime.fromMillis(this.getVirtualTs()).toISO()}${this.isCurrentTime ? '*' : ''} ::${rs}`;
+    return `${c}<${DateTime.fromMillis(this.getVirtualTs()).toISO()}${this.isCurrentTime ? '*' : ''}>${rs}`;
   }
 }
 
