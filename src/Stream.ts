@@ -89,6 +89,8 @@ export class Stream {
 
   private initialized: boolean = false;
 
+  private isFirstLoad: boolean = true;
+
   constructor (options: IStreamConstructorOptions) {
     const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0, loadPortionFrom } = options;
     const { fetchIntervalSec, bufferMultiplier, src } = streamConfig;
@@ -343,11 +345,19 @@ ${g}================================================================`;
   async _loadNextPortion () {
     const { recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs, lastEndTs, isSilly } = this;
     const virtualTimeObj = vtObj as VirtualTimeObj;
-    let startTs = lastRecordTs ? Number(lastRecordTs) : virtualTimeObj.virtualStartTs;
-    if (this.loadPortionFrom === 'LAST_END') {
-      startTs = Math.max(lastEndTs, startTs);
+
+    let startTs;
+    let endTs;
+    if (this.isFirstLoad) {
+      startTs = virtualTimeObj.virtualStartTs;
+      endTs = startTs + bufferLookAheadMs;
+    } else {
+      startTs = Number(lastRecordTs);
+      if (this.loadPortionFrom === 'LAST_END') {
+        startTs = Math.max(lastEndTs, startTs);
+      }
+      endTs = virtualTimeObj.getVirtualTs() + bufferLookAheadMs;
     }
-    const endTs = (lastRecordTs ? virtualTimeObj.getVirtualTs() : startTs) + bufferLookAheadMs;
 
     if (startTs >= endTs) {
       return;
