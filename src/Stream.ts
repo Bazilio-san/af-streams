@@ -336,7 +336,7 @@ ${g}================================================================`;
     }
     if (isSilly) {
       this.options.echo(`${lBlue}${this.options.streamConfig.streamId} ${this.virtualTimeObj.getString()
-      } l/s/u: ${lm}${loaded}${blue}/${lc}${skipped}${blue}/${g}${toUse}${rs}`);
+      } loaded/skipped/used: ${lm}${loaded}${blue}/${lc}${skipped}${blue}/${g}${toUse}${rs}`);
     }
   }
 
