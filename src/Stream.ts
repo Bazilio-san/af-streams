@@ -470,7 +470,9 @@ ${g}================================================================`;
       }
     }
     if (isDebug) {
-      this.options.echo(`${debugMessage}\t${m}BUFFER: ${Stream.packetInfo(rb.length, rb.first, rb.last)}`);
+      let bufferInfo = Stream.packetInfo(rb.length, rb.first, rb.last);
+      bufferInfo = bufferInfo.trim() ? `BUFFER: ${bufferInfo}` : `BUFFER empty`;
+      this.options.echo(`${debugMessage}\t${m}${bufferInfo}`);
     }
   }
 
