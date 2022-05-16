@@ -2,6 +2,7 @@
 import EventEmitter from 'events';
 import { createClient, RedisClientType, RedisDefaultModules, RedisModules, RedisScripts } from 'redis';
 import { DateTime } from 'luxon';
+import { RedisFunctions } from '@redis/client';
 import { getStreamKey, getTimeParamMillis, timeParamRE } from './utils/utils';
 import { ILoggerEx } from './interfaces';
 
@@ -18,7 +19,7 @@ export interface IStartTimeRedisOptions {
 export class StartTimeRedis {
   private readonly options: IStartTimeRedisOptions;
 
-  private readonly client: RedisClientType<RedisDefaultModules & RedisModules, RedisScripts>;
+  private readonly client: RedisClientType<RedisDefaultModules & RedisModules, RedisFunctions, RedisScripts>;
 
   private readonly streamKey: string;
 
@@ -41,7 +42,7 @@ export class StartTimeRedis {
     });
   }
 
-  async getRedisClient (): Promise<RedisClientType<RedisDefaultModules & RedisModules, RedisScripts>> {
+  async getRedisClient (): Promise<RedisClientType<RedisDefaultModules, RedisFunctions & RedisModules, RedisScripts>> {
     if (this.client.isOpen) {
       return this.client;
     }

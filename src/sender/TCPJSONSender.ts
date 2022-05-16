@@ -4,15 +4,11 @@ import { Buffer } from 'buffer';
 import AbstractSender from './AbstractSender';
 import { IEventComposite, IRecordsComposite, ISenderConstructorOptions, TEventRecord } from '../interfaces';
 
-export interface ITCPSocket extends net.Socket {
-  readyState: string
-}
-
 class TCPJSONSender extends AbstractSender {
   public isReady: boolean;
 
   // noinspection TypeScriptFieldCanBeMadeReadonly
-  private socket: ITCPSocket | net.Socket | null;
+  private socket: net.Socket | null;
 
   constructor (options: ISenderConstructorOptions) {
     super(options);
@@ -59,7 +55,7 @@ class TCPJSONSender extends AbstractSender {
 Connection established with ${msg}
 ================================================================`);
         socket.setKeepAlive(true, 5000);
-        const { readyState } = socket as ITCPSocket;
+        const { readyState } = socket;
         if (readyState === 'open') {
           return resolve(true);
         }
@@ -88,7 +84,7 @@ Connection established with ${msg}
   }
 
   isConnected (): boolean {
-    const socket = this.socket as ITCPSocket;
+    const { socket } = this;
     return socket?.readyState === 'open'; // VVQ
   }
 
