@@ -91,9 +91,11 @@ export class Stream {
 
   private isFirstLoad: boolean = true;
 
+  private maxBufferSize: number;
+
   constructor (options: IStreamConstructorOptions) {
     const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0, loadPortionFrom } = options;
-    const { fetchIntervalSec, bufferMultiplier, src } = streamConfig;
+    const { fetchIntervalSec, bufferMultiplier, src, maxBufferSize } = streamConfig;
     src.timezoneOfTsField = src.timezoneOfTsField || 'GMT';
     const zone = src.timezoneOfTsField;
     this.options = options;
@@ -119,6 +121,7 @@ export class Stream {
 
     const { idFields } = src;
     this.bufferLookAheadMs = ((fetchIntervalSec || 10) * 1000 * (bufferMultiplier || 30));
+    this.maxBufferSize = maxBufferSize || 65_536;
 
     this.sender = {} as ISender;
     this.db = {} as DbMsSql | DbPostgres;
@@ -344,7 +347,9 @@ ${g}================================================================`;
   }
 
   async _loadNextPortion () {
-    const { recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs, lastEndTs, isSilly } = this;
+    const {
+      options, recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs, lastEndTs, isSilly, maxBufferSize,
+    } = this;
     const virtualTimeObj = vtObj as VirtualTimeObj;
 
     let startTs;
@@ -364,22 +369,31 @@ ${g}================================================================`;
     if (startTs >= endTs) {
       return;
     }
+    // Если расстояние по времени от первой до последней записи в буфере больше bufferLookAheadMs, новых записей подгружать не нужно
     if (((recordsBuffer.getMsDistance()) > bufferLookAheadMs)) {
       return;
     }
+    const limit = maxBufferSize - recordsBuffer.buffer.length;
+    if (limit < 1) {
+      return;
+    }
+
     if (isSilly) {
-      this.options.echo(`${c}_loadNextPortion()${rs} vt: ${m}${this.virtualTimeObj.getString()}${rs
+      options.echo(`${c}_loadNextPortion()${rs} vt: ${m}${this.virtualTimeObj.getString()}${rs
       } from: ${m}${millis2iso(startTs)}${rs} to ${m}${millis2iso(endTs)}${rs}`);
     }
     try {
-      this.options.eventEmitter?.emit('before-load-next-portion', { startTs, endTs });
-      const recordset = await this.db.getPortionOfData(startTs, endTs);
+      options.eventEmitter?.emit('before-load-next-portion', { startTs, endTs });
+      const recordset = await this.db.getPortionOfData({ startTs, endTs, limit });
+      if (recordset.length) {
+        endTs = this.tsFieldToMillis(recordset[recordset.length - 1][options.streamConfig.src.tsField]);
+      }
       this._addPortionToBuffer(recordset);
       this.lastEndTs = endTs;
-      this.options.eventEmitter?.emit('after-load-next-portion', { startTs, endTs });
+      options.eventEmitter?.emit('after-load-next-portion', { startTs, endTs });
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
-      this.options.exitOnError(err);
+      options.exitOnError(err);
     }
   }
 

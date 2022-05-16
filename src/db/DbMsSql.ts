@@ -92,4 +92,10 @@ export class DbMsSql extends DbBase {
     const { columns } = result.recordset;
     return Object.keys(columns);
   }
+
+  limitIt (strSQL: string, limit: number): string {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+    const self = this; // Заглушка
+    return strSQL.replace('SELECT ', `SELECT TOP(${limit}) `);
+  }
 }

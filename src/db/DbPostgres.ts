@@ -57,4 +57,10 @@ export class DbPostgres extends DbBase {
     const { fields } = await this.query(`${'SELECT'} * FROM ${this.schemaAndTable} LIMIT 1`);
     return fields.map((field: any) => field.name);
   }
+
+  limitIt (strSQL: string, limit: number): string {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+    const self = this; // Заглушка
+    return `${strSQL} LIMIT ${limit}`;
+  }
 }

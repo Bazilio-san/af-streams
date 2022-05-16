@@ -81,13 +81,21 @@ export class DbBase {
     }
   }
 
-  async getPortionOfData (fromMillis: number, toMills: number): Promise<TDbRecord[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+  limitIt (strSQL: string, limit: number): string {
+    return strSQL;
+  }
+
+  async getPortionOfData ({ startTs, endTs, limit } : { startTs: number, endTs: number, limit: number }): Promise<TDbRecord[]> {
     const { tsField, ld, rd, options: { millis2dbFn } } = this;
-    const strSQL = `SELECT ${this.fieldsList}
+    let strSQL = `SELECT ${this.fieldsList}
                     FROM ${this.schemaAndTable} ${this.noLock}
-                    WHERE ${ld}${tsField}${rd} >= ${millis2dbFn(fromMillis)}
-                      AND ${ld}${tsField}${rd} <= ${millis2dbFn(toMills)}
+                    WHERE ${ld}${tsField}${rd} >= ${millis2dbFn(startTs)}
+                      AND ${ld}${tsField}${rd} <= ${millis2dbFn(endTs)}
                     ORDER BY ${this.sortBy}`;
+    if (limit) {
+      strSQL = this.limitIt(strSQL, limit);
+    }
     const result = await this.query(strSQL);
     return result?.[this.recordsetPropName] || [];
   }

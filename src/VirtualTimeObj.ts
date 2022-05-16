@@ -2,6 +2,7 @@ import { DateTime } from 'luxon';
 import EventEmitter from 'events';
 import { IEcho } from './interfaces';
 import { c, rs } from './utils/color';
+import { MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
 
 export interface IVirtualTimeObjOptions {
   startTime: number, // timestamp millis
@@ -37,6 +38,10 @@ export class VirtualTimeObj {
 
   private readonly debug: Function;
 
+  private prevVirtualDateNumber: number = 0;
+
+  private prevVirtualHourNumber: number = 0;
+
   constructor (options: IVirtualTimeObjOptions) {
     const { startTime, speed, loopTimeMillis = 0, eventEmitter, echo } = options;
 
@@ -57,12 +62,38 @@ export class VirtualTimeObj {
     };
   }
 
+  setVirtualNumbers (vt: number) {
+    const { prevVirtualDateNumber: pvd, prevVirtualHourNumber: pvh } = this;
+    this.prevVirtualDateNumber = Math.floor(vt / MILLIS_IN_DAY);
+    if (pvd && pvd < this.prevVirtualDateNumber) {
+      this.eventEmitter.emit('virtual-date-changed', {
+        prevN: pvd,
+        currN: this.prevVirtualDateNumber,
+        prevTs: pvd * MILLIS_IN_DAY,
+        currTs: this.prevVirtualDateNumber * MILLIS_IN_DAY,
+      });
+    }
+    this.prevVirtualHourNumber = Math.floor(vt / MILLIS_IN_HOUR);
+    if (pvh && pvh !== this.prevVirtualHourNumber) {
+      this.eventEmitter.emit('virtual-hour-changed', {
+        prevN: pvh,
+        currN: this.prevVirtualHourNumber,
+        prevHZ: pvh % 24,
+        currHZ: this.prevVirtualHourNumber % 24,
+        prevTs: pvh * MILLIS_IN_HOUR,
+        currTs: this.prevVirtualHourNumber * MILLIS_IN_HOUR,
+      });
+    }
+    return vt;
+  }
+
   getVirtualTs () {
     const now = Date.now();
     const { isCurrentTime, virtualStartTs, realStartTs, speed, loopTimeMillis, loopTimeMillsEnd } = this;
     if (isCurrentTime) {
-      return now;
+      return this.setVirtualNumbers(now);
     }
+
     let vt = virtualStartTs + (now - realStartTs) * speed;
     if (loopTimeMillis && vt >= loopTimeMillsEnd) {
       vt = virtualStartTs;
@@ -70,14 +101,15 @@ export class VirtualTimeObj {
       this.loopNumber++;
       this.debug(`[AF-STREAM]: New cycle from ${this.getString()}`);
       this.eventEmitter.emit('virtual-time-loop-back');
-      return vt;
+      return this.setVirtualNumbers(vt);
     }
+
     if (vt >= now) {
       this.eventEmitter.emit('virtual-time-is-synchronized-with-current');
       this.isCurrentTime = true;
-      return now;
+      return this.setVirtualNumbers(now);
     }
-    return vt;
+    return this.setVirtualNumbers(vt);
   }
 
   setReady () {

@@ -157,6 +157,7 @@ export interface IStreamConfig {
   streamId: string,
   fetchIntervalSec?: number,
   bufferMultiplier?: number,
+  maxBufferSize?: number,
   src: {
     schema: string,
     table: string,
