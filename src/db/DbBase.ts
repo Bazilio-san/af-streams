@@ -87,16 +87,17 @@ export class DbBase {
   }
 
   async getPortionOfData ({ startTs, endTs, limit } : { startTs: number, endTs: number, limit: number }): Promise<TDbRecord[]> {
-    const { tsField, ld, rd, options: { millis2dbFn } } = this;
-    let strSQL = `SELECT ${this.fieldsList}
+    const { options, tsField, ld, rd, options: { millis2dbFn }, dbInfo } = this;
+    let sql = `SELECT ${this.fieldsList}
                     FROM ${this.schemaAndTable} ${this.noLock}
                     WHERE ${ld}${tsField}${rd} >= ${millis2dbFn(startTs)}
                       AND ${ld}${tsField}${rd} <= ${millis2dbFn(endTs)}
                     ORDER BY ${this.sortBy}`;
     if (limit) {
-      strSQL = this.limitIt(strSQL, limit);
+      sql = this.limitIt(sql, limit);
     }
-    const result = await this.query(strSQL);
+    options.eventEmitter.emit('get-portion-of-data-sql', { sql, startTs, endTs, limit, dbInfo });
+    const result = await this.query(sql);
     return result?.[this.recordsetPropName] || [];
   }
 }

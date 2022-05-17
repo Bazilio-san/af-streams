@@ -174,6 +174,7 @@ export interface IStreamConfig {
 export interface IDbConstructorOptions {
   streamConfig: IStreamConfig,
   logger: ILoggerEx,
+  eventEmitter: EventEmitter,
   exitOnError: Function,
   dbOptions: IMsSqlConfig | IPostgresConfig,
   dbConfig: IDbConfig,

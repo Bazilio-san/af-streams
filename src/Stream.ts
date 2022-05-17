@@ -243,6 +243,7 @@ ${g}================================================================`;
       const dbConstructorOptions: IDbConstructorOptions = {
         streamConfig,
         logger,
+        eventEmitter,
         exitOnError,
         dbOptions,
         dbConfig,
