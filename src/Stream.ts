@@ -345,11 +345,12 @@ ${g}================================================================`;
     let endTs;
     if (this.isFirstLoad) {
       startTs = virtualTimeObj.virtualStartTs;
+      endTs = startTs + bufferLookAheadMs;
       this.isFirstLoad = false;
     } else {
       startTs = lastRecordTs || virtualTimeObj.virtualStartTs;
+      endTs = virtualTimeObj.getVirtualTs() + bufferLookAheadMs;
     }
-    endTs = startTs + bufferLookAheadMs;
 
     if (startTs >= endTs) {
       return;
