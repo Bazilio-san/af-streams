@@ -305,7 +305,6 @@ ${g}================================================================`;
     let skipped = 0;
     let toUse = loaded;
     if (loaded) {
-      console.log(`_addPortionToBuffer ================>>> loaded = ${loaded}`); // VVR
       const forBuffer = this.prepareEventsPacket(recordset);
 
       if (loopTimeMillis) {
@@ -321,7 +320,6 @@ ${g}================================================================`;
       this.lastTimeRecords.subtractLastTimeRecords(forBuffer);
 
       toUse = forBuffer.length;
-      console.log(`_addPortionToBuffer ================>>> forBuffer.length = ${toUse}`); // VVR
       if (toUse !== loaded) {
         skipped = loaded - toUse;
       }
@@ -374,9 +372,6 @@ ${g}================================================================`;
       const recordset = await this.db.getPortionOfData({ startTs, endTs, limit });
       if (recordset.length) {
         endTs = this.tsFieldToMillis(recordset[recordset.length - 1][options.streamConfig.src.tsField]);
-      } else {
-        // VVR
-        console.log(`================>>> recordset.length = ${recordset.length}`);
       }
       this._addPortionToBuffer(recordset);
       options.eventEmitter?.emit('after-load-next-portion', { startTs, endTs });
