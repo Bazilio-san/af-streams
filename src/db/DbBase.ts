@@ -86,18 +86,23 @@ export class DbBase {
     return strSQL;
   }
 
-  async getPortionOfData ({ startTs, endTs, limit } : { startTs: number, endTs: number, limit: number }): Promise<TDbRecord[]> {
+  async getPortionOfData ({ startTs, endTs, limit }: { startTs: number, endTs: number, limit: number }): Promise<TDbRecord[]> {
     const { options, tsField, ld, rd, options: { millis2dbFn }, dbInfo } = this;
     let sql = `SELECT ${this.fieldsList}
-                    FROM ${this.schemaAndTable} ${this.noLock}
-                    WHERE ${ld}${tsField}${rd} >= ${millis2dbFn(startTs)}
-                      AND ${ld}${tsField}${rd} <= ${millis2dbFn(endTs)}
-                    ORDER BY ${this.sortBy}`;
+               FROM ${this.schemaAndTable} ${this.noLock}
+               WHERE ${ld}${tsField}${rd} >= ${millis2dbFn(startTs)}
+                 AND ${ld}${tsField}${rd} <= ${millis2dbFn(endTs)}
+               ORDER BY ${this.sortBy}`;
     if (limit) {
       sql = this.limitIt(sql, limit);
     }
-    options.eventEmitter.emit('get-portion-of-data-sql', { sql, startTs, endTs, limit, dbInfo });
+    if (process.env.DUMP_PORTION_SQL) {
+      options.eventEmitter.emit('get-portion-of-data-sql', { sql, startTs, endTs, limit, dbInfo });
+    }
     const result = await this.query(sql);
+    if (process.env.DUMP_PORTION_SQL) {
+      options.eventEmitter.emit('get-portion-of-data-count', { sql, count: result?.[this.recordsetPropName]?.length });
+    }
     return result?.[this.recordsetPropName] || [];
   }
 }
