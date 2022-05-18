@@ -347,12 +347,11 @@ ${g}================================================================`;
     let endTs;
     if (this.isFirstLoad) {
       startTs = virtualTimeObj.virtualStartTs;
-      endTs = startTs + bufferLookAheadMs;
       this.isFirstLoad = false;
     } else {
-      startTs = Number(lastRecordTs);
-      endTs = virtualTimeObj.getVirtualTs() + bufferLookAheadMs;
+      startTs = lastRecordTs || virtualTimeObj.virtualStartTs;
     }
+    endTs = startTs + bufferLookAheadMs;
 
     if (startTs >= endTs) {
       return;
