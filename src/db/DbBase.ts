@@ -91,8 +91,9 @@ export class DbBase {
 
   async getPortionOfData ({ startTs, endTs, limit }: { startTs: number, endTs: number, limit: number }): Promise<TDbRecord[]> {
     const { options, tsField, ld, rd, options: { millis2dbFn }, dbInfo } = this;
+    //  ${this.noLock}
     let sql = `SELECT ${this.fieldsList}
-               FROM ${this.schemaAndTable} ${this.noLock}
+               FROM ${this.schemaAndTable}
                WHERE ${ld}${tsField}${rd} >= ${millis2dbFn(startTs)}
                  AND ${ld}${tsField}${rd} <= ${millis2dbFn(endTs)}
                ORDER BY ${this.sortBy}`;
