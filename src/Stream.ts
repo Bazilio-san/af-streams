@@ -38,7 +38,6 @@ export interface IStreamConstructorOptions {
   prepareEvent?: Function,
   tsFieldToMillis?: Function,
   millis2dbFn?: Function,
-  loadPortionFrom?: 'LAST_END' | 'LAST_RECORD_TS',
   testMode?: boolean,
 }
 
@@ -48,10 +47,6 @@ export class Stream {
   public readonly bufferLookAheadMs: number;
 
   public lastRecordTs: number;
-
-  public lastEndTs: number = 0;
-
-  public loadPortionFrom: 'LAST_END' | 'LAST_RECORD_TS' = 'LAST_RECORD_TS';
 
   private loopTimeMillis: number;
 
@@ -94,7 +89,7 @@ export class Stream {
   private maxBufferSize: number;
 
   constructor (options: IStreamConstructorOptions) {
-    const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0, loadPortionFrom } = options;
+    const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0 } = options;
     const { fetchIntervalSec, bufferMultiplier, src, maxBufferSize } = streamConfig;
     src.timezoneOfTsField = src.timezoneOfTsField || 'GMT';
     const zone = src.timezoneOfTsField;
@@ -125,10 +120,6 @@ export class Stream {
 
     this.sender = {} as ISender;
     this.db = {} as DbMsSql | DbPostgres;
-    this.lastRecordTs = 0;
-    if (loadPortionFrom === 'LAST_END') {
-      this.loadPortionFrom = 'LAST_END';
-    }
     this.lastRecordTs = 0;
 
     this.loopTimeMillis = getTimeParamMillis(loopTime);
@@ -162,7 +153,6 @@ export class Stream {
       this.recordsBuffer.flush();
       this.lastTimeRecords.flush();
       this.totalRowsSent = 0;
-      this.lastEndTs = 0;
       this.isFirstLoad = true;
     });
     this.isSilly = options.logger.isLevel('silly');
@@ -350,9 +340,7 @@ ${g}================================================================`;
   }
 
   async _loadNextPortion () {
-    const {
-      options, recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs, lastEndTs, isSilly, maxBufferSize,
-    } = this;
+    const { options, recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs, isSilly, maxBufferSize } = this;
     const virtualTimeObj = vtObj as VirtualTimeObj;
 
     let startTs;
@@ -363,9 +351,6 @@ ${g}================================================================`;
       this.isFirstLoad = false;
     } else {
       startTs = Number(lastRecordTs);
-      if (this.loadPortionFrom === 'LAST_END') {
-        startTs = Math.max(lastEndTs, startTs);
-      }
       endTs = virtualTimeObj.getVirtualTs() + bufferLookAheadMs;
     }
 
@@ -395,7 +380,6 @@ ${g}================================================================`;
         console.log(`================>>> recordset.length = ${recordset.length}`);
       }
       this._addPortionToBuffer(recordset);
-      this.lastEndTs = endTs;
       options.eventEmitter?.emit('after-load-next-portion', { startTs, endTs });
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
