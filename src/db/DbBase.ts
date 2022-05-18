@@ -29,18 +29,21 @@ export class DbBase {
   constructor (options: IDbConstructorOptions) {
     this.options = options;
     const { streamConfig, dbConfig } = options;
+    let host;
     if (dbConfig.dialect === 'mssql') {
       this.ld = '[';
       this.rd = ']';
       this.recordsetPropName = 'recordset';
       this.noLock = ' WITH(NOLOCK) ';
+      host = dbConfig.server;
     } else {
       this.ld = '"';
       this.rd = '"';
       this.recordsetPropName = 'rows';
+      ({ host } = dbConfig);
     }
     const { ld, rd } = this;
-    this.dbInfo = `${dbConfig.user}@${ld}${dbConfig.host}:${dbConfig.port}${rd}.${ld}${dbConfig.database}${rd}`;
+    this.dbInfo = `${dbConfig.user}@${ld}${host}:${dbConfig.port}${rd}.${ld}${dbConfig.database}${rd}`;
     const { fields, src } = streamConfig;
     const { schema, table, tsField, idFields } = src;
     if (Array.isArray(fields)) {
