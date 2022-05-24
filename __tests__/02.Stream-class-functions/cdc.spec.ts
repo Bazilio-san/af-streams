@@ -52,8 +52,8 @@ describe('Test CDC', () => {
         require('./case1/2-data-ltr.json'),
       ];
     });
-    test('test 1', () => {
-      stream._addPortionToBuffer(portions[0]);
+    test('test 1', async () => {
+      await stream._addPortionToBuffer(portions[0]);
       const [first, , , last] = portions[0];
 
       expect(stream.lastRecordTs).toEqual(+(new Date(last.tradetime)));
@@ -68,8 +68,8 @@ describe('Test CDC', () => {
       expect(resBuffer).toEqual(portions[0]);
     });
 
-    test('test 2', () => {
-      stream._addPortionToBuffer(portions[1]);
+    test('test 2', async () => {
+      await stream._addPortionToBuffer(portions[1]);
       const last = portions[1][6];
 
       expect(stream.lastRecordTs).toEqual(+(new Date(last.tradetime)));
@@ -84,8 +84,8 @@ describe('Test CDC', () => {
       expect(removeSymbolTsArr(resBuffer)).toEqual(expected[1]);
     });
 
-    test('test 3', () => {
-      stream._addPortionToBuffer(portions[2]);
+    test('test 3', async () => {
+      await stream._addPortionToBuffer(portions[2]);
       const last = portions[2][4];
 
       expect(stream.lastRecordTs).toEqual(+(new Date(last.tradetime)));
@@ -102,7 +102,7 @@ describe('Test CDC', () => {
   });
 
   describe('case2', () => {
-    test('test 1', () => {
+    test('test 1', async () => {
       const portions = [
         require('./case2/0-data.json'),
         require('./case2/1-data.json'),
@@ -110,9 +110,9 @@ describe('Test CDC', () => {
       ];
       const expected = require('./case2/2-expected.json');
       stream.recordsBuffer.flush();
-      stream._addPortionToBuffer(portions[0]);
-      stream._addPortionToBuffer(portions[1]);
-      stream._addPortionToBuffer(portions[2]);
+      await stream._addPortionToBuffer(portions[0]);
+      await stream._addPortionToBuffer(portions[1]);
+      await stream._addPortionToBuffer(portions[2]);
       const resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);
       expect(removeSymbolTsArr(resBuffer)).toEqual(expected);
     });
@@ -145,32 +145,32 @@ describe('Test CDC', () => {
       stream.recordsBuffer.flush();
     });
 
-    test('test 0', () => {
-      stream._addPortionToBuffer(portions[0]);
+    test('test 0', async () => {
+      await stream._addPortionToBuffer(portions[0]);
       expect(stream.lastTimeRecords.getLtr()).toEqual(ltr[0]);
 
       resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);
       expect(resBuffer).toEqual(expected[0]);
     });
 
-    test('test 1', () => {
-      stream._addPortionToBuffer(portions[1]);
+    test('test 1', async () => {
+      await stream._addPortionToBuffer(portions[1]);
       expect(stream.lastTimeRecords.getLtr()).toEqual(ltr[1]);
 
       resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);
       expect(resBuffer).toEqual(expected[1]);
     });
 
-    test('test 2', () => {
-      stream._addPortionToBuffer(portions[2]);
+    test('test 2', async () => {
+      await stream._addPortionToBuffer(portions[2]);
       expect(stream.lastTimeRecords.getLtr()).toEqual(ltr[2]);
 
       resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);
       expect(removeSymbolTsArr(resBuffer)).toEqual(expected[2]);
     });
 
-    test('test 3', () => {
-      stream._addPortionToBuffer(portions[3]);
+    test('test 3', async () => {
+      await stream._addPortionToBuffer(portions[3]);
       expect(stream.lastTimeRecords.getLtr()).toEqual(ltr[3]);
 
       resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);

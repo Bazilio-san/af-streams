@@ -2,6 +2,7 @@ import EventEmitter from 'events';
 import { DateTime } from 'luxon';
 import * as cron from 'cron';
 import { ToISOTimeOptions } from 'luxon/src/datetime';
+import { Promise } from 'mssql';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
@@ -285,7 +286,7 @@ ${g}================================================================`;
     return ' '.repeat(60);
   }
 
-  prepareEventsPacket (dbRecordOrRecordset: TDbRecord[]): TEventRecord[] {
+  async prepareEventsPacket (dbRecordOrRecordset: TDbRecord[]): Promise<TEventRecord[]> {
     const { options: { streamConfig: { src: { tsField } } }, prepareEvent, tsFieldToMillis } = this;
     if (!Array.isArray(dbRecordOrRecordset)) {
       if (!dbRecordOrRecordset || typeof dbRecordOrRecordset !== 'object') {
@@ -293,19 +294,20 @@ ${g}================================================================`;
       }
       dbRecordOrRecordset = [dbRecordOrRecordset];
     }
-    return dbRecordOrRecordset.map((record) => {
+
+    return Promise.all(dbRecordOrRecordset.map((record) => {
       record[TS_FIELD] = tsFieldToMillis(record[tsField]);
       return prepareEvent(record);
-    });
+    }));
   }
 
-  _addPortionToBuffer (recordset: TDbRecord[]) {
+  async _addPortionToBuffer (recordset: TDbRecord[]) {
     const { recordsBuffer, isSilly, loopTimeMillis } = this;
     const { length: loaded = 0 } = recordset;
     let skipped = 0;
     let toUse = loaded;
     if (loaded) {
-      const forBuffer = this.prepareEventsPacket(recordset);
+      const forBuffer = await this.prepareEventsPacket(recordset);
 
       if (loopTimeMillis) {
         const bias = Date.now() - this.virtualTimeObj.realStartTsLoopSafe;
@@ -374,7 +376,7 @@ ${g}================================================================`;
       if (recordset.length) {
         endTs = this.tsFieldToMillis(recordset[recordset.length - 1][options.streamConfig.src.tsField]);
       }
-      this._addPortionToBuffer(recordset);
+      await this._addPortionToBuffer(recordset);
       options.eventEmitter?.emit('after-load-next-portion', { startTs, endTs });
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
@@ -412,7 +414,7 @@ ${g}================================================================`;
 
   async _sendPacket (eventsPacket: TEventRecord[]): Promise<{ debugMessage: string, isError?: boolean }> {
     const { sender, sessionId, isDebug, options: { eventEmitter, logger, streamConfig: { streamId } } } = this;
-    return new Promise((resolve) => {
+    return new Promise((resolve: Function) => {
       let debugMessage = '';
 
       setTimeout(() => {
