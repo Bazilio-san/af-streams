@@ -177,7 +177,7 @@ export class Stream {
 
     let { speed } = options;
     if (/^[\d.]+$/.test(String(speed))) {
-      speed = Math.min(Math.max(0.2, parseFloat(String(speed))), 500);
+      speed = Math.min(Math.max(0.2, parseFloat(String(speed))), 5000);
     } else {
       speed = 1;
     }
