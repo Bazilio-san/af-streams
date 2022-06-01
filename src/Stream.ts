@@ -59,11 +59,15 @@ export class Stream {
 
   public virtualTimeObj: VirtualTimeObj;
 
+  public readonly options: IStreamConstructorOptions;
+
+  public sender: ISender;
+
   private sendTimer: any;
 
   private readonly sendInterval: number;
 
-  private sessionId: string;
+  public readonly sessionId: string = `sid${+(new Date())}`;
 
   private totalRowsSent: number;
 
@@ -77,11 +81,7 @@ export class Stream {
 
   private isDebug: boolean;
 
-  private readonly options: IStreamConstructorOptions;
-
   private db: DbMsSql | DbPostgres;
-
-  private sender: ISender;
 
   private initialized: boolean = false;
 
@@ -146,7 +146,6 @@ export class Stream {
 
     this.sendTimer = null;
     this.sendInterval = 10; // ms
-    this.sessionId = `sid${+(new Date())}`;
     this.totalRowsSent = 0;
     this.busy = 0;
     options.eventEmitter?.on('virtual-time-loop-back', () => {
