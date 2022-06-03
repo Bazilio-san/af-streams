@@ -90,7 +90,7 @@ export class DbBase {
   }
 
   async getPortionOfData ({ startTs, endTs, limit }: { startTs: number, endTs: number, limit: number }): Promise<TDbRecord[]> {
-    const { options, tsField, ld, rd, options: { millis2dbFn }, dbInfo } = this;
+    const { tsField, ld, rd, options: { millis2dbFn, eventEmitter, streamConfig: { streamId } }, dbInfo } = this;
     //  ${this.noLock}
     let sql = `SELECT ${this.fieldsList}
                FROM ${this.schemaAndTable}
@@ -101,11 +101,11 @@ export class DbBase {
       sql = this.limitIt(sql, limit);
     }
     if (process.env.DUMP_PORTION_SQL) {
-      options.eventEmitter.emit('get-portion-of-data-sql', { sql, startTs, endTs, limit, dbInfo });
+      eventEmitter.emit('get-portion-of-data-sql', { streamId, sql, startTs, endTs, limit, dbInfo });
     }
     const result = await this.query(sql);
     if (process.env.DUMP_PORTION_SQL) {
-      options.eventEmitter.emit('get-portion-of-data-count', { sql, count: result?.[this.recordsetPropName]?.length });
+      eventEmitter.emit('get-portion-of-data-count', { streamId, sql, count: result?.[this.recordsetPropName]?.length });
     }
     return result?.[this.recordsetPropName] || [];
   }

@@ -39,12 +39,14 @@ class EmitterSender extends AbstractSender {
     recordsComposite.sentBufferLength = pl;
     recordsComposite.sendCount = pl;
     recordsComposite.last = packet[pl - 1];
+
+    const { eventEmitter, emitId, options: { streamConfig: { streamId } } } = this;
     if (this.emitSingleEvent) {
       packet.eventsPacket.forEach((event: TEventRecord) => {
-        this.eventEmitter.emit(this.emitId, event);
+        eventEmitter.emit(emitId, { streamId, event });
       });
     } else {
-      this.eventEmitter.emit(this.emitId, packet);
+      eventEmitter.emit(emitId, { streamId, packet });
     }
     return true;
   }

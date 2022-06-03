@@ -63,15 +63,6 @@ export interface ISenderConfig {
   emitId?: string,
 }
 
-export interface ISenderConstructorOptions {
-  senderConfig: ISenderConfig,
-  serviceName: string,
-  logger: ILoggerEx,
-  echo: IEcho,
-  exitOnError: Function,
-  eventEmitter: EventEmitter,
-}
-
 export interface ISender {
   sendEvents: Function,
   connect: Function
@@ -169,6 +160,16 @@ export interface IStreamConfig {
   }
   fields: TFields,
   printInfoIntervalSec?: number,
+}
+
+export interface ISenderConstructorOptions {
+  streamConfig: IStreamConfig,
+  senderConfig: ISenderConfig,
+  serviceName: string,
+  logger: ILoggerEx,
+  echo: IEcho,
+  exitOnError: Function,
+  eventEmitter: EventEmitter,
 }
 
 export interface IDbConstructorOptions {

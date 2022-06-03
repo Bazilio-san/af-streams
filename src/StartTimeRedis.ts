@@ -34,9 +34,9 @@ export class StartTimeRedis {
     });
     const streamKey = getStreamKey(options.streamId);
     this.streamKey = streamKey;
-    options.eventEmitter.on('save-last-ts', async (ts: number) => {
+    options.eventEmitter.on('save-last-ts', async ({ lastTs }: { streamId: string, lastTs: number }) => {
       const redisClient = await this.getRedisClient();
-      redisClient?.set(streamKey, ts).catch((err: Error | any) => {
+      redisClient?.set(streamKey, lastTs).catch((err: Error | any) => {
         options.logger.error(err);
       });
     });

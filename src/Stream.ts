@@ -182,6 +182,7 @@ export class Stream {
     }
 
     const senderConstructorOptions: ISenderConstructorOptions = {
+      streamConfig,
       senderConfig,
       serviceName,
       echo,
@@ -340,6 +341,7 @@ ${g}================================================================`;
 
   async _loadNextPortion () {
     const { options, recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs, isSilly, maxBufferSize } = this;
+    const { streamConfig: { streamId } } = options;
     const virtualTimeObj = vtObj as VirtualTimeObj;
 
     let startTs;
@@ -370,13 +372,13 @@ ${g}================================================================`;
       } from: ${m}${millis2iso(startTs)}${rs} to ${m}${millis2iso(endTs)}${rs}`);
     }
     try {
-      options.eventEmitter?.emit('before-load-next-portion', { startTs, endTs });
+      options.eventEmitter?.emit('before-load-next-portion', { streamId, startTs, endTs });
       const recordset = await this.db.getPortionOfData({ startTs, endTs, limit });
       if (recordset.length) {
         endTs = this.tsFieldToMillis(recordset[recordset.length - 1][options.streamConfig.src.tsField]);
       }
       await this._addPortionToBuffer(recordset);
-      options.eventEmitter?.emit('after-load-next-portion', { startTs, endTs });
+      options.eventEmitter?.emit('after-load-next-portion', { streamId, startTs, endTs });
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
       options.exitOnError(err);
@@ -433,7 +435,7 @@ ${g}================================================================`;
           const { last, sendCount = 0, sentBufferLength } = recordsComposite;
           const lastTs = last?.[TS_FIELD];
           if (lastTs) {
-            eventEmitter.emit('save-last-ts', lastTs);
+            eventEmitter.emit('save-last-ts', { streamId, lastTs });
           }
           this.totalRowsSent += sendCount;
           if (isDebug) {
