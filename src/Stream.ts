@@ -209,17 +209,8 @@ export class Stream {
       logger,
     };
     const startTimeRedis = new StartTimeRedis(startTimeRedisOptions);
-    const { isUsedSavedStartTime, startTime } = await startTimeRedis.getStartTime();
 
-    const info = `${g}========================== [AF STREAM] =========================
-${g}Time field TZ:         ${m}${timezoneOfTsField}
-${g}Start from beginning:  ${m}${useStartTimeFromRedisCache ? 'NOT' : 'YES'}
-${g}Start time:            ${m}${millis2iso(startTime)}${isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
-${g}Speed:                 ${m}${speed}x
-${g}Cyclicity:             ${m}${loopTimeMillis ? `${loopTimeMillis / 1000} sec` : '-'}
-${g}Db polling frequency:  ${m}${fetchIntervalSec} sec
-${g}================================================================`;
-    echo(info);
+    const { isUsedSavedStartTime, startTime } = await startTimeRedis.getStartTime();
 
     const virtualTimeObjOptions: IVirtualTimeObjOptions = {
       startTime,
@@ -229,6 +220,17 @@ ${g}================================================================`;
       exitOnError,
     };
     this.virtualTimeObj = getVirtualTimeObj(virtualTimeObjOptions);
+
+    const eqFill = '='.repeat(Math.max(1, (36 - streamId.length) / 2));
+    const info = `${g}${eqFill} [@bazilio-san/af-stream: ${streamId}] ${eqFill}
+${g}Time field TZ:         ${m}${timezoneOfTsField}
+${g}Start from beginning:  ${m}${useStartTimeFromRedisCache ? 'NOT' : 'YES'}
+${g}Start time:            ${m}${millis2iso(startTime)}${isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
+${g}Speed:                 ${m}${this.virtualTimeObj.speed}x
+${g}Cyclicity:             ${m}${loopTimeMillis ? `${loopTimeMillis / 1000} sec` : '-'}
+${g}Db polling frequency:  ${m}${fetchIntervalSec} sec
+${g}================================================================`;
+    echo(info);
 
     if (!testMode) {
       const dbConstructorOptions: IDbConstructorOptions = {

@@ -5,7 +5,7 @@ import CallbackSender from './CallbackSender';
 import ConsoleSender from './ConsoleSender';
 import EmitterSender from './EmitterSender';
 
-let sender: ISender;
+const sendersCache: { [streamId: string]: ISender } = {};
 
 const accessPointTimeOutMillis = 10_000;
 const checkAccessPointAvailability = async (options: ISenderConstructorOptions) => {
@@ -17,6 +17,8 @@ const checkAccessPointAvailability = async (options: ISenderConstructorOptions) 
 };
 
 const getSender = async (options: ISenderConstructorOptions) => {
+  const { streamId } = options.streamConfig;
+  let sender = sendersCache[streamId];
   if (sender) {
     return sender;
   }
@@ -43,6 +45,7 @@ const getSender = async (options: ISenderConstructorOptions) => {
     default:
       sender = new ConsoleSender(options);
   }
+  sendersCache[streamId] = sender;
   return sender;
 };
 
