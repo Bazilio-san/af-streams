@@ -304,7 +304,7 @@ ${g}================================================================`;
   }
 
   async _addPortionToBuffer (recordset: TDbRecord[]) {
-    const { recordsBuffer, isSilly, loopTimeMillis } = this;
+    const { recordsBuffer, isSilly, loopTimeMillis, options } = this;
     const { length: loaded = 0 } = recordset;
     let skipped = 0;
     let toUse = loaded;
@@ -321,7 +321,8 @@ ${g}================================================================`;
 
       const lastRecordTsBeforeCheck = forBuffer[forBuffer.length - 1][TS_FIELD];
 
-      this.lastTimeRecords.subtractLastTimeRecords(forBuffer);
+      const subtractedLastTimeRecords = this.lastTimeRecords.subtractLastTimeRecords(forBuffer);
+      options.eventEmitter?.emit('subtracted-last-time-records', subtractedLastTimeRecords);
 
       toUse = forBuffer.length;
       if (toUse !== loaded) {
@@ -330,7 +331,8 @@ ${g}================================================================`;
       if (toUse) {
         recordsBuffer.add(forBuffer);
         this.lastRecordTs = recordsBuffer.lastTs;
-        this.lastTimeRecords.fillLastTimeRecords(this.recordsBuffer.buffer);
+        const currentLastTimeRecords = this.lastTimeRecords.fillLastTimeRecords(this.recordsBuffer.buffer);
+        options.eventEmitter?.emit('current-last-time-records', currentLastTimeRecords);
       } else {
         this.lastRecordTs = lastRecordTsBeforeCheck + 1;
       }

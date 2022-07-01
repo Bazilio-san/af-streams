@@ -1,4 +1,5 @@
 import { TS_FIELD } from './constants';
+import { TDbRecord } from './interfaces';
 
 export class LastTimeRecords {
   private idFields: string[];
@@ -24,9 +25,10 @@ export class LastTimeRecords {
     }
   }
 
-  fillLastTimeRecords (rb: any[]) {
+  fillLastTimeRecords (rb: any[]): TDbRecord[] {
+    let currentLastTimeRecords: TDbRecord[] = [];
     if (!rb.length) {
-      return;
+      return currentLastTimeRecords;
     }
     let index = rb.length;
     const { lastTs } = this;
@@ -39,20 +41,35 @@ export class LastTimeRecords {
     while (index > -1 && rb[--index]?.[TS_FIELD] === ts) {
       this.set.add(this.getKey(rb[index]));
     }
+    currentLastTimeRecords = [...this.set].map((r) => {
+      const info = { [TS_FIELD]: r[TS_FIELD] };
+      this.idFields.forEach((fName) => {
+        info[fName] = r[fName];
+      });
+      return info;
+    });
+    return currentLastTimeRecords;
   }
 
-  subtractLastTimeRecords (forBuffer: any[]) {
+  subtractLastTimeRecords (forBuffer: any[]): TDbRecord[] {
     const { lastTs, set } = this;
+    const subtractedLastTimeRecords: TDbRecord[] = [];
     if (!set.size || !forBuffer.length) {
-      return;
+      return subtractedLastTimeRecords;
     }
     let index = -1;
     while (forBuffer[++index]?.[TS_FIELD] === lastTs) {
       if (set.has(this.getKey(forBuffer[index]))) {
-        forBuffer.splice(index, 1);
+        const removedRecord = forBuffer.splice(index, 1);
+        const info = { [TS_FIELD]: removedRecord[TS_FIELD] };
+        this.idFields.forEach((fName) => {
+          info[fName] = removedRecord[fName];
+        });
+        subtractedLastTimeRecords.push(info);
         index--;
       }
     }
+    return subtractedLastTimeRecords;
   }
 
   getLtr () {
