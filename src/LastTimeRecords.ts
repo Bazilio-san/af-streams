@@ -4,7 +4,7 @@ import { TDbRecord } from './interfaces';
 export class LastTimeRecords {
   private idFields: string[];
 
-  private set: Set<any>;
+  private set: Set<string>;
 
   private lastTs: number | null;
 
@@ -19,14 +19,12 @@ export class LastTimeRecords {
     this.lastTs = ts;
   }
 
-  getKey (bufferRecord: any) {
-    if (bufferRecord) {
-      return this.idFields.map((fieldName) => bufferRecord[fieldName]).join('|');
-    }
+  getKey (bufferRecord: any): string {
+    return bufferRecord ? this.idFields.map((fieldName) => bufferRecord[fieldName]).join('|') : '';
   }
 
-  fillLastTimeRecords (rb: any[]): TDbRecord[] {
-    let currentLastTimeRecords: TDbRecord[] = [];
+  fillLastTimeRecords (rb: any[]): string[] {
+    const currentLastTimeRecords: string[] = [];
     if (!rb.length) {
       return currentLastTimeRecords;
     }
@@ -39,16 +37,12 @@ export class LastTimeRecords {
       this.flush(ts);
     }
     while (index > -1 && rb[--index]?.[TS_FIELD] === ts) {
-      this.set.add(this.getKey(rb[index]));
+      const key = this.getKey(rb[index]);
+      if (key) {
+        this.set.add(key);
+      }
     }
-    currentLastTimeRecords = [...this.set].map((r) => {
-      const info = { [TS_FIELD]: r[TS_FIELD] };
-      this.idFields.forEach((fName) => {
-        info[fName] = r[fName];
-      });
-      return info;
-    });
-    return currentLastTimeRecords;
+    return [...this.set];
   }
 
   subtractLastTimeRecords (forBuffer: any[]): TDbRecord[] {
@@ -59,7 +53,8 @@ export class LastTimeRecords {
     }
     let index = -1;
     while (forBuffer[++index]?.[TS_FIELD] === lastTs) {
-      if (set.has(this.getKey(forBuffer[index]))) {
+      const key = this.getKey(forBuffer[index]);
+      if (key && set.has(this.getKey(forBuffer[index]))) {
         const removedRecord = forBuffer.splice(index, 1);
         const info = { [TS_FIELD]: removedRecord[TS_FIELD] };
         this.idFields.forEach((fName) => {
