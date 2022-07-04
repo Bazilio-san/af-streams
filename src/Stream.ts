@@ -18,7 +18,7 @@ import {
 import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
 import getSender from './sender/get-sender';
-import { TS_FIELD } from './constants';
+import { DEBUG_LNP, DEBUG_LTR, TS_FIELD } from './constants';
 
 export interface IStreamConstructorOptions {
   streamConfig: IStreamConfig,
@@ -305,6 +305,7 @@ ${g}================================================================`;
 
   async _addPortionToBuffer (recordset: TDbRecord[]) {
     const { recordsBuffer, isSilly, loopTimeMillis, options } = this;
+    const { streamConfig: { streamId } } = options;
     const { length: loaded = 0 } = recordset;
     let skipped = 0;
     let toUse = loaded;
@@ -322,7 +323,9 @@ ${g}================================================================`;
       const lastRecordTsBeforeCheck = forBuffer[forBuffer.length - 1][TS_FIELD];
 
       const subtractedLastTimeRecords = this.lastTimeRecords.subtractLastTimeRecords(forBuffer);
-      options.eventEmitter?.emit('subtracted-last-time-records', subtractedLastTimeRecords);
+      if (DEBUG_LTR) {
+        options.eventEmitter?.emit('subtracted-last-time-records', { streamId, subtractedLastTimeRecords });
+      }
 
       toUse = forBuffer.length;
       if (toUse !== loaded) {
@@ -332,13 +335,15 @@ ${g}================================================================`;
         recordsBuffer.add(forBuffer);
         this.lastRecordTs = recordsBuffer.lastTs;
         const currentLastTimeRecords = this.lastTimeRecords.fillLastTimeRecords(this.recordsBuffer.buffer);
-        options.eventEmitter?.emit('current-last-time-records', currentLastTimeRecords);
+        if (DEBUG_LTR) {
+          options.eventEmitter?.emit('current-last-time-records', { streamId, currentLastTimeRecords });
+        }
       } else {
         this.lastRecordTs = lastRecordTsBeforeCheck + 1;
       }
     }
     if (isSilly) {
-      this.options.echo(`${lBlue}${this.options.streamConfig.streamId}${rs} vt: ${this.virtualTimeObj.getString()
+      options.echo(`${lBlue}${this.options.streamConfig.streamId}${rs} vt: ${this.virtualTimeObj.getString()
       } loaded/skipped/used: ${lm}${loaded}${blue}/${lc}${skipped}${blue}/${g}${toUse}${rs}`);
     }
   }
@@ -376,13 +381,17 @@ ${g}================================================================`;
       } from: ${m}${millis2iso(startTs)}${rs} to ${m}${millis2iso(endTs)}${rs}`);
     }
     try {
-      options.eventEmitter?.emit('before-load-next-portion', { streamId, startTs, endTs });
+      if (DEBUG_LNP) {
+        options.eventEmitter?.emit('before-load-next-portion', { streamId, startTs, endTs });
+      }
       const recordset = await this.db.getPortionOfData({ startTs, endTs, limit });
       if (recordset.length) {
         endTs = this.tsFieldToMillis(recordset[recordset.length - 1][options.streamConfig.src.tsField]);
       }
       await this._addPortionToBuffer(recordset);
-      options.eventEmitter?.emit('after-load-next-portion', { streamId, startTs, endTs });
+      if (DEBUG_LNP) {
+        options.eventEmitter?.emit('after-load-next-portion', { streamId, endTs, lastRecordTs: this.lastRecordTs, last: recordsBuffer.last });
+      }
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
       options.exitOnError(err);

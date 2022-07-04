@@ -1,5 +1,6 @@
 /* eslint-disable class-methods-use-this */
 import { IDbConstructorOptions, TDbRecord } from '../interfaces';
+import { DEBUG_SQL } from '../constants';
 
 export class DbBase {
   public readonly options: IDbConstructorOptions;
@@ -100,11 +101,11 @@ export class DbBase {
     if (limit) {
       sql = this.limitIt(sql, limit);
     }
-    if (process.env.DUMP_PORTION_SQL) {
+    if (DEBUG_SQL) {
       eventEmitter.emit('get-portion-of-data-sql', { streamId, sql, startTs, endTs, limit, dbInfo });
     }
     const result = await this.query(sql);
-    if (process.env.DUMP_PORTION_SQL) {
+    if (DEBUG_SQL) {
       eventEmitter.emit('get-portion-of-data-count', { streamId, sql, count: result?.[this.recordsetPropName]?.length });
     }
     return result?.[this.recordsetPropName] || [];

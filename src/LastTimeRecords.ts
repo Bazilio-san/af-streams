@@ -1,4 +1,4 @@
-import { TS_FIELD } from './constants';
+import { DEBUG_LTR, TS_FIELD } from './constants';
 import { TDbRecord } from './interfaces';
 
 export class LastTimeRecords {
@@ -50,7 +50,9 @@ export class LastTimeRecords {
       if (key) {
         this.set.add(key);
         // For debug
-        currentLastTimeRecords.push(this.getInfo4debug(bufferRecord));
+        if (DEBUG_LTR) {
+          currentLastTimeRecords.push(this.getInfo4debug(bufferRecord));
+        }
       }
     }
     return currentLastTimeRecords;
@@ -67,7 +69,9 @@ export class LastTimeRecords {
       const key = this.getKey(forBuffer[index]);
       if (key && set.has(key)) {
         const removedRecord = forBuffer.splice(index, 1);
-        subtractedLastTimeRecords.push(this.getInfo4debug(removedRecord));
+        if (DEBUG_LTR) {
+          subtractedLastTimeRecords.push(this.getInfo4debug(removedRecord));
+        }
         index--;
       }
     }
