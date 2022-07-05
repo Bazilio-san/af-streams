@@ -390,7 +390,7 @@ ${g}================================================================`;
       }
       await this._addPortionToBuffer(recordset);
       if (DEBUG_LNP) {
-        options.eventEmitter?.emit('after-load-next-portion', { streamId, endTs, lastRecordTs: this.lastRecordTs, last: recordsBuffer.last });
+        options.eventEmitter?.emit('after-load-next-portion', { streamId, startTs, endTs, lastRecordTs: this.lastRecordTs, last: recordsBuffer.last });
       }
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
