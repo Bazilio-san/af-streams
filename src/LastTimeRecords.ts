@@ -25,6 +25,9 @@ export class LastTimeRecords {
   }
 
   private getInfo4debug (bufferRecord: any): TDbRecord {
+    if (!bufferRecord?.[TS_FIELD]) {
+      return {};
+    }
     const ts = bufferRecord[TS_FIELD];
     const info: TDbRecord = { ts, tsISO: millis2isoZ(ts) };
     this.idFields.forEach((fName) => {
@@ -72,7 +75,7 @@ export class LastTimeRecords {
       if (key && set.has(key)) {
         const removedRecord = forBuffer.splice(index, 1);
         if (DEBUG_LTR) {
-          subtractedLastTimeRecords.push(this.getInfo4debug(removedRecord));
+          subtractedLastTimeRecords.push(this.getInfo4debug(removedRecord?.[0]));
         }
         index--;
       }
