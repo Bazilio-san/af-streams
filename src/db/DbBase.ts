@@ -90,9 +90,8 @@ export class DbBase {
     return strSQL;
   }
 
-  async getPortionOfData ({ startTs, endTs, limit }: { startTs: number, endTs: number, limit: number }): Promise<TDbRecord[]> {
-    const { tsField, ld, rd, options: { millis2dbFn, eventEmitter, streamConfig: { streamId } }, dbInfo } = this;
-    //  ${this.noLock}
+  getPortionSQL ({ startTs, endTs, limit }: { startTs: number, endTs: number, limit: number }): string {
+    const { tsField, ld, rd, options: { millis2dbFn } } = this;
     let sql = `SELECT ${this.fieldsList}
                FROM ${this.schemaAndTable}
                WHERE ${ld}${tsField}${rd} >= ${millis2dbFn(startTs)}
@@ -101,6 +100,12 @@ export class DbBase {
     if (limit) {
       sql = this.limitIt(sql, limit);
     }
+    return sql;
+  }
+
+  async getPortionOfData ({ startTs, endTs, limit }: { startTs: number, endTs: number, limit: number }): Promise<TDbRecord[]> {
+    const { options: { eventEmitter, streamConfig: { streamId } }, dbInfo } = this;
+    const sql = this.getPortionSQL({ startTs, endTs, limit });
     if (DEBUG_SQL) {
       eventEmitter.emit('get-portion-of-data-sql', { streamId, sql, startTs, endTs, limit, dbInfo });
     }
