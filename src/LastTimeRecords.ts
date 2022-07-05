@@ -1,5 +1,6 @@
 import { DEBUG_LTR, TS_FIELD } from './constants';
 import { TDbRecord } from './interfaces';
+import { millis2isoZ } from './utils/utils';
 
 export class LastTimeRecords {
   private idFields: string[];
@@ -24,7 +25,8 @@ export class LastTimeRecords {
   }
 
   private getInfo4debug (bufferRecord: any): TDbRecord {
-    const info: TDbRecord = { [TS_FIELD]: bufferRecord[TS_FIELD] };
+    const ts = bufferRecord[TS_FIELD];
+    const info: TDbRecord = { ts, tsISO: millis2isoZ(ts) };
     this.idFields.forEach((fName) => {
       info[fName] = bufferRecord[fName];
     });

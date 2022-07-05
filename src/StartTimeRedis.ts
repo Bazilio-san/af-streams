@@ -3,7 +3,7 @@ import EventEmitter from 'events';
 import { createClient, RedisClientType, RedisDefaultModules, RedisModules, RedisScripts } from 'redis';
 import { DateTime } from 'luxon';
 import { RedisFunctions } from '@redis/client';
-import { getStreamKey, getTimeParamMillis, timeParamRE } from './utils/utils';
+import { getStreamKey, getTimeParamMillis, millis2iso, timeParamRE } from './utils/utils';
 import { ILoggerEx } from './interfaces';
 
 export interface IStartTimeRedisOptions {
@@ -75,9 +75,7 @@ export class StartTimeRedis {
       this.options.logger.error(`Cache stored data is not a unix timestamp: ${startTime}`);
       return 0;
     }
-    this.options.logger.info(`Get time of last sent entry: ${
-      DateTime.fromMillis(startTime).toISO({ includeOffset: true })
-    } from the Redis cache using key ${this.streamKey}`);
+    this.options.logger.info(`Get time of last sent entry: ${millis2iso(startTime, { includeOffset: true })} from the Redis cache using key ${this.streamKey}`);
     return startTime;
   }
 

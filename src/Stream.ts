@@ -1,13 +1,12 @@
 import EventEmitter from 'events';
 import { DateTime } from 'luxon';
 import * as cron from 'cron';
-import { ToISOTimeOptions } from 'luxon/src/datetime';
 import { Promise } from 'mssql';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
 import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
-import { getTimeParamMillis, padL } from './utils/utils';
+import { getTimeParamMillis, millis2iso, padL } from './utils/utils';
 import getDb from './db/db';
 import {
   blue, bold, boldOff, c, g, lBlue, lc, lm, m, rs, y,
@@ -41,8 +40,6 @@ export interface IStreamConstructorOptions {
   millis2dbFn?: Function,
   testMode?: boolean,
 }
-
-const millis2iso = (millis: number, options?: ToISOTimeOptions): string => DateTime.fromMillis(millis).toISO(options);
 
 export class Stream {
   public readonly bufferLookAheadMs: number;

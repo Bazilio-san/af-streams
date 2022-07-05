@@ -1,8 +1,8 @@
-import { DateTime } from 'luxon';
 import EventEmitter from 'events';
 import { IEcho } from './interfaces';
 import { c, rs } from './utils/color';
 import { MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
+import { millis2iso } from './utils/utils';
 
 export interface IVirtualTimeObjOptions {
   startTime: number, // timestamp millis
@@ -118,7 +118,7 @@ export class VirtualTimeObj {
   }
 
   getString () {
-    return `${c}<${DateTime.fromMillis(this.getVirtualTs()).toISO()}${this.isCurrentTime ? '*' : ''}>${rs}`;
+    return `${c}<${millis2iso(this.getVirtualTs())}${this.isCurrentTime ? '*' : ''}>${rs}`;
   }
 }
 

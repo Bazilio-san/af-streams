@@ -1,5 +1,7 @@
 import * as os from 'os';
 import * as crypto from 'crypto';
+import { ToISOTimeOptions } from 'luxon/src/datetime';
+import { DateTime } from 'luxon';
 
 let instanceKey: string;
 
@@ -90,6 +92,12 @@ export const getTimeParamMillis = (val: string | number): number => {
   }
   return sec * 1000;
 };
+
+// 2022-05-15T16:56:42.349Z
+export const millis2isoZ = (millis: number, options?: ToISOTimeOptions): string => DateTime.fromMillis(millis).setZone('UTC').toISO(options);
+
+// 2022-05-15T19:56:42.349+03:00
+export const millis2iso = (millis: number, options?: ToISOTimeOptions): string => DateTime.fromMillis(millis).toISO(options);
 
 /*
 export const getBool = (v: any): boolean => {
