@@ -46,13 +46,9 @@ export class Stream {
 
   public lastRecordTs: number;
 
-  private loopTimeMillis: number;
-
   public recordsBuffer: RecordsBuffer;
 
   public lastTimeRecords: LastTimeRecords;
-
-  private busy: number;
 
   public virtualTimeObj: VirtualTimeObj;
 
@@ -60,11 +56,17 @@ export class Stream {
 
   public sender: ISender;
 
+  public readonly sessionId: string = `sid${+(new Date())}`;
+
+  public db: DbMsSql | DbPostgres;
+
+  private loopTimeMillis: number;
+
+  private busy: number;
+
   private sendTimer: any;
 
   private readonly sendInterval: number;
-
-  public readonly sessionId: string = `sid${+(new Date())}`;
 
   private totalRowsSent: number;
 
@@ -77,8 +79,6 @@ export class Stream {
   private isSilly: boolean;
 
   private isDebug: boolean;
-
-  private db: DbMsSql | DbPostgres;
 
   private initialized: boolean = false;
 
