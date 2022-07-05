@@ -36,7 +36,6 @@ export interface IStreamConstructorOptions {
   speed?: number,
   loopTime?: string | number,
   prepareEvent?: Function,
-  sortEvents?: (a: any, b: any) => number,
   tsFieldToMillis?: Function,
   millis2dbFn?: Function,
   testMode?: boolean,
@@ -75,8 +74,6 @@ export class Stream {
 
   private readonly prepareEvent: Function;
 
-  private readonly sortEvents: ((a: any, b: any) => number) | undefined;
-
   private readonly millis2dbFn: Function;
 
   private isSilly: boolean;
@@ -90,7 +87,7 @@ export class Stream {
   private maxBufferSize: number;
 
   constructor (options: IStreamConstructorOptions) {
-    const { streamConfig, prepareEvent, sortEvents, tsFieldToMillis, millis2dbFn, loopTime = 0 } = options;
+    const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0 } = options;
     const { fetchIntervalSec, bufferMultiplier, src, maxBufferSize } = streamConfig;
     src.timezoneOfTsField = src.timezoneOfTsField || 'GMT';
     const zone = src.timezoneOfTsField;
@@ -110,8 +107,6 @@ export class Stream {
     this.prepareEvent = typeof prepareEvent === 'function'
       ? prepareEvent.bind(this)
       : (dbRecord: TDbRecord) => dbRecord;
-
-    this.sortEvents = sortEvents;
 
     this.millis2dbFn = typeof millis2dbFn === 'function'
       ? millis2dbFn.bind(this)
@@ -299,14 +294,10 @@ ${g}================================================================`;
       dbRecordOrRecordset = [dbRecordOrRecordset];
     }
 
-    const eventsPacket = await Promise.all(dbRecordOrRecordset.map((record) => {
+    return Promise.all(dbRecordOrRecordset.map((record) => {
       record[TS_FIELD] = tsFieldToMillis(record[tsField]);
       return prepareEvent(record);
     }));
-    if (this.sortEvents) {
-      eventsPacket.sort(this.sortEvents);
-    }
-    return eventsPacket;
   }
 
   async _addPortionToBuffer (recordset: TDbRecord[]) {
