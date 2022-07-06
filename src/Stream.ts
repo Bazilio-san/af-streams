@@ -374,7 +374,7 @@ ${g}================================================================`;
     }
 
     if (isSilly) {
-      options.echo(`${c}_loadNextPortion()${rs} vt: ${m}${this.virtualTimeObj.getString()}${rs
+      options.echo(`${c}_loadNextPortion()${rs} vt: ${m}${virtualTimeObj.getString()}${rs
       } from: ${m}${millis2iso(startTs)}${rs} to ${m}${millis2iso(endTs)}${rs}`);
     }
     try {
@@ -387,7 +387,14 @@ ${g}================================================================`;
       }
       await this._addPortionToBuffer(recordset);
       if (DEBUG_LNP) {
-        options.eventEmitter?.emit('after-load-next-portion', { streamId, startTs, endTs, lastRecordTs: this.lastRecordTs, last: recordsBuffer.last });
+        options.eventEmitter?.emit('after-load-next-portion', {
+          streamId,
+          startTs,
+          endTs,
+          lastRecordTs: this.lastRecordTs,
+          last: recordsBuffer.last,
+          vt: virtualTimeObj.getVirtualTs(),
+        });
       }
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
