@@ -3,7 +3,7 @@ export { LastTimeRecords } from './LastTimeRecords';
 export { RecordsBuffer } from './RecordsBuffer';
 export { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
 export { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
-export { TDbRecord, TEventRecord, IDbConfig, TSlot } from './interfaces';
+export { TDbRecord, TEventRecord, IDbConfig, TSlot, IVirtualDateChanged, IVirtualHourChanged } from './interfaces';
 export {
   getTimeParamMillis,
   timeParamRE,
