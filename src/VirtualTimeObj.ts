@@ -1,5 +1,5 @@
 import EventEmitter from 'events';
-import { IEcho } from './interfaces';
+import { IEcho, IEmVirtualDateChanged, IEmVirtualHourChanged } from './interfaces';
 import { c, rs } from './utils/color';
 import { MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
 import { millis2iso } from './utils/utils';
@@ -62,32 +62,34 @@ export class VirtualTimeObj {
     };
   }
 
-  setVirtualNumbers (vt: number) {
+  setVirtualNumbers (vt: number): number {
     const { prevVirtualDateNumber: pvd, prevVirtualHourNumber: pvh } = this;
     this.prevVirtualDateNumber = Math.floor(vt / MILLIS_IN_DAY);
     if (pvd && pvd < this.prevVirtualDateNumber) {
-      this.eventEmitter.emit('virtual-date-changed', {
+      const payload: IEmVirtualDateChanged = {
         prevN: pvd,
         currN: this.prevVirtualDateNumber,
         prevTs: pvd * MILLIS_IN_DAY,
         currTs: this.prevVirtualDateNumber * MILLIS_IN_DAY,
-      });
+      };
+      this.eventEmitter.emit('virtual-date-changed', payload);
     }
     this.prevVirtualHourNumber = Math.floor(vt / MILLIS_IN_HOUR);
     if (pvh && pvh !== this.prevVirtualHourNumber) {
-      this.eventEmitter.emit('virtual-hour-changed', {
+      const payload: IEmVirtualHourChanged = {
         prevN: pvh,
         currN: this.prevVirtualHourNumber,
         prevHZ: pvh % 24,
         currHZ: this.prevVirtualHourNumber % 24,
         prevTs: pvh * MILLIS_IN_HOUR,
         currTs: this.prevVirtualHourNumber * MILLIS_IN_HOUR,
-      });
+      };
+      this.eventEmitter.emit('virtual-hour-changed', payload);
     }
     return vt;
   }
 
-  getVirtualTs () {
+  getVirtualTs (): number {
     const now = Date.now();
     const { isCurrentTime, virtualStartTs, realStartTs, speed, loopTimeMillis, loopTimeMillsEnd } = this;
     if (isCurrentTime) {
@@ -112,12 +114,12 @@ export class VirtualTimeObj {
     return this.setVirtualNumbers(vt);
   }
 
-  setReady () {
+  setReady (): void {
     this.realStartTs = Date.now();
     this.ready = true;
   }
 
-  getString () {
+  getString (): string {
     return `${c}<${millis2iso(this.getVirtualTs())}${this.isCurrentTime ? '*' : ''}>${rs}`;
   }
 }

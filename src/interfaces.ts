@@ -184,18 +184,63 @@ export interface IDbConstructorOptions {
 
 export type TSlot = [leftIndex: number | null, foundIndex: number | null, rightIndex: number | null]
 
-export interface IVirtualHourChanged {
-  prevN: number, // номер предыдущего часа с начала компьютерной эры
-  currN: number, // номер текущего часа с начала компьютерной эры
-  prevHZ: number, // номер предыдущего часа с начала суток
-  currHZ: number, // номер текущего часа с начала суток
-  prevTs: number, // метка времени начала предыдущего часа
-  currTs: number, // метка времени начала текущего часа
+// Event Emitter
+export interface IEmPortionOfDataSql {
+  streamId: string,
+  sql: string, // Portion SQL
+  startTs: number,
+  endTs: number,
+  limit: number,
+  dbInfo: string,
 }
 
-export interface IVirtualDateChanged {
-  prevN: number, // номер предыдущей даты с начала компьютерной эры
-  currN: number, // номер текущей даты с начала компьютерной эры
-  prevTs: number, // метка времени начала предыдущей даты
-  currTs: number, // метка времени начала текущей даты
+export interface IEmPortionOfDataCount {
+  streamId: string,
+  count: number, // The number of records retrieved from the database in this portion
+}
+
+export interface IEmVirtualHourChanged {
+  prevN: number, // number of the previous hour since the beginning of the computer era
+  currN: number, // number of the current hour since the beginning of the computer era
+  prevHZ: number, // number of the previous hour from the beginning of the day
+  currHZ: number, // number of the current hour from the beginning of the day
+  prevTs: number, // timestamp of the beginning of the previous hour
+  currTs: number, // timestamp of the beginning of the current hour
+}
+
+export interface IEmVirtualDateChanged {
+  prevN: number, // previous date number since the beginning of the computer era
+  currN: number, // current date number since the beginning of the computer era
+  prevTs: number, // timestamp of the beginning of the previous date
+  currTs: number, // timestamp of the start of the current date
+}
+
+export interface IEmSubtractedLastTimeRecords {
+  streamId: string,
+  subtractedLastTimeRecords: TDbRecord[]
+}
+
+export interface IEmCurrentLastTimeRecords {
+  streamId: string,
+  currentLastTimeRecords: TDbRecord[]
+}
+
+export interface IEmBeforeLoadNextPortion {
+  streamId: string,
+  startTs: number,
+  endTs: number,
+}
+
+export interface IEmAfterLoadNextPortion {
+  streamId: string,
+  startTs: number,
+  endTs: number,
+  lastRecordTs: number,
+  last: TEventRecord | null,
+  vt: number, // Virtual time stamp
+}
+
+export interface IEmSaveLastTs {
+  streamId: string,
+  lastTs: number,
 }

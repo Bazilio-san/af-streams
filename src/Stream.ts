@@ -12,7 +12,18 @@ import {
   blue, bold, boldOff, c, g, lBlue, lc, lm, m, rs, y,
 } from './utils/color';
 import {
-  IDbConstructorOptions, IEcho, ILoggerEx, IRecordsComposite, ISender, ISenderConfig, ISenderConstructorOptions, IStreamConfig, TDbRecord, TEventRecord,
+  IDbConstructorOptions,
+  IEcho, IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion,
+  IEmCurrentLastTimeRecords, IEmSaveLastTs,
+  IEmSubtractedLastTimeRecords,
+  ILoggerEx,
+  IRecordsComposite,
+  ISender,
+  ISenderConfig,
+  ISenderConstructorOptions,
+  IStreamConfig,
+  TDbRecord,
+  TEventRecord,
 } from './interfaces';
 import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
@@ -321,7 +332,8 @@ ${g}================================================================`;
 
       const subtractedLastTimeRecords = this.lastTimeRecords.subtractLastTimeRecords(forBuffer);
       if (DEBUG_LTR) {
-        options.eventEmitter?.emit('subtracted-last-time-records', { streamId, subtractedLastTimeRecords });
+        const payload: IEmSubtractedLastTimeRecords = { streamId, subtractedLastTimeRecords };
+        options.eventEmitter?.emit('subtracted-last-time-records', payload);
       }
 
       toUse = forBuffer.length;
@@ -333,7 +345,8 @@ ${g}================================================================`;
         this.lastRecordTs = recordsBuffer.lastTs;
         const currentLastTimeRecords = this.lastTimeRecords.fillLastTimeRecords(this.recordsBuffer.buffer);
         if (DEBUG_LTR) {
-          options.eventEmitter?.emit('current-last-time-records', { streamId, currentLastTimeRecords });
+          const payload: IEmCurrentLastTimeRecords = { streamId, currentLastTimeRecords };
+          options.eventEmitter?.emit('current-last-time-records', payload);
         }
       } else {
         this.lastRecordTs = lastRecordTsBeforeCheck + 1;
@@ -379,7 +392,8 @@ ${g}================================================================`;
     }
     try {
       if (DEBUG_LNP) {
-        options.eventEmitter?.emit('before-load-next-portion', { streamId, startTs, endTs });
+        const payload: IEmBeforeLoadNextPortion = { streamId, startTs, endTs };
+        options.eventEmitter?.emit('before-load-next-portion', payload);
       }
       const recordset = await this.db.getPortionOfData({ startTs, endTs, limit });
       if (recordset.length) {
@@ -387,14 +401,15 @@ ${g}================================================================`;
       }
       await this._addPortionToBuffer(recordset);
       if (DEBUG_LNP) {
-        options.eventEmitter?.emit('after-load-next-portion', {
+        const payload: IEmAfterLoadNextPortion = {
           streamId,
           startTs,
           endTs,
           lastRecordTs: this.lastRecordTs,
           last: recordsBuffer.last,
           vt: virtualTimeObj.getVirtualTs(),
-        });
+        };
+        options.eventEmitter?.emit('after-load-next-portion', payload);
       }
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
@@ -452,7 +467,8 @@ ${g}================================================================`;
           const { last, sendCount = 0, sentBufferLength } = recordsComposite;
           const lastTs = last?.[TS_FIELD];
           if (lastTs) {
-            eventEmitter.emit('save-last-ts', { streamId, lastTs });
+            const payload: IEmSaveLastTs = { streamId, lastTs };
+            eventEmitter.emit('save-last-ts', payload);
           }
           this.totalRowsSent += sendCount;
           if (isDebug) {

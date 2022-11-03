@@ -1,5 +1,5 @@
 /* eslint-disable class-methods-use-this */
-import { IDbConstructorOptions, TDbRecord } from '../interfaces';
+import { IDbConstructorOptions, IEmPortionOfDataCount, IEmPortionOfDataSql, TDbRecord } from '../interfaces';
 import { DEBUG_SQL } from '../constants';
 
 export class DbBase {
@@ -107,11 +107,13 @@ export class DbBase {
     const { options: { eventEmitter, streamConfig: { streamId } }, dbInfo } = this;
     const sql = this.getPortionSQL({ startTs, endTs, limit });
     if (DEBUG_SQL) {
-      eventEmitter.emit('get-portion-of-data-sql', { streamId, sql, startTs, endTs, limit, dbInfo });
+      const payload: IEmPortionOfDataSql = { streamId, sql, startTs, endTs, limit, dbInfo };
+      eventEmitter.emit('get-portion-of-data-sql', payload);
     }
     const result = await this.query(sql);
     if (DEBUG_SQL) {
-      eventEmitter.emit('get-portion-of-data-count', { streamId, sql, count: result?.[this.recordsetPropName]?.length });
+      const payload: IEmPortionOfDataCount = { streamId, count: result?.[this.recordsetPropName]?.length };
+      eventEmitter.emit('get-portion-of-data-count', payload);
     }
     return result?.[this.recordsetPropName] || [];
   }

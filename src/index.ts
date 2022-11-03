@@ -3,7 +3,13 @@ export { LastTimeRecords } from './LastTimeRecords';
 export { RecordsBuffer } from './RecordsBuffer';
 export { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
 export { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
-export { TDbRecord, TEventRecord, IDbConfig, TSlot, IVirtualDateChanged, IVirtualHourChanged } from './interfaces';
+export {
+  TDbRecord, TEventRecord, IDbConfig, TSlot,
+  IEmPortionOfDataCount, IEmPortionOfDataSql,
+  IEmVirtualHourChanged, IEmVirtualDateChanged,
+  IEmSubtractedLastTimeRecords, IEmCurrentLastTimeRecords,
+  IEmBeforeLoadNextPortion, IEmAfterLoadNextPortion, IEmSaveLastTs,
+} from './interfaces';
 export {
   getTimeParamMillis,
   timeParamRE,
