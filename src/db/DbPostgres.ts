@@ -1,3 +1,4 @@
+// @ts-ignore
 import * as pg from 'pg';
 import { IDbConstructorOptions, IPostgresConfig } from '../interfaces';
 import { DbBase } from './DbBase';
@@ -58,9 +59,8 @@ export class DbPostgres extends DbBase {
     return fields.map((field: any) => field.name);
   }
 
+  // eslint-disable-next-line class-methods-use-this
   limitIt (strSQL: string, limit: number): string {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-    const self = this; // Заглушка
     return `${strSQL} LIMIT ${limit}`;
   }
 }

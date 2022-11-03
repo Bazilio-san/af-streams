@@ -183,3 +183,19 @@ export interface IDbConstructorOptions {
 }
 
 export type TSlot = [leftIndex: number | null, foundIndex: number | null, rightIndex: number | null]
+
+export interface IVirtualHourChanged {
+  prevN: number, // номер предыдущего часа с начала компьютерной эры
+  currN: number, // номер текущего часа с начала компьютерной эры
+  prevHZ: number, // номер предыдущего часа с начала суток
+  currHZ: number, // номер текущего часа с начала суток
+  prevTs: number, // метка времени начала предыдущего часа
+  currTs: number, // метка времени начала текущего часа
+}
+
+export interface IVirtualDateChanged {
+  prevN: number, // номер предыдущей даты с начала компьютерной эры
+  currN: number, // номер текущей даты с начала компьютерной эры
+  prevTs: number, // метка времени начала предыдущей даты
+  currTs: number, // метка времени начала текущей даты
+}

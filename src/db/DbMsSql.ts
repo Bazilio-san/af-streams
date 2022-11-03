@@ -93,9 +93,8 @@ export class DbMsSql extends DbBase {
     return Object.keys(columns);
   }
 
+  // eslint-disable-next-line class-methods-use-this
   limitIt (strSQL: string, limit: number): string {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-    const self = this; // Заглушка
     return strSQL.replace('SELECT ', `SELECT TOP(${limit}) `);
   }
 }
