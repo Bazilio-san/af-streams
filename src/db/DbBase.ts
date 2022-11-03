@@ -112,7 +112,7 @@ export class DbBase {
     }
     const result = await this.query(sql);
     if (DEBUG_SQL) {
-      const payload: IEmPortionOfDataCount = { streamId, count: result?.[this.recordsetPropName]?.length };
+      const payload: IEmPortionOfDataCount = { streamId, sql, count: result?.[this.recordsetPropName]?.length };
       eventEmitter.emit('get-portion-of-data-count', payload);
     }
     return result?.[this.recordsetPropName] || [];

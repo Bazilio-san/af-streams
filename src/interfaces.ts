@@ -196,6 +196,7 @@ export interface IEmPortionOfDataSql {
 
 export interface IEmPortionOfDataCount {
   streamId: string,
+  sql: string, // Portion SQL
   count: number, // The number of records retrieved from the database in this portion
 }
 
