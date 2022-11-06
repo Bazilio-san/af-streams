@@ -12,6 +12,7 @@ export {
 } from './interfaces';
 export {
   getTimeParamMillis,
+  getTimeParamFromMillis,
   timeParamRE,
   padL,
   padR,
