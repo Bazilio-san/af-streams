@@ -93,6 +93,57 @@ export const getTimeParamMillis = (val: string | number): number => {
   return sec * 1000;
 };
 
+export const getTimeParamFromMillis = (millis: number, roundTo: 'd' | 'h' | 'm' | 's' | 'biggest' | '' = ''): string => {
+  let seconds = millis < 1000 ? 0 : Math.floor(millis / 1000);
+  if (roundTo === 's') {
+    return `${seconds} s`;
+  }
+  millis %= 1000;
+  let minutes = seconds < 60 ? 0 : Math.floor(seconds / 60);
+  if (roundTo === 'm') {
+    return `${minutes} m`;
+  }
+  seconds %= 60;
+  let hours = minutes < 60 ? 0 : Math.floor(minutes / 60);
+  if (roundTo === 'h') {
+    return `${hours} h`;
+  }
+  minutes %= 60;
+  const days = hours < 24 ? 0 : Math.floor(hours / 24);
+  if (roundTo === 'd') {
+    return `${days} d`;
+  }
+  hours %= 24;
+  if (roundTo === 'biggest') {
+    if (days) {
+      return `${days} d`;
+    }
+    if (hours) {
+      return `${hours} h`;
+    }
+    if (minutes) {
+      return `${minutes} m`;
+    }
+    if (seconds) {
+      return `${seconds} s`;
+    }
+    return `${millis} ms`;
+  }
+  if (millis) {
+    return `${millis + seconds * 1000 + minutes * 60_000 + hours * 60 * 60_000 + days * 24 * 60 * 60_000} ms`;
+  }
+  if (seconds) {
+    return `${seconds + minutes * 60 + hours * 60 * 60 + days * 24 * 60 * 60} s`;
+  }
+  if (minutes) {
+    return `${minutes + hours * 60 + days * 24 * 60} m`;
+  }
+  if (hours) {
+    return `${hours + days * 24} h`;
+  }
+  return `${days} d`;
+};
+
 // 2022-05-15T16:56:42.349Z
 export const millis2isoZ = (millis: number, options?: ToISOTimeOptions): string => DateTime.fromMillis(millis).setZone('UTC').toISO(options);
 
