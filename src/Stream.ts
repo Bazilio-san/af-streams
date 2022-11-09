@@ -71,6 +71,8 @@ export class Stream {
 
   public db: DbMsSql | DbPostgres;
 
+  public locked: boolean = false;
+
   private loopTimeMillis: number;
 
   private busy: number;
@@ -420,6 +422,9 @@ ${g}================================================================`;
   _fetchLoop () {
     const { options: { streamConfig } } = this;
     cron.job(`0/${streamConfig.fetchIntervalSec || 10} * * * * *`, async () => {
+      if (this.locked) {
+        return;
+      }
       if (this.busy === 0 || this.busy > 5) {
         this.busy = 1;
         try {
@@ -526,5 +531,13 @@ ${g}================================================================`;
 
   setEventCallback (eventCallback: Function) {
     this.sender.eventCallback = eventCallback;
+  }
+
+  lock () {
+    this.locked = true;
+  }
+
+  unLock () {
+    this.locked = false;
   }
 }

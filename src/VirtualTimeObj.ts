@@ -34,7 +34,7 @@ export class VirtualTimeObj {
 
   public isCurrentTime: boolean;
 
-  public lock: boolean = false;
+  public locked: boolean = false;
 
   public lastVt: number = 0;
 
@@ -94,23 +94,23 @@ export class VirtualTimeObj {
     return vt;
   }
 
-  lockVirtualTs () {
-    if (!this.lock) {
+  lock () {
+    if (!this.locked) {
       this.lastVt = this.getVirtualTs();
       this.isCurrentTime = false;
-      this.lock = true;
+      this.locked = true;
     }
   }
 
-  unLockVirtualTs () {
-    if (this.lock) {
-      this.lock = false;
+  unLock () {
+    if (this.locked) {
+      this.locked = false;
       this.realStartTs = Date.now() - ((this.lastVt - this.virtualStartTs) / this.speed);
     }
   }
 
   getVirtualTs (): number {
-    if (this.lock) {
+    if (this.locked) {
       return this.setVirtualNumbers(this.lastVt);
     }
     const now = Date.now();
