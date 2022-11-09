@@ -34,6 +34,10 @@ export class VirtualTimeObj {
 
   public isCurrentTime: boolean;
 
+  public lock: boolean = false;
+
+  public lastVt: number = 0;
+
   private eventEmitter: EventEmitter;
 
   private readonly debug: Function;
@@ -63,6 +67,7 @@ export class VirtualTimeObj {
   }
 
   setVirtualNumbers (vt: number): number {
+    this.lastVt = vt;
     const { prevVirtualDateNumber: pvd, prevVirtualHourNumber: pvh } = this;
     this.prevVirtualDateNumber = Math.floor(vt / MILLIS_IN_DAY);
     if (pvd && pvd < this.prevVirtualDateNumber) {
@@ -89,7 +94,25 @@ export class VirtualTimeObj {
     return vt;
   }
 
+  lockVirtualTs () {
+    if (!this.lock) {
+      this.lastVt = this.getVirtualTs();
+      this.isCurrentTime = false;
+      this.lock = true;
+    }
+  }
+
+  unLockVirtualTs () {
+    if (this.lock) {
+      this.lock = false;
+      this.realStartTs = Date.now() - ((this.lastVt - this.virtualStartTs) / this.speed);
+    }
+  }
+
   getVirtualTs (): number {
+    if (this.lock) {
+      return this.setVirtualNumbers(this.lastVt);
+    }
     const now = Date.now();
     const { isCurrentTime, virtualStartTs, realStartTs, speed, loopTimeMillis, loopTimeMillsEnd } = this;
     if (isCurrentTime) {
@@ -107,10 +130,11 @@ export class VirtualTimeObj {
     }
 
     if (vt >= now) {
+      vt = now;
       this.eventEmitter.emit('virtual-time-is-synchronized-with-current');
       this.isCurrentTime = true;
-      return this.setVirtualNumbers(now);
     }
+
     return this.setVirtualNumbers(vt);
   }
 
