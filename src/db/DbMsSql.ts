@@ -1,8 +1,9 @@
 import * as sql from 'mssql';
 import { IDbConstructorOptions, IMsSqlConfig } from '../interfaces';
 import { DbBase } from './DbBase';
+import { MILLIS_IN_HOUR } from '../constants';
 
-const commonTimeout = 108_000_000; // 30 min
+const commonTimeout = MILLIS_IN_HOUR * 3; // 3 ч
 const mssqlDefaults: IMsSqlConfig = {
   options: { enableArithAbort: false },
   pool: {
