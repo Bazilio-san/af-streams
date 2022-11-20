@@ -2,18 +2,24 @@ import * as sql from 'mssql';
 import { IDbConstructorOptions, IMsSqlConfig } from '../interfaces';
 import { DbBase } from './DbBase';
 
+const commonTimeout = 108_000_000; // 30 min
 const mssqlDefaults: IMsSqlConfig = {
   options: { enableArithAbort: false },
   pool: {
     max: 10,
     min: 1,
-    idleTimeoutMillis: 300_000,
+    idleTimeoutMillis: commonTimeout,
+    acquireTimeoutMillis: commonTimeout,
+    createTimeoutMillis: commonTimeout,
+    destroyTimeoutMillis: commonTimeout,
+    reapIntervalMillis: commonTimeout,
+    createRetryIntervalMillis: commonTimeout,
   },
   trustServerCertificate: true,
   stream: false,
   parseJSON: false,
-  requestTimeout: 1_800_000,
-  connectionTimeout: 3_600_000,
+  requestTimeout: commonTimeout,
+  connectionTimeout: commonTimeout,
   server: '',
 };
 

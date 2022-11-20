@@ -1,4 +1,5 @@
 import EventEmitter from 'events';
+import { CallbackOrPromise, PoolOptions } from 'tarn/dist/Pool';
 
 export type TEventRecord = { [fieldName: string | symbol]: any };
 export type Nullable<T> = T | null;
@@ -88,6 +89,11 @@ export interface IDbConfig {
   password: string,
 }
 
+export interface IPoolOptions<T> extends Omit<PoolOptions<T>, 'create' | 'destroy'> {
+  create?: CallbackOrPromise<T>;
+  destroy?: (resource: T) => any;
+}
+
 export interface IMsSqlConfig {
   driver?: string | undefined;
   user?: string | undefined;
@@ -106,11 +112,7 @@ export interface IMsSqlConfig {
     trustedConnection?: boolean | undefined;
     useUTC?: boolean | undefined;
   };
-  pool: {
-    max: number,
-    min: number,
-    idleTimeoutMillis: number
-  },
+  pool: IPoolOptions<any>,
   trustServerCertificate?: boolean | undefined,
   stream?: boolean | undefined;
   parseJSON?: boolean | undefined;
