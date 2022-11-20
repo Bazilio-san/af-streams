@@ -79,6 +79,7 @@ export type TFields = TFieldsTypes | TFieldList;
 
 export interface IDbConfig {
   dialect: 'mssql' | 'pg',
+  options?: any,
   host?: string,
   server?: string,
   port: number,
