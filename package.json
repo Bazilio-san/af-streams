@@ -1,6 +1,6 @@
 {
   "name": "@bazilio-san/af-stream",
-  "version": "2.0.62",
+  "version": "2.0.64",
   "description": "Data stream from database table",
   "main": "./dist/cjs/src/index.js",
   "module": "./dist/esm/index.js",
@@ -21,7 +21,7 @@
     "lint": "eslint . --ext .ts ",
     "lint:fix": "eslint . --ext .ts --fix",
     "test": "jest --config jest.config.js",
-    "publish": "npm run lint:fix && npm run clean && npm run build && npm publish",
+    "pub": "npm run lint:fix && npm run clean && npm run build && npm publish",
     "cb": "npm run clean && npm run build"
   },
   "dependencies": {
