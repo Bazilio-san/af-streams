@@ -9,7 +9,7 @@ import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './Vir
 import { getTimeParamMillis, millis2iso, padL } from './utils/utils';
 import getDb from './db/db';
 import {
-  blue, bold, boldOff, c, g, lBlue, lc, lm, m, rs, y,
+  blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, y,
 } from './utils/color';
 import {
   IDbConstructorOptions,
@@ -28,7 +28,7 @@ import {
 import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
 import getSender from './sender/get-sender';
-import { DEBUG_LNP, DEBUG_LTR, TS_FIELD } from './constants';
+import { DEBUG_LNP, DEBUG_LTR, DEBUG_STREAM, TS_FIELD } from './constants';
 
 export interface IStreamConstructorOptions {
   streamConfig: IStreamConfig,
@@ -89,15 +89,13 @@ export class Stream {
 
   private readonly millis2dbFn: Function;
 
-  private isSilly: boolean;
-
-  private isDebug: boolean;
-
   private initialized: boolean = false;
 
   private isFirstLoad: boolean = true;
 
   private maxBufferSize: number;
+
+  private prefix: string;
 
   constructor (options: IStreamConstructorOptions) {
     const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0 } = options;
@@ -165,8 +163,7 @@ export class Stream {
       this.totalRowsSent = 0;
       this.isFirstLoad = true;
     });
-    this.isSilly = options.logger.isLevel('silly');
-    this.isDebug = options.logger.isLevel('debug');
+    this.prefix = `${lCyan}STREAM: ${lBlue}${options.streamConfig.streamId}${rs}`;
   }
 
   async init (): Promise<Stream | undefined> {
@@ -276,7 +273,7 @@ ${g}================================================================`;
   findEndIndex () {
     const virtualTime = this.virtualTimeObj.getVirtualTs();
     /*
-    if (this.isSilly) {
+    if (DEBUG_STREAM) {
       const { buffer: rb } = this.recordsBuffer;
       const firstISO = rb.length ? millis2iso(rb[0][TS_FIELD]) : '-';
       const lastISO = rb.length > 1 ? millis2iso(rb[rb.length - 1][TS_FIELD]) : '-';
@@ -314,7 +311,7 @@ ${g}================================================================`;
   }
 
   async _addPortionToBuffer (recordset: TDbRecord[]) {
-    const { recordsBuffer, isSilly, loopTimeMillis, options } = this;
+    const { recordsBuffer, loopTimeMillis, options } = this;
     const { streamConfig: { streamId } } = options;
     const { length: loaded = 0 } = recordset;
     let skipped = 0;
@@ -354,14 +351,13 @@ ${g}================================================================`;
         this.lastRecordTs = lastRecordTsBeforeCheck + 1;
       }
     }
-    if (isSilly) {
-      options.echo(`${lBlue}${this.options.streamConfig.streamId}${rs} vt: ${this.virtualTimeObj.getString()
-      } loaded/skipped/used: ${lm}${loaded}${blue}/${lc}${skipped}${blue}/${g}${toUse}${rs}`);
+    if (DEBUG_STREAM) {
+      options.echo(`${this.prefix} vt: ${this.virtualTimeObj.getString()} loaded/skipped/used: ${lm}${loaded}${blue}/${lc}${skipped}${blue}/${g}${toUse}${rs}`);
     }
   }
 
   async _loadNextPortion () {
-    const { options, recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs, isSilly, maxBufferSize } = this;
+    const { options, recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs, maxBufferSize } = this;
     const { streamConfig: { streamId } } = options;
     const virtualTimeObj = vtObj as VirtualTimeObj;
 
@@ -388,8 +384,8 @@ ${g}================================================================`;
       return;
     }
 
-    if (isSilly) {
-      options.echo(`${c}_loadNextPortion()${rs} vt: ${m}${virtualTimeObj.getString()}${rs
+    if (DEBUG_LNP) {
+      options.echo(`${this.prefix} ${c}_loadNextPortion()${rs} vt: ${m}${virtualTimeObj.getString()}${rs
       } from: ${m}${millis2iso(startTs)}${rs} to ${m}${millis2iso(endTs)}${rs}`);
     }
     try {
@@ -445,19 +441,19 @@ ${g}================================================================`;
     const { streamConfig, logger } = this.options;
     cron.job(`0/${streamConfig.printInfoIntervalSec || 30} * * * * *`, () => {
       const rowsSent = `rows sent: ${bold}${padL(this.totalRowsSent || 0, 6)}${boldOff}${rs}`;
-      logger.info(`${lBlue}${streamConfig.streamId}${rs} ${rowsSent} / ${this.virtualTimeObj.getString()}`);
+      logger.info(`${this.prefix} ${rowsSent} / ${this.virtualTimeObj.getString()}`);
     }, null, true, 'GMT', undefined, false);
     // onComplete, start, timeZone, context, runOnInit
   }
 
   async _sendPacket (eventsPacket: TEventRecord[]): Promise<{ debugMessage: string, isError?: boolean }> {
-    const { sender, sessionId, isDebug, options: { eventEmitter, logger, streamConfig: { streamId } } } = this;
+    const { sender, sessionId, options: { eventEmitter, logger, streamConfig: { streamId } } } = this;
     return new Promise((resolve: Function) => {
       let debugMessage = '';
 
       setTimeout(() => {
-        if (isDebug) {
-          debugMessage += `${lBlue}${streamId}${rs}`;
+        if (DEBUG_STREAM) {
+          debugMessage += `${this.prefix}`;
         }
         const first = eventsPacket[0];
         const recordsComposite: IRecordsComposite = {
@@ -476,7 +472,7 @@ ${g}================================================================`;
             eventEmitter.emit('save-last-ts', payload);
           }
           this.totalRowsSent += sendCount;
-          if (isDebug) {
+          if (DEBUG_STREAM) {
             debugMessage += ` SENT: ${c}${Stream.packetInfo(sendCount, first, last)}`;
             debugMessage += ` / ${padL(sentBufferLength, 6)}b`;
             debugMessage += ` / r.tot: ${bold}${padL(this.totalRowsSent, 6)}${boldOff}${rs}`;
@@ -491,7 +487,7 @@ ${g}================================================================`;
   }
 
   async _send () {
-    const { recordsBuffer: rb, virtualTimeObj, isDebug } = this;
+    const { recordsBuffer: rb, virtualTimeObj } = this;
     if (!virtualTimeObj.ready) {
       return;
     }
@@ -509,7 +505,7 @@ ${g}================================================================`;
         rb.setEdges();
       }
     }
-    if (isDebug) {
+    if (DEBUG_STREAM) {
       let bufferInfo = Stream.packetInfo(rb.length, rb.first, rb.last);
       bufferInfo = bufferInfo.trim() ? `BUFFER: ${bufferInfo}` : `BUFFER empty`;
       this.options.echo(`${debugMessage}\t${m}${bufferInfo}`);
