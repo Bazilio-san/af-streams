@@ -233,7 +233,7 @@ export class Stream {
 ${g}Time field TZ:         ${m}${timezoneOfTsField}
 ${g}Start from beginning:  ${m}${useStartTimeFromRedisCache ? 'NOT' : 'YES'}
 ${g}Start time:            ${m}${millis2iso(startTime)}${isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
-${g}Speed:                 ${m}${this.virtualTimeObj.speed}x
+${g}Speed:                 ${m}${this.virtualTimeObj.speed} X
 ${g}Cyclicity:             ${m}${loopTimeMillis ? `${loopTimeMillis / 1000} sec` : '-'}
 ${g}Db polling frequency:  ${m}${fetchIntervalSec} sec
 ${g}================================================================`;

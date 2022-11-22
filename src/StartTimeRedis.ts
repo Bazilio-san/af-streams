@@ -32,7 +32,7 @@ export class StartTimeRedis {
     this.url = `redis://${options.host}:${options.port}`;
     const streamKey = getStreamKey(options.streamId);
     this.streamKey = streamKey;
-    logger.info(`${prefix}Redis are expected at ${this.url}`);
+    logger.info(`${prefix}Redis expected at ${this.url}`);
     this.client = createClient({ url: this.url });
     this.client.on('error', (err: Error | any) => {
       console.error('Redis Client Error');
@@ -53,7 +53,7 @@ export class StartTimeRedis {
     const { logger } = this.options;
     try {
       await this.client.connect();
-      logger.info(`${prefix} Connected to REDIS on URL: ${this.url} / streamKey: ${this.streamKey}`);
+      logger.info(`${prefix}Connected to REDIS on URL: ${this.url} / streamKey: ${this.streamKey}`);
     } catch (err: Error | any) {
       logger.error('Failed to initialize Redis client');
       this.options.exitOnError(err);
