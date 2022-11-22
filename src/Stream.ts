@@ -9,7 +9,7 @@ import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './Vir
 import { getTimeParamMillis, millis2iso, padL } from './utils/utils';
 import getDb from './db/db';
 import {
-  blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, y,
+  blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, y, bg, yellow,
 } from './utils/color';
 import {
   IDbConstructorOptions,
@@ -441,7 +441,8 @@ ${g}================================================================`;
     const { streamConfig, logger } = this.options;
     cron.job(`0/${streamConfig.printInfoIntervalSec || 30} * * * * *`, () => {
       const rowsSent = `rows sent: ${bold}${padL(this.totalRowsSent || 0, 6)}${boldOff}${rs}`;
-      logger.info(`${this.prefix} ${rowsSent} / ${this.virtualTimeObj.getString()}`);
+      const locked = this.locked ? `  ${bg.red}${yellow}STREAM LOCKED${rs}` : '';
+      logger.info(`${this.prefix} ${rowsSent} / ${this.virtualTimeObj.getString()}${locked}`);
     }, null, true, 'GMT', undefined, false);
     // onComplete, start, timeZone, context, runOnInit
   }
