@@ -81,7 +81,7 @@ export class Stream {
 
   private readonly sendInterval: number;
 
-  private totalRowsSent: number;
+  public totalRowsSent: number;
 
   private readonly tsFieldToMillis: Function;
 
@@ -95,7 +95,7 @@ export class Stream {
 
   private maxBufferSize: number;
 
-  private prefix: string;
+  public prefix: string;
 
   constructor (options: IStreamConstructorOptions) {
     const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0 } = options;
