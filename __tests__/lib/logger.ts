@@ -5,7 +5,7 @@ import { getAFLogger } from 'af-logger';
 import { TLogLevelName } from 'tslog';
 import emitter from './ee';
 
-const prefix = 'af-stream';
+const prefix = 'af-streams';
 const minLevel = process.env.LOGGER_LEVEL || 'silly';
 
 const { logger, fileLogger, exitOnError, echo, color } = getAFLogger({

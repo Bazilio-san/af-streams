@@ -16,6 +16,7 @@ export interface IStartTimeRedisOptions {
   logger: ILoggerEx,
 }
 
+const prefix = '[af-streams:redis]: ';
 export class StartTimeRedis {
   private readonly options: IStartTimeRedisOptions;
 
@@ -23,21 +24,24 @@ export class StartTimeRedis {
 
   private readonly streamKey: string;
 
+  private readonly url: string;
+
   constructor (options: IStartTimeRedisOptions) {
     this.options = options;
-    const url = `redis://${options.host}:${options.port}`;
-    console.log(`[AF-STREAM]: Redis are expected at ${url}`);
-    this.client = createClient({ url });
+    const { logger } = this.options;
+    this.url = `redis://${options.host}:${options.port}`;
+    const streamKey = getStreamKey(options.streamId);
+    this.streamKey = streamKey;
+    logger.info(`${prefix}Redis are expected at ${this.url}`);
+    this.client = createClient({ url: this.url });
     this.client.on('error', (err: Error | any) => {
       console.error('Redis Client Error');
       options.exitOnError(err);
     });
-    const streamKey = getStreamKey(options.streamId);
-    this.streamKey = streamKey;
     options.eventEmitter.on('save-last-ts', async ({ lastTs }: { streamId: string, lastTs: number }) => {
       const redisClient = await this.getRedisClient();
       redisClient?.set(streamKey, lastTs).catch((err: Error | any) => {
-        options.logger.error(err);
+        logger.error(err);
       });
     });
   }
@@ -46,10 +50,12 @@ export class StartTimeRedis {
     if (this.client.isOpen) {
       return this.client;
     }
+    const { logger } = this.options;
     try {
       await this.client.connect();
+      logger.info(`${prefix} Connected to REDIS on URL: ${this.url} / streamKey: ${this.streamKey}`);
     } catch (err: Error | any) {
-      this.options.logger.error('Failed to initialize Redis client');
+      logger.error('Failed to initialize Redis client');
       this.options.exitOnError(err);
     }
     if (!this.client.isOpen) {
@@ -59,12 +65,13 @@ export class StartTimeRedis {
   }
 
   async getStartTimeFromRedis (): Promise<number> {
+    const { logger } = this.options;
     const redisClient = await this.getRedisClient();
     let startTime;
     try {
       startTime = await redisClient.get(this.streamKey);
     } catch (err) {
-      this.options.logger.error(err);
+      logger.error(err);
       return 0;
     }
     startTime = Number(startTime);
@@ -72,10 +79,10 @@ export class StartTimeRedis {
       return 0;
     }
     if (!DateTime.fromMillis(startTime).isValid) {
-      this.options.logger.error(`Cache stored data is not a unix timestamp: ${startTime}`);
+      logger.error(`Cache stored data is not a unix timestamp: ${startTime}`);
       return 0;
     }
-    this.options.logger.info(`Get time of last sent entry: ${millis2iso(startTime, { includeOffset: true })} from the Redis cache using key ${this.streamKey}`);
+    logger.info(`${prefix}Get time of last sent entry: ${millis2iso(startTime, { includeOffset: true })} from the Redis cache using key ${this.streamKey}`);
     return startTime;
   }
 
