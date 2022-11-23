@@ -1,3 +1,4 @@
+import { Promise } from 'mssql';
 import AbstractSender from './AbstractSender';
 import { IRecordsComposite, ISenderConstructorOptions, TEventRecord } from '../interfaces';
 
@@ -30,9 +31,8 @@ class CallbackSender extends AbstractSender {
     recordsComposite.sendCount = pl;
     recordsComposite.last = packet[pl - 1];
 
-    packet.forEach((row: TEventRecord) => {
-      this.eventCallback(row);
-    });
+    const fns = packet.map((row: TEventRecord) => this.eventCallback(row));
+    await Promise.all(fns);
     return true;
   }
 }
