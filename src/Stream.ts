@@ -295,7 +295,8 @@ ${g}================================================================`;
     return ' '.repeat(60);
   }
 
-  async prepareEventsPacket (dbRecordOrRecordset: TDbRecord[]): Promise<TEventRecord[]> {
+  async prepareEventsPacket (dbRecordOrRecordset: (TDbRecord | null)[]): Promise<TEventRecord[]> {
+    const TIMEOUT_TO_PREPARE_EVENT = 5 * 60_000; // VVQ
     const { options: { streamConfig: { src: { tsField } } }, prepareEvent, tsFieldToMillis } = this;
     if (!Array.isArray(dbRecordOrRecordset)) {
       if (!dbRecordOrRecordset || typeof dbRecordOrRecordset !== 'object') {
@@ -304,19 +305,28 @@ ${g}================================================================`;
       dbRecordOrRecordset = [dbRecordOrRecordset];
     }
 
-    return Promise.all(dbRecordOrRecordset.map((record) => {
-      record[TS_FIELD] = tsFieldToMillis(record[tsField]);
-      return prepareEvent(record);
+    return Promise.all(dbRecordOrRecordset.map((record, index) => {
+      const recordCopy = JSON.parse(JSON.stringify(record));
+      // dbRecordOrRecordset[index] = null;
+      recordCopy[TS_FIELD] = tsFieldToMillis(recordCopy[tsField]);
+      return new Promise((resolve: (arg0: TEventRecord | null) => void) => {
+        setTimeout(() => {
+          resolve(null);
+        }, TIMEOUT_TO_PREPARE_EVENT);
+        const eventRecord = prepareEvent(recordCopy) as TEventRecord;
+        resolve(eventRecord);
+      });
     }));
   }
 
   async _addPortionToBuffer (recordset: TDbRecord[], endTs: number = 0) {
     const { recordsBuffer, loopTimeMillis, options } = this;
     const { streamConfig: { streamId } } = options;
-    const { length: loaded = 0 } = recordset;
+    const { length: loadedCount = 0 } = recordset;
     let skipped = 0;
-    let toUse = loaded;
-    if (loaded) {
+    let toUseCount = loadedCount;
+
+    if (loadedCount) {
       const forBuffer = await this.prepareEventsPacket(recordset);
 
       if (loopTimeMillis) {
@@ -327,7 +337,7 @@ ${g}================================================================`;
         });
       }
 
-      const lastRecordTsBeforeCheck = forBuffer[forBuffer.length - 1][TS_FIELD];
+      const lastLoadedRecordTs = forBuffer[forBuffer.length - 1][TS_FIELD];
 
       const subtractedLastTimeRecords = this.lastTimeRecords.subtractLastTimeRecords(forBuffer);
       if (DEBUG_LTR) {
@@ -335,11 +345,11 @@ ${g}================================================================`;
         options.eventEmitter?.emit('subtracted-last-time-records', payload);
       }
 
-      toUse = forBuffer.length;
-      if (toUse !== loaded) {
-        skipped = loaded - toUse;
+      toUseCount = forBuffer.length;
+      if (toUseCount !== loadedCount) {
+        skipped = loadedCount - toUseCount;
       }
-      if (toUse) {
+      if (toUseCount) {
         recordsBuffer.add(forBuffer);
         this.lastRecordTs = recordsBuffer.lastTs;
         const currentLastTimeRecords = this.lastTimeRecords.fillLastTimeRecords(this.recordsBuffer.buffer);
@@ -348,18 +358,20 @@ ${g}================================================================`;
           options.eventEmitter?.emit('current-last-time-records', payload);
         }
       } else {
-        this.lastRecordTs = lastRecordTsBeforeCheck + 1;
+        this.lastRecordTs = lastLoadedRecordTs + 1;
       }
+    } else {
+      // this.lastRecordTs = this.virtualTimeObj.isCurrentTime ? Date.now() : endTs;
     }
     if (DEBUG_STREAM) {
-      options.echo(`${this.prefix} vt: ${this.virtualTimeObj.getString()} loaded/skipped/used: ${lm}${loaded}${blue}/${lc}${skipped}${blue}/${g}${toUse}${rs}`);
+      options.echo(`${this.prefix} vt: ${this.virtualTimeObj.getString()
+      } loaded/skipped/used: ${lm}${loadedCount}${blue}/${lc}${skipped}${blue}/${g}${toUseCount}${rs}`);
     }
   }
 
   async _loadNextPortion () {
-    const { options, recordsBuffer, virtualTimeObj: vtObj, bufferLookAheadMs, lastRecordTs, maxBufferSize } = this;
+    const { options, recordsBuffer, virtualTimeObj, bufferLookAheadMs, lastRecordTs, maxBufferSize } = this;
     const { streamConfig: { streamId } } = options;
-    const virtualTimeObj = vtObj as VirtualTimeObj;
 
     let startTs;
     let endTs;
@@ -500,7 +512,7 @@ ${g}================================================================`;
     if (index < 0) {
       return;
     }
-    const eventsPacket = rb.shiftBy(index + 1);
+    const eventsPacket: any[] | null = rb.shiftBy(index + 1);
     let debugMessage;
     if (eventsPacket.length) {
       ({ debugMessage } = await this._sendPacket(eventsPacket));

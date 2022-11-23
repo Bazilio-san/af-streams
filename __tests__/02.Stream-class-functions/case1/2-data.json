@@ -31,13 +31,13 @@
     "seccode": "AMD",
     "buysell": "B"
   },
-
   {
     "tradeno": "24603348128",
     "tradetime": "2022-02-14T18:27:30.524Z",
     "orderno": "24603243687",
     "shortname": "ADVANCED MIC.DEV.  DL-0.01",
     "seccode": "AMD",
-    "buysell": "B"
+    "buysell": "B",
+    "__ts__": 1644863250524
   }
 ]
