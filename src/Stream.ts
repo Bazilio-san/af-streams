@@ -307,7 +307,7 @@ ${g}================================================================`;
 
     return Promise.all(dbRecordOrRecordset.map((record, index) => {
       const recordCopy = JSON.parse(JSON.stringify(record));
-      // dbRecordOrRecordset[index] = null;
+      dbRecordOrRecordset[index] = null;
       recordCopy[TS_FIELD] = tsFieldToMillis(recordCopy[tsField]);
       return new Promise((resolve: (arg0: TEventRecord | null) => void) => {
         setTimeout(() => {

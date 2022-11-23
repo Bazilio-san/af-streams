@@ -53,7 +53,8 @@ describe('Test CDC', () => {
       ];
     });
     test('test 1', async () => {
-      await stream._addPortionToBuffer(portions[0]);
+      const portions0clone = [...portions[0]];
+      await stream._addPortionToBuffer(portions0clone);
       const [first, , , last] = portions[0];
 
       expect(stream.lastRecordTs).toEqual(+(new Date(last.tradetime)));
@@ -69,7 +70,8 @@ describe('Test CDC', () => {
     });
 
     test('test 2', async () => {
-      await stream._addPortionToBuffer(portions[1]);
+      const portions1clone = [...portions[1]];
+      await stream._addPortionToBuffer(portions1clone);
       const last = portions[1][6];
 
       expect(stream.lastRecordTs).toEqual(+(new Date(last.tradetime)));
@@ -85,7 +87,8 @@ describe('Test CDC', () => {
     });
 
     test('test 3', async () => {
-      await stream._addPortionToBuffer(portions[2]);
+      const portions2clone = [...portions[2]];
+      await stream._addPortionToBuffer(portions2clone);
       const last = portions[2][4];
 
       expect(stream.lastRecordTs).toEqual(+(new Date(last.tradetime)));
@@ -146,7 +149,8 @@ describe('Test CDC', () => {
     });
 
     test('test 0', async () => {
-      await stream._addPortionToBuffer(portions[0]);
+      const portionsClone = [...portions[0]];
+      await stream._addPortionToBuffer(portionsClone);
       expect(stream.lastTimeRecords.getLtr()).toEqual(ltr[0]);
 
       resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);
@@ -154,7 +158,8 @@ describe('Test CDC', () => {
     });
 
     test('test 1', async () => {
-      await stream._addPortionToBuffer(portions[1]);
+      const portionsClone = [...portions[1]];
+      await stream._addPortionToBuffer(portionsClone);
       expect(stream.lastTimeRecords.getLtr()).toEqual(ltr[1]);
 
       resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);
@@ -162,7 +167,8 @@ describe('Test CDC', () => {
     });
 
     test('test 2', async () => {
-      await stream._addPortionToBuffer(portions[2]);
+      const portionsClone = [...portions[2]];
+      await stream._addPortionToBuffer(portionsClone);
       expect(stream.lastTimeRecords.getLtr()).toEqual(ltr[2]);
 
       resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);
@@ -170,7 +176,8 @@ describe('Test CDC', () => {
     });
 
     test('test 3', async () => {
-      await stream._addPortionToBuffer(portions[3]);
+      const portionsClone = [...portions[3]];
+      await stream._addPortionToBuffer(portionsClone);
       expect(stream.lastTimeRecords.getLtr()).toEqual(ltr[3]);
 
       resBuffer = convertRecordsToExpected(stream.recordsBuffer.buffer);
