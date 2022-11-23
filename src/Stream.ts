@@ -327,7 +327,9 @@ ${g}================================================================`;
     let toUseCount = loadedCount;
 
     if (loadedCount) {
-      const forBuffer = await this.prepareEventsPacket(recordset);
+      const recordsetCopy = [...recordset];
+      recordset.splice(0, recordset.length);
+      const forBuffer = await this.prepareEventsPacket(recordsetCopy);
 
       if (loopTimeMillis) {
         const bias = Date.now() - this.virtualTimeObj.realStartTsLoopSafe;
@@ -351,7 +353,7 @@ ${g}================================================================`;
       }
       if (toUseCount) {
         recordsBuffer.add(forBuffer);
-        this.lastRecordTs = recordsBuffer.lastTs;
+        this.lastRecordTs = lastLoadedRecordTs;
         const currentLastTimeRecords = this.lastTimeRecords.fillLastTimeRecords(this.recordsBuffer.buffer);
         if (DEBUG_LTR) {
           const payload: IEmCurrentLastTimeRecords = { streamId, currentLastTimeRecords };
@@ -405,11 +407,13 @@ ${g}================================================================`;
         const payload: IEmBeforeLoadNextPortion = { streamId, startTs, endTs };
         options.eventEmitter?.emit('before-load-next-portion', payload);
       }
-      const recordset: TDbRecord[] | null = await this.db.getPortionOfData({ startTs, endTs, limit });
+      let recordset: TDbRecord[] | null = await this.db.getPortionOfData({ startTs, endTs, limit });
       if (recordset.length) {
         endTs = this.tsFieldToMillis(recordset[recordset.length - 1][options.streamConfig.src.tsField]);
       }
       await this._addPortionToBuffer(recordset, endTs);
+      recordset = null;
+
       if (DEBUG_LNP) {
         const payload: IEmAfterLoadNextPortion = {
           streamId,
