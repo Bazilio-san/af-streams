@@ -42,7 +42,7 @@ class EmitterSender extends AbstractSender {
 
     const { eventEmitter, emitId, options: { streamConfig: { streamId } } } = this;
     if (this.emitSingleEvent) {
-      packet.eventsPacket.forEach((event: TEventRecord) => {
+      packet.forEach((event: TEventRecord) => {
         eventEmitter.emit(emitId, { streamId, event });
       });
     } else {
