@@ -516,7 +516,7 @@ ${g}================================================================`;
     if (index < 0) {
       return;
     }
-    const eventsPacket: any[] | null = rb.shiftBy(index + 1);
+    let eventsPacket: any[] | null = rb.shiftBy(index + 1);
     let debugMessage;
     if (eventsPacket.length) {
       ({ debugMessage } = await this._sendPacket(eventsPacket));
@@ -525,7 +525,9 @@ ${g}================================================================`;
       } else {
         rb.setEdges();
       }
+      eventsPacket.splice(0, eventsPacket.length); // GC
     }
+    eventsPacket = null; // GC
     if (DEBUG_STREAM) {
       let bufferInfo = Stream.packetInfo(rb.length, rb.first, rb.last);
       bufferInfo = bufferInfo.trim() ? `BUFFER: ${bufferInfo}` : `BUFFER empty`;
