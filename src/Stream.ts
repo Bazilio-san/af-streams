@@ -489,7 +489,7 @@ ${g}================================================================`;
 
   async _send () {
     const { recordsBuffer: rb, virtualTimeObj } = this;
-    if (!virtualTimeObj.ready) {
+    if (virtualTimeObj.locked) {
       return;
     }
     const index = this.findEndIndex();

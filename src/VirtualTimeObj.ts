@@ -30,11 +30,9 @@ export class VirtualTimeObj {
 
   public loopNumber: number;
 
-  public ready: boolean;
-
   public isCurrentTime: boolean;
 
-  public locked: boolean = false;
+  public locked: boolean = true;
 
   public lastVt: number = 0;
 
@@ -53,11 +51,11 @@ export class VirtualTimeObj {
     this.speed = Number(speed) || 1;
     this.loopTimeMillis = loopTimeMillis;
     this.virtualStartTs = +startTime; // timestamp millis from which to start uploading data
+    this.lastVt = this.virtualStartTs;
     this.loopTimeMillsEnd = loopTimeMillis && (this.virtualStartTs + loopTimeMillis);
     this.realStartTs = Date.now();
     this.realStartTsLoopSafe = Date.now();
     this.loopNumber = 0;
-    this.ready = false; // flag: all sources are ready to give data
     this.isCurrentTime = false; // flag: virtual time has caught up with real time
     this.eventEmitter = eventEmitter;
     this.debug = echo ? echo.debug.bind(echo) : (m: string) => {
@@ -106,7 +104,14 @@ export class VirtualTimeObj {
     if (this.locked) {
       this.locked = false;
       this.realStartTs = Date.now() - ((this.lastVt - this.virtualStartTs) / this.speed);
+      // this.realStartTs = Date.now();
     }
+  }
+
+  // For compatibility
+  /** @deprecated */
+  setReady (): void {
+    this.unLock();
   }
 
   getVirtualTs (): number {
@@ -136,11 +141,6 @@ export class VirtualTimeObj {
     }
 
     return this.setVirtualNumbers(vt);
-  }
-
-  setReady (): void {
-    this.realStartTs = Date.now();
-    this.ready = true;
   }
 
   getString (): string {
