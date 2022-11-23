@@ -361,7 +361,7 @@ ${g}================================================================`;
         this.lastRecordTs = lastLoadedRecordTs + 1;
       }
     } else {
-      // this.lastRecordTs = this.virtualTimeObj.isCurrentTime ? Date.now() : endTs;
+      this.lastRecordTs = this.virtualTimeObj.isCurrentTime ? Date.now() : endTs;
     }
     if (DEBUG_STREAM) {
       options.echo(`${this.prefix} vt: ${this.virtualTimeObj.getString()
