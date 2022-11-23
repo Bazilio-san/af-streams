@@ -32,6 +32,7 @@ export class RecordsBuffer {
 
   add (forBuffer: TEventRecord[]) {
     this.buffer.push(...forBuffer);
+    forBuffer.splice(0, forBuffer.length); // GC
     this.setEdges();
   }
 
