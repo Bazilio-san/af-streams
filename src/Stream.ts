@@ -310,7 +310,7 @@ ${g}================================================================`;
     }));
   }
 
-  async _addPortionToBuffer (recordset: TDbRecord[]) {
+  async _addPortionToBuffer (recordset: TDbRecord[], endTs: number = 0) {
     const { recordsBuffer, loopTimeMillis, options } = this;
     const { streamConfig: { streamId } } = options;
     const { length: loaded = 0 } = recordset;
@@ -393,11 +393,11 @@ ${g}================================================================`;
         const payload: IEmBeforeLoadNextPortion = { streamId, startTs, endTs };
         options.eventEmitter?.emit('before-load-next-portion', payload);
       }
-      const recordset = await this.db.getPortionOfData({ startTs, endTs, limit });
+      const recordset: TDbRecord[] | null = await this.db.getPortionOfData({ startTs, endTs, limit });
       if (recordset.length) {
         endTs = this.tsFieldToMillis(recordset[recordset.length - 1][options.streamConfig.src.tsField]);
       }
-      await this._addPortionToBuffer(recordset);
+      await this._addPortionToBuffer(recordset, endTs);
       if (DEBUG_LNP) {
         const payload: IEmAfterLoadNextPortion = {
           streamId,
@@ -416,9 +416,13 @@ ${g}================================================================`;
   }
 
   _fetchLoop () {
-    const { options: { streamConfig } } = this;
+    const { options: { echo, streamConfig } } = this;
     cron.job(`0/${streamConfig.fetchIntervalSec || 10} * * * * *`, async () => {
       if (this.locked) {
+        if (DEBUG_STREAM) {
+          const vt = `vt: ${this.virtualTimeObj.getString()} ${this.virtualTimeObj.locked ? `${bg.red}${yellow}LOCKED${rs}` : ''}}`;
+          echo(`${this.prefix} ${bg.red}${yellow}STREAM LOCKED${rs} ${vt}`);
+        }
         return;
       }
       if (this.busy === 0 || this.busy > 5) {
