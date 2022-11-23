@@ -530,11 +530,17 @@ ${g}================================================================`;
     this.sender.eventCallback = eventCallback;
   }
 
-  lock () {
+  lock (lockVirtualTime?: boolean) {
     this.locked = true;
+    if (lockVirtualTime) {
+      this.virtualTimeObj.lock();
+    }
   }
 
-  unLock () {
+  unLock (unlockVirtualTime?: boolean) {
     this.locked = false;
+    if (unlockVirtualTime) {
+      this.virtualTimeObj.unLock();
+    }
   }
 }
