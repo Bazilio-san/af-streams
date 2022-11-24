@@ -319,7 +319,7 @@ ${g}================================================================`;
     }));
   }
 
-  async _addPortionToBuffer (recordset: TDbRecord[], endTs: number = 0) {
+  async _addPortionToBuffer (recordset: TDbRecord[]): Promise<void> {
     const { recordsBuffer, loopTimeMillis, options } = this;
     const { streamConfig: { streamId } } = options;
     const { length: loadedCount = 0 } = recordset;
@@ -362,8 +362,6 @@ ${g}================================================================`;
       } else {
         this.lastRecordTs = lastLoadedRecordTs + 1;
       }
-    } else {
-      this.lastRecordTs = this.virtualTimeObj.isCurrentTime ? Date.now() : endTs;
     }
     if (DEBUG_STREAM) {
       options.echo(`${this.prefix} vt: ${this.virtualTimeObj.getString()
@@ -408,10 +406,11 @@ ${g}================================================================`;
         options.eventEmitter?.emit('before-load-next-portion', payload);
       }
       let recordset: TDbRecord[] | null = await this.db.getPortionOfData({ startTs, endTs, limit });
-      if (recordset.length) {
-        endTs = this.tsFieldToMillis(recordset[recordset.length - 1][options.streamConfig.src.tsField]);
+      await this._addPortionToBuffer(recordset);
+
+      if (!recordset.length) {
+        this.lastRecordTs = this.virtualTimeObj.isCurrentTime ? Date.now() : endTs;
       }
-      await this._addPortionToBuffer(recordset, endTs);
       recordset = null;
 
       if (DEBUG_LNP) {
