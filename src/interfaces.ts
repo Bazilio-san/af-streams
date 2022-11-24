@@ -233,6 +233,7 @@ export interface IEmBeforeLoadNextPortion {
   streamId: string,
   startTs: number,
   endTs: number,
+  vt: number,
 }
 
 export interface IEmAfterLoadNextPortion {

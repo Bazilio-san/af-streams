@@ -396,13 +396,9 @@ ${g}================================================================`;
       return;
     }
 
-    if (DEBUG_LNP) {
-      options.echo(`${this.prefix} ${c}_loadNextPortion()${rs} vt: ${m}${virtualTimeObj.getString()}${rs
-      } from: ${m}${millis2iso(startTs)}${rs} to ${m}${millis2iso(endTs)}${rs}`);
-    }
     try {
       if (DEBUG_LNP) {
-        const payload: IEmBeforeLoadNextPortion = { streamId, startTs, endTs };
+        const payload: IEmBeforeLoadNextPortion = { streamId, startTs, endTs, vt: virtualTimeObj.getVirtualTs() };
         options.eventEmitter?.emit('before-load-next-portion', payload);
       }
       let recordset: TDbRecord[] | null = await this.db.getPortionOfData({ startTs, endTs, limit });

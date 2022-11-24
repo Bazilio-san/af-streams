@@ -1,6 +1,6 @@
 {
   "name": "af-streams",
-  "version": "2.0.89",
+  "version": "2.0.90",
   "description": "Data stream from database table",
   "main": "./dist/cjs/src/index.js",
   "module": "./dist/esm/index.js",
@@ -22,7 +22,8 @@
     "lint:fix": "eslint . --ext .ts --fix",
     "test": "jest --config jest.config.js",
     "pub": "npm run lint:fix && npm run clean && npm run build && npm publish",
-    "cb": "npm run clean && npm run build"
+    "cb": "npm run clean && npm run build",
+    "cbp": "npm run clean && npm run build && npm publish"
   },
   "dependencies": {
     "cron": "^2.0.0",
