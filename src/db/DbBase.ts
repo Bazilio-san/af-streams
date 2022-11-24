@@ -92,8 +92,8 @@ export class DbBase {
 
   getPortionSQL ({ startTs, endTs, limit }: { startTs: number, endTs: number, limit: number }): string {
     const { tsField, ld, rd, options: { millis2dbFn } } = this;
-    let sql = `${'SELECT'} ${this.fieldsList}
-FROM ${this.schemaAndTable} WHERE ${ld}${tsField}${rd} >= ${millis2dbFn(startTs)} AND ${ld}${tsField}${rd} <= ${millis2dbFn(endTs)} ORDER BY ${this.sortBy}`;
+    let sql = `${'    SELECT'} ${this.fieldsList}
+    FROM ${this.schemaAndTable} WHERE ${ld}${tsField}${rd} >= ${millis2dbFn(startTs)} AND ${ld}${tsField}${rd} <= ${millis2dbFn(endTs)} ORDER BY ${this.sortBy}`;
     if (limit) {
       sql = this.limitIt(sql, limit);
     }
