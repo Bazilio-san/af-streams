@@ -309,6 +309,7 @@ ${g}================================================================`;
       const recordCopy = JSON.parse(JSON.stringify(record));
       dbRecordOrRecordset[index] = null;
       recordCopy[TS_FIELD] = tsFieldToMillis(recordCopy[tsField]);
+      Object.defineProperty(recordCopy, TS_FIELD, { configurable: false, writable: false });
       return new Promise((resolve: (arg0: TEventRecord | null) => void) => {
         setTimeout(() => {
           resolve(null);
