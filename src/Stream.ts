@@ -309,6 +309,7 @@ ${g}================================================================`;
       const recordCopy = JSON.parse(JSON.stringify(record));
       dbRecordOrRecordset[index] = null;
       Object.defineProperty(recordCopy, TS_FIELD, {
+        enumerable: true,
         configurable: false,
         writable: false,
         value: tsFieldToMillis(recordCopy[tsField]),
