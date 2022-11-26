@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this,no-console */
 import AbstractSender from './AbstractSender';
-import { IRecordsComposite, TEventRecord } from '../interfaces';
+import { IRecordsComposite, TEventRecord } from '../@types/interfaces';
 
 class ConsoleSender extends AbstractSender {
   async connect () {

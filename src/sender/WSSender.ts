@@ -3,7 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { sleep } from '../utils/utils';
 import AbstractSender from './AbstractSender';
 import { cyan, lBlue, reset } from '../utils/color';
-import { IRecordsComposite, ISenderConstructorOptions, Nullable, TAccessPoint } from '../interfaces';
+import { IRecordsComposite, ISenderConstructorOptions, Nullable, TAccessPoint } from '../@types/interfaces';
 
 const AWAIT_SOCKET_TIMEOUT = 10_000;
 const LOOP_SLEEP_MILLIS = 1000;

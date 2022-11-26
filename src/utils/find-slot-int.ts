@@ -1,4 +1,4 @@
-import { TSlot } from '../interfaces';
+import { TSlot } from '../@types/interfaces';
 
 export const findSlotIntLEFT = (arr: number[], x: number): TSlot => {
   const lastIndex = arr.length - 1;

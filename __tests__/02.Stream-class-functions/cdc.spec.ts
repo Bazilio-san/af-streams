@@ -1,6 +1,6 @@
 import initStream from './init-stream';
 import { Stream, TS_FIELD } from '../../src';
-import { Nullable, TEventRecord } from '../../src/interfaces';
+import { Nullable, TEventRecord } from '../../src/@types/interfaces';
 
 let stream: Stream;
 

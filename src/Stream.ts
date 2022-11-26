@@ -24,7 +24,7 @@ import {
   IStreamConfig,
   TDbRecord,
   TEventRecord,
-} from './interfaces';
+} from './@types/interfaces';
 import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
 import getSender from './sender/get-sender';

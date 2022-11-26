@@ -2,7 +2,7 @@
 import * as net from 'net';
 import { Buffer } from 'buffer';
 import AbstractSender from './AbstractSender';
-import { IEventComposite, IRecordsComposite, ISenderConstructorOptions, TEventRecord } from '../interfaces';
+import { IEventComposite, IRecordsComposite, ISenderConstructorOptions, TEventRecord } from '../@types/interfaces';
 
 class TCPJSONSender extends AbstractSender {
   public isReady: boolean;

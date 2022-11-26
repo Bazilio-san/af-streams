@@ -1,4 +1,4 @@
-import { TSlot } from '../interfaces';
+import { TSlot } from '../@types/interfaces';
 
 export const eq = (a: number, b: number, SIGMA: number) => Math.abs(a - b) <= SIGMA;
 export const gt = (a: number, b: number, SIGMA: number) => a > b + SIGMA;

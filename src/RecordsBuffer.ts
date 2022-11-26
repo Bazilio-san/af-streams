@@ -1,5 +1,5 @@
 import { findIndexOfNearestSmaller } from './utils/find-index-of-nearest-smaller';
-import { TEventRecord } from './interfaces';
+import { TEventRecord } from './@types/interfaces';
 import { TS_FIELD } from './constants';
 
 export class RecordsBuffer {

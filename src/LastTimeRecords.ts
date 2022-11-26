@@ -1,5 +1,5 @@
 import { DEBUG_LTR, TS_FIELD } from './constants';
-import { TDbRecord } from './interfaces';
+import { TDbRecord } from './@types/interfaces';
 import { millis2isoZ } from './utils/utils';
 
 export class LastTimeRecords {

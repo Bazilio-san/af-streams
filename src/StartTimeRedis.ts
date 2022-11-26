@@ -4,7 +4,7 @@ import { createClient, RedisClientType, RedisDefaultModules, RedisModules, Redis
 import { DateTime } from 'luxon';
 import { RedisFunctions } from '@redis/client';
 import { getStreamKey, getTimeParamMillis, millis2iso, timeParamRE } from './utils/utils';
-import { ILoggerEx } from './interfaces';
+import { ILoggerEx } from './@types/interfaces';
 
 export interface IStartTimeRedisOptions {
   useStartTimeFromRedisCache: boolean,

@@ -1,6 +1,6 @@
 import { Promise } from 'mssql';
 import AbstractSender from './AbstractSender';
-import { IRecordsComposite, ISenderConstructorOptions, TEventRecord } from '../interfaces';
+import { IRecordsComposite, ISenderConstructorOptions, TEventRecord } from '../@types/interfaces';
 
 class CallbackSender extends AbstractSender {
   public eventCallback: Function;

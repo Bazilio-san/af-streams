@@ -2,8 +2,8 @@
 // noinspection JSUnusedGlobalSymbols
 
 import { getAFLogger } from 'af-logger';
-import { TLogLevelName } from 'tslog';
 import emitter from './ee';
+import { TLogLevelName } from '../../src/@types/logger-levels';
 
 const prefix = 'af-streams';
 const minLevel = process.env.LOGGER_LEVEL || 'silly';

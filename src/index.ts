@@ -9,7 +9,7 @@ export {
   IEmVirtualHourChanged, IEmVirtualDateChanged,
   IEmSubtractedLastTimeRecords, IEmCurrentLastTimeRecords,
   IEmBeforeLoadNextPortion, IEmAfterLoadNextPortion, IEmSaveLastTs,
-} from './interfaces';
+} from './@types/interfaces';
 export {
   getTimeParamMillis,
   getTimeParamFromMillis,

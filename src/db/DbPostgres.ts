@@ -1,6 +1,6 @@
 // @ts-ignore
 import * as pg from 'pg';
-import { IDbConstructorOptions, IPostgresConfig } from '../interfaces';
+import { IDbConstructorOptions, IPostgresConfig } from '../@types/interfaces';
 import { DbBase } from './DbBase';
 
 const postgresDefaults: pg.PoolConfig = {

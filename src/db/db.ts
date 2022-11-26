@@ -1,4 +1,4 @@
-import { IDbConstructorOptions } from '../interfaces';
+import { IDbConstructorOptions } from '../@types/interfaces';
 import { DbMsSql } from './DbMsSql';
 import { DbPostgres } from './DbPostgres';
 

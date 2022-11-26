@@ -1,4 +1,4 @@
-import { ISender, ISenderConstructorOptions, TAccessPoint } from '../interfaces';
+import { ISender, ISenderConstructorOptions, TAccessPoint } from '../@types/interfaces';
 import TCPJSONSender from './TCPJSONSender';
 import WSSender from './WSSender';
 import CallbackSender from './CallbackSender';

@@ -1,5 +1,5 @@
 /* eslint-disable class-methods-use-this,@typescript-eslint/no-unused-vars,no-unused-vars */
-import { IRecordsComposite, ISenderConfig, ISenderConstructorOptions } from '../interfaces';
+import { IRecordsComposite, ISenderConfig, ISenderConstructorOptions } from '../@types/interfaces';
 
 class AbstractSender {
   public senderConfig: ISenderConfig;

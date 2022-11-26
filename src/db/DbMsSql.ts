@@ -1,5 +1,5 @@
 import * as sql from 'mssql';
-import { IDbConstructorOptions, IMsSqlConfig } from '../interfaces';
+import { IDbConstructorOptions, IMsSqlConfig } from '../@types/interfaces';
 import { DbBase } from './DbBase';
 import { MILLIS_IN_HOUR } from '../constants';
 

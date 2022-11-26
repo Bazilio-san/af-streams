@@ -1,6 +1,6 @@
 import EventEmitter from 'events';
 import AbstractSender from './AbstractSender';
-import { IRecordsComposite, ISenderConstructorOptions, TEventRecord } from '../interfaces';
+import { IRecordsComposite, ISenderConstructorOptions, TEventRecord } from '../@types/interfaces';
 
 class EmitterSender extends AbstractSender {
   private readonly emitSingleEvent: boolean;

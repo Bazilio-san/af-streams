@@ -1,5 +1,5 @@
 import EventEmitter from 'events';
-import { IEcho, IEmVirtualDateChanged, IEmVirtualHourChanged } from './interfaces';
+import { IEcho, IEmVirtualDateChanged, IEmVirtualHourChanged } from './@types/interfaces';
 import { c, rs } from './utils/color';
 import { MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
 import { millis2iso } from './utils/utils';

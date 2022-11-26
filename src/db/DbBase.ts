@@ -1,5 +1,5 @@
 /* eslint-disable class-methods-use-this */
-import { IDbConstructorOptions, IEmPortionOfDataCount, IEmPortionOfDataSql, TDbRecord } from '../interfaces';
+import { IDbConstructorOptions, IEmPortionOfDataCount, IEmPortionOfDataSql, TDbRecord } from '../@types/interfaces';
 import { DEBUG_SQL } from '../constants';
 
 export class DbBase {
