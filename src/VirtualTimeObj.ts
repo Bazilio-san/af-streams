@@ -92,6 +92,11 @@ export class VirtualTimeObj {
     return vt;
   }
 
+  setVirtualTs (ts: number) {
+    this.lastVt = ts;
+    this.realStartTs = Date.now() - ((this.lastVt - this.virtualStartTs) / this.speed);
+  }
+
   lock () {
     if (!this.locked) {
       this.lastVt = this.getVirtualTs();
@@ -104,7 +109,6 @@ export class VirtualTimeObj {
     if (this.locked) {
       this.locked = false;
       this.realStartTs = Date.now() - ((this.lastVt - this.virtualStartTs) / this.speed);
-      // this.realStartTs = Date.now();
     }
   }
 
