@@ -55,7 +55,15 @@ export interface IStreamConstructorOptions {
 export class Stream {
   public readonly bufferLookAheadMs: number;
 
+  /**
+   * Timestamp of the last loaded record
+   */
   public lastRecordTs: number;
+
+  /**
+   * Left border for next request
+   */
+  public nextStartTs: number;
 
   public recordsBuffer: RecordsBuffer;
 
@@ -130,6 +138,7 @@ export class Stream {
     this.sender = {} as ISender;
     this.db = {} as DbMsSql | DbPostgres;
     this.lastRecordTs = 0;
+    this.nextStartTs = 0;
 
     this.loopTimeMillis = getTimeParamMillis(loopTime);
     this.recordsBuffer = new RecordsBuffer();
@@ -158,6 +167,7 @@ export class Stream {
     this.busy = 0;
     options.eventEmitter?.on('virtual-time-loop-back', () => {
       this.lastRecordTs = 0;
+      this.nextStartTs = 0;
       this.recordsBuffer.flush();
       this.lastTimeRecords.flush();
       this.totalRowsSent = 0;
@@ -344,28 +354,27 @@ ${g}================================================================`;
         });
       }
 
-      const lastLoadedRecordTs = forBuffer[forBuffer.length - 1][TS_FIELD];
+      this.lastRecordTs = forBuffer[forBuffer.length - 1][TS_FIELD];
 
+      // Removing from the received package those records that were already received in the previous package
       const subtractedLastTimeRecords = this.lastTimeRecords.subtractLastTimeRecords(forBuffer);
       if (DEBUG_LTR) {
         const payload: IEmSubtractedLastTimeRecords = { streamId, subtractedLastTimeRecords };
         options.eventEmitter?.emit('subtracted-last-time-records', payload);
       }
-
+      // Since the previous step may have removed previously received records,
+      // the length of forBuffer may be less
       toUseCount = forBuffer.length;
-      if (toUseCount !== loadedCount) {
-        skipped = loadedCount - toUseCount;
-      }
+      skipped = loadedCount - toUseCount;
+
       if (toUseCount) {
         recordsBuffer.add(forBuffer);
-        this.lastRecordTs = lastLoadedRecordTs;
+        // currentLastTimeRecords contains records from a batch with the same latest timestamp
         const currentLastTimeRecords = this.lastTimeRecords.fillLastTimeRecords(this.recordsBuffer.buffer);
         if (DEBUG_LTR) {
           const payload: IEmCurrentLastTimeRecords = { streamId, currentLastTimeRecords };
           options.eventEmitter?.emit('current-last-time-records', payload);
         }
-      } else {
-        this.lastRecordTs = lastLoadedRecordTs + 1;
       }
     }
     if (DEBUG_STREAM) {
@@ -375,7 +384,7 @@ ${g}================================================================`;
   }
 
   async _loadNextPortion () {
-    const { options, recordsBuffer, virtualTimeObj, bufferLookAheadMs, lastRecordTs, maxBufferSize } = this;
+    const { options, recordsBuffer, virtualTimeObj, bufferLookAheadMs, nextStartTs, maxBufferSize } = this;
     const { streamConfig: { streamId } } = options;
 
     let startTs;
@@ -385,7 +394,7 @@ ${g}================================================================`;
       endTs = startTs + bufferLookAheadMs;
       this.isFirstLoad = false;
     } else {
-      startTs = lastRecordTs || virtualTimeObj.virtualStartTs;
+      startTs = nextStartTs || virtualTimeObj.virtualStartTs;
       endTs = virtualTimeObj.getVirtualTs() + bufferLookAheadMs;
     }
 
@@ -407,12 +416,10 @@ ${g}================================================================`;
         options.eventEmitter?.emit('before-load-next-portion', payload);
       }
       let recordset: TDbRecord[] | null = await this.db.getPortionOfData({ startTs, endTs, limit });
-      await this._addPortionToBuffer(recordset);
+      await this._addPortionToBuffer(recordset); // Inside the function recordset is cleared
+      recordset = null; // GC
 
-      if (!recordset.length) {
-        this.lastRecordTs = this.virtualTimeObj.isCurrentTime ? Date.now() : endTs;
-      }
-      recordset = null;
+      this.nextStartTs = this.virtualTimeObj.isCurrentTime ? Date.now() : endTs;
 
       if (DEBUG_LNP) {
         const payload: IEmAfterLoadNextPortion = {
@@ -420,6 +427,7 @@ ${g}================================================================`;
           startTs,
           endTs,
           lastRecordTs: this.lastRecordTs,
+          nextStartTs: this.nextStartTs,
           last: recordsBuffer.last,
           vt: virtualTimeObj.getVirtualTs(),
         };

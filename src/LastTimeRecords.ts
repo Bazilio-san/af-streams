@@ -36,6 +36,10 @@ export class LastTimeRecords {
     return info;
   }
 
+  /**
+   * Populates the cache with entries that have the same latest timestamp.
+   * Returns these entries for diagnostics
+   */
   fillLastTimeRecords (rb: any[]): TDbRecord[] {
     const currentLastTimeRecords: TDbRecord[] = [];
     if (!rb.length) {

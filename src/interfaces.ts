@@ -238,9 +238,14 @@ export interface IEmBeforeLoadNextPortion {
 
 export interface IEmAfterLoadNextPortion {
   streamId: string,
+  // Left time limit in last request
   startTs: number,
+  // Right time limit in last request
   endTs: number,
+  // Timestamp of the last received record
   lastRecordTs: number,
+  // Left border for next request
+  nextStartTs: number,
   last: TEventRecord | null,
   vt: number, // Virtual time stamp
 }
