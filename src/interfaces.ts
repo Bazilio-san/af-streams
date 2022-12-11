@@ -246,6 +246,7 @@ export interface IEmAfterLoadNextPortion {
   lastRecordTs: number,
   // Left border for next request
   nextStartTs: number,
+  recordsetLength: number,
   last: TEventRecord | null,
   vt: number, // Virtual time stamp
 }

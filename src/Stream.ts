@@ -416,6 +416,7 @@ ${g}================================================================`;
         options.eventEmitter?.emit('before-load-next-portion', payload);
       }
       let recordset: TDbRecord[] | null = await this.db.getPortionOfData({ startTs, endTs, limit });
+      const recordsetLength = recordset?.length || 0;
       await this._addPortionToBuffer(recordset); // Inside the function recordset is cleared
       recordset = null; // GC
 
@@ -428,6 +429,7 @@ ${g}================================================================`;
           endTs,
           lastRecordTs: this.lastRecordTs,
           nextStartTs: this.nextStartTs,
+          recordsetLength,
           last: recordsBuffer.last,
           vt: virtualTimeObj.getVirtualTs(),
         };
