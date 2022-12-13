@@ -242,11 +242,13 @@ export interface IEmAfterLoadNextPortion {
   startTs: number,
   // Right time limit in last request
   endTs: number,
+  limit: number,
   // Timestamp of the last received record
   lastRecordTs: number,
   // Left border for next request
   nextStartTs: number,
   recordsetLength: number,
+  isLimitExceed: boolean,
   last: TEventRecord | null,
   vt: number, // Virtual time stamp
 }

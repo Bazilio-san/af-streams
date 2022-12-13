@@ -420,16 +420,20 @@ ${g}================================================================`;
       await this._addPortionToBuffer(recordset); // Inside the function recordset is cleared
       recordset = null; // GC
 
-      this.nextStartTs = this.virtualTimeObj.isCurrentTime ? Date.now() : endTs;
+      const isLimitExceed = recordsetLength <= limit;
+
+      this.nextStartTs = isLimitExceed ? this.lastRecordTs : endTs;
 
       if (DEBUG_LNP) {
         const payload: IEmAfterLoadNextPortion = {
           streamId,
           startTs,
           endTs,
+          limit,
           lastRecordTs: this.lastRecordTs,
           nextStartTs: this.nextStartTs,
           recordsetLength,
+          isLimitExceed,
           last: recordsBuffer.last,
           vt: virtualTimeObj.getVirtualTs(),
         };
