@@ -6,7 +6,7 @@ import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
 import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
-import { getTimeParamMillis, millis2iso, padL } from './utils/utils';
+import { getTimeParamMillis, millis2iso, millis2isoZ, padL } from './utils/utils';
 import getDb from './db/db';
 import {
   blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, y, bg, yellow,
@@ -242,7 +242,7 @@ export class Stream {
     const info = `${g}${eqFill} [af-streams: ${streamId}] ${eqFill}
 ${g}Time field TZ:         ${m}${timezoneOfTsField}
 ${g}Start from beginning:  ${m}${useStartTimeFromRedisCache ? 'NOT' : 'YES'}
-${g}Start time:            ${m}${millis2iso(startTime)}${isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
+${g}Start time:            ${m}${millis2isoZ(startTime)}${isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
 ${g}Speed:                 ${m}${this.virtualTimeObj.speed} X
 ${g}Cyclicity:             ${m}${loopTimeMillis ? `${loopTimeMillis / 1000} sec` : '-'}
 ${g}Db polling frequency:  ${m}${fetchIntervalSec} sec
