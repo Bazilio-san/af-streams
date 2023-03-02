@@ -316,7 +316,7 @@ ${g}================================================================`;
     }
 
     return Promise.all(dbRecordOrRecordset.map((record, index) => {
-      const recordCopy = JSON.parse(JSON.stringify(record));
+      const recordCopy = { ...record };
       dbRecordOrRecordset[index] = null;
       Object.defineProperty(recordCopy, TS_FIELD, {
         enumerable: true,
