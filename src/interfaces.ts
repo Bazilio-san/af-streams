@@ -87,6 +87,7 @@ export interface IDbConfig {
   database: string,
   user: string,
   password: string,
+  id?: string, // id объекта настроек БД в config
 }
 
 export interface IPoolOptions<T> extends Omit<PoolOptions<T>, 'create' | 'destroy'> {
