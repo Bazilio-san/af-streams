@@ -14,7 +14,7 @@ import {
 import {
   IDbConstructorOptions,
   IEcho, IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion,
-  IEmCurrentLastTimeRecords, IEmSaveLastTs,
+  IEmCurrentLastTimeRecords, IEmFindNextTs, IEmSaveLastTs,
   IEmSubtractedLastTimeRecords,
   ILoggerEx,
   IRecordsComposite,
@@ -53,6 +53,7 @@ export interface IStreamConstructorOptions {
   prepareEvent?: Function,
   tsFieldToMillis?: Function,
   millis2dbFn?: Function,
+  skipGaps?: boolean, // skip gaps in data when working in virtual time mode
   testMode?: boolean,
 }
 
@@ -115,6 +116,14 @@ export class Stream {
 
   private maxBufferSize: number;
 
+  //-----------------------------------------
+  private readonly skipGaps: boolean = false;
+
+  private prevLastRecordTs: number;
+
+  private noRecordsQueryCounter: number;
+  //-----------------------------------------
+
   public prefix: string;
 
   constructor (options: IStreamConstructorOptions) {
@@ -155,6 +164,11 @@ export class Stream {
     this.db = {} as DbMsSql | DbPostgres;
     this.lastRecordTs = 0;
     this.nextStartTs = 0;
+
+    // Properties for Jumping Data Breaks
+    this.skipGaps = !!options.skipGaps;
+    this.prevLastRecordTs = 0;
+    this.noRecordsQueryCounter = 0;
 
     this.loopTimeMillis = getTimeParamMillis(loopTime);
     this.recordsBuffer = new RecordsBuffer();
@@ -417,7 +431,7 @@ ${g}================================================================`;
     }
   }
 
-  async _loadNextPortion () {
+  private async _loadNextPortion () {
     const { options, recordsBuffer, virtualTimeObj, bufferLookAheadMs, nextStartTs, maxBufferSize } = this;
     const { streamConfig: { streamId } } = options;
 
@@ -469,6 +483,9 @@ ${g}================================================================`;
       const isLimitExceed = recordsetLength <= limit;
 
       this.nextStartTs = isLimitExceed ? this.lastRecordTs : endTs;
+      if (!recordsetLength) {
+        await this.skipGap();
+      }
 
       if (DEBUG_LNP) {
         const payload: IEmAfterLoadNextPortion = {
@@ -491,7 +508,38 @@ ${g}================================================================`;
     }
   }
 
-  _fetchLoop () {
+  private async skipGap () {
+    if (!this.skipGaps || this.virtualTimeObj.isCurrentTime) {
+      return;
+    }
+    const { lastRecordTs, nextStartTs } = this;
+    if (this.prevLastRecordTs === lastRecordTs) {
+      this.noRecordsQueryCounter++;
+    } else {
+      this.noRecordsQueryCounter = 0;
+    }
+    this.prevLastRecordTs = lastRecordTs;
+    if (this.noRecordsQueryCounter < 2) {
+      return;
+    }
+
+    const nextTs = await this.db.getNextRecordTs(this.nextStartTs);
+    this.noRecordsQueryCounter = 0;
+    if (!nextTs) {
+      return;
+    }
+    this.nextStartTs = this.tsFieldToMillis(nextTs);
+    if (DEBUG_LNP) {
+      const payload: IEmFindNextTs = {
+        streamId: this.options.streamConfig.streamId,
+        o: nextStartTs,
+        n: this.nextStartTs,
+      };
+      this.options.eventEmitter?.emit('find-next-ts', payload);
+    }
+  }
+
+  private _fetchLoop () {
     const { options: { echo, streamConfig } } = this;
     cron.job(`0/${streamConfig.fetchIntervalSec} * * * * *`, async () => {
       if (this.locked) {
@@ -517,7 +565,7 @@ ${g}================================================================`;
     // onComplete, start, timeZone, context, runOnInit
   }
 
-  _printInfoLoop () {
+  private _printInfoLoop () {
     const { streamConfig, logger } = this.options;
     cron.job(`0/${streamConfig.printInfoIntervalSec || 30} * * * * *`, () => {
       const rowsSent = `rows sent: ${bold}${padL(this.totalRowsSent || 0, 6)}${boldOff}${rs}`;
@@ -527,7 +575,7 @@ ${g}================================================================`;
     // onComplete, start, timeZone, context, runOnInit
   }
 
-  async _sendPacket (eventsPacket: TEventRecord[]): Promise<{ debugMessage: string, isError?: boolean }> {
+  private async _sendPacket (eventsPacket: TEventRecord[]): Promise<{ debugMessage: string, isError?: boolean }> {
     const { sender, sessionId, options: { eventEmitter, logger, streamConfig: { streamId } } } = this;
     return new Promise((resolve: Function) => {
       let debugMessage = '';
@@ -567,7 +615,7 @@ ${g}================================================================`;
     });
   }
 
-  async _send () {
+  private async _send () {
     const { recordsBuffer: rb, virtualTimeObj } = this;
     if (virtualTimeObj.locked) {
       return;
@@ -593,7 +641,7 @@ ${g}================================================================`;
     }
   }
 
-  async _sendLoop () {
+  private async _sendLoop () {
     const self = this;
     clearTimeout(this.sendTimer);
     try {

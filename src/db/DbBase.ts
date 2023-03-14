@@ -1,5 +1,5 @@
 /* eslint-disable class-methods-use-this */
-import { IDbConstructorOptions, IEmPortionOfDataCount, IEmPortionOfDataSql, TDbRecord } from '../interfaces';
+import { IDbConstructorOptions, IEmNextRecordTsSql, IEmPortionOfDataCount, IEmPortionOfDataSql, TDbRecord } from '../interfaces';
 import { DEBUG_SQL } from '../constants';
 
 export class DbBase {
@@ -14,6 +14,8 @@ export class DbBase {
   public fieldsArray: string[];
 
   public tsField: string;
+
+  private tsFieldQuoted: string;
 
   public idFields: string[] | any[];
 
@@ -55,6 +57,7 @@ export class DbBase {
     this.fieldsList = this.fieldsArray.map((fName) => `${ld}${fName}${rd}`).join(', ');
     this.schemaAndTable = `${ld}${schema}${rd}.${ld}${table}${rd}`;
     this.tsField = tsField;
+    this.tsFieldQuoted = `${ld}${tsField}${rd}`;
     this.idFields = idFields;
     this.sortBy = [tsField, ...idFields].map((f) => `${ld}${f}${rd}`).join(',');
   }
@@ -87,13 +90,14 @@ export class DbBase {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   limitIt (strSQL: string, limit: number): string {
+    // Stub function that is overridden in child classes
     return strSQL;
   }
 
   getPortionSQL ({ startTs, endTs, limit }: { startTs: number, endTs: number, limit: number }): string {
-    const { tsField, ld, rd, options: { millis2dbFn } } = this;
+    const { tsFieldQuoted, options: { millis2dbFn } } = this;
     let sql = `${'    SELECT'} ${this.fieldsList}
-    FROM ${this.schemaAndTable} WHERE ${ld}${tsField}${rd} >= ${millis2dbFn(startTs)} AND ${ld}${tsField}${rd} <= ${millis2dbFn(endTs)} ORDER BY ${this.sortBy}`;
+    FROM ${this.schemaAndTable} WHERE ${tsFieldQuoted} >= ${millis2dbFn(startTs)} AND ${tsFieldQuoted} <= ${millis2dbFn(endTs)} ORDER BY ${this.sortBy}`;
     if (limit) {
       sql = this.limitIt(sql, limit);
     }
@@ -113,5 +117,31 @@ export class DbBase {
       eventEmitter.emit('get-portion-of-data-count', payload);
     }
     return result?.[this.recordsetPropName] || [];
+  }
+
+  getNextRecordSQL (fromTs: number): string {
+    const { tsFieldQuoted, options: { millis2dbFn } } = this;
+    let sql = `${'    SELECT'} ${tsFieldQuoted} AS ts
+    FROM ${this.schemaAndTable} WHERE ${tsFieldQuoted} > ${millis2dbFn(fromTs)} ORDER BY ${tsFieldQuoted}`;
+    sql = this.limitIt(sql, 1);
+    return sql;
+  }
+
+  async getNextRecordTs (fromTs: number): Promise<number | undefined> {
+    const { options: { eventEmitter, streamConfig: { streamId } }, dbInfo } = this;
+    const sql = this.getNextRecordSQL(fromTs);
+    let result;
+    let nextRecordTs: number | undefined;
+    try {
+      result = await this.query(sql);
+      nextRecordTs = result?.[this.recordsetPropName]?.[0]?.ts;
+    } catch (err) {
+      this.options.logger.error(err);
+    }
+    if (DEBUG_SQL) {
+      const payload: IEmNextRecordTsSql = { streamId, sql, fromTs, dbInfo, nextRecordTs };
+      eventEmitter.emit('get-next-record-ts-sql', payload);
+    }
+    return nextRecordTs;
   }
 }

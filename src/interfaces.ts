@@ -198,6 +198,14 @@ export interface IEmPortionOfDataSql {
   dbInfo: string,
 }
 
+export interface IEmNextRecordTsSql {
+  streamId: string,
+  sql: string,
+  fromTs: number,
+  dbInfo: string,
+  nextRecordTs: number | undefined
+}
+
 export interface IEmPortionOfDataCount {
   streamId: string,
   sql: string, // Portion SQL
@@ -263,4 +271,10 @@ export interface IStreamLike {
   streamId: string,
   lastTs: number,
   getDesiredTimeFront: () => number,
+}
+
+export interface IEmFindNextTs {
+  streamId: string,
+  o: number,
+  n: number,
 }
