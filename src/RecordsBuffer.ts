@@ -3,45 +3,36 @@ import { TEventRecord } from './interfaces';
 import { TS_FIELD } from './constants';
 
 export class RecordsBuffer {
-  public buffer: any[];
+  public buffer: any[] = [];
 
-  public first: TEventRecord | null;
-
-  public last: TEventRecord | null;
-
-  private firstTs: number;
-
-  public lastTs: number;
-
-  constructor () {
-    this.buffer = [];
-    this.first = null;
-    this.last = null;
-    this.firstTs = 0;
-    this.lastTs = 0;
-    this.setEdges();
+  get length () {
+    return this.buffer.length;
   }
 
-  setEdges () {
+  get first (): TEventRecord | null {
+    return this.buffer[0] || null;
+  }
+
+  get last (): TEventRecord | null {
     const { buffer: rb } = this;
-    this.first = rb[0] || null;
-    this.last = rb.length ? rb[rb.length - 1] : null;
-    this.firstTs = this.first?.[TS_FIELD] || 0;
-    this.lastTs = this.last?.[TS_FIELD] || 0;
+    return rb.length ? rb[rb.length - 1] : null;
+  }
+
+  get firstTs (): number {
+    return this.first?.[TS_FIELD] || 0;
+  }
+
+  get lastTs (): number {
+    return this.last?.[TS_FIELD] || 0;
+  }
+
+  getMsDistance (): number {
+    return this.buffer.length ? Math.max(0, this.lastTs - this.firstTs) : 0;
   }
 
   add (forBuffer: TEventRecord[]) {
     this.buffer.push(...forBuffer);
     forBuffer.splice(0, forBuffer.length); // GC
-    this.setEdges();
-  }
-
-  getMsDistance (): number {
-    const { firstTs, lastTs } = this;
-    if (!this.buffer.length || lastTs < firstTs) {
-      return 0;
-    }
-    return lastTs - firstTs;
   }
 
   shiftBy (length: number) {
@@ -54,22 +45,10 @@ export class RecordsBuffer {
 
   flush () {
     this.buffer = [];
-    this.first = null;
-    this.last = null;
-    this.firstTs = 0;
-    this.lastTs = 0;
-  }
-
-  get length () {
-    return this.buffer.length;
   }
 
   // Greatest index of a value less than the specified
   findIndexOfNearestSmaller (virtualTime: number) {
-    const { buffer: rb } = this;
-    if (!rb.length) {
-      return -1;
-    }
-    return findIndexOfNearestSmaller(rb, virtualTime);
+    return this.length ? findIndexOfNearestSmaller(this.buffer, virtualTime) : -1;
   }
 }

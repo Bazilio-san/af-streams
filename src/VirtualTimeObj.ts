@@ -1,8 +1,10 @@
 import EventEmitter from 'events';
-import { IEcho, IEmVirtualDateChanged, IEmVirtualHourChanged } from './interfaces';
+import { IEcho, IEmVirtualDateChanged, IEmVirtualHourChanged, IStreamLike } from './interfaces';
 import { c, rs } from './utils/color';
 import { MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
 import { millis2iso } from './utils/utils';
+
+const TIME_FRONT_UPDATE_INTERVAL_MILLIS = 3;
 
 export interface IVirtualTimeObjOptions {
   startTime: number, // timestamp millis
@@ -14,19 +16,11 @@ export interface IVirtualTimeObjOptions {
 }
 
 export class VirtualTimeObj {
-  private options: IVirtualTimeObjOptions;
-
   public speed: number;
 
-  private loopTimeMillis: number;
+  public readonly realStartTs: number;
 
-  public virtualStartTs: number;
-
-  private loopTimeMillsEnd: 0 | number;
-
-  public realStartTs: number;
-
-  public realStartTsLoopSafe: number;
+  public readonly virtualStartTs: number;
 
   public loopNumber: number;
 
@@ -34,7 +28,15 @@ export class VirtualTimeObj {
 
   public locked: boolean = true;
 
-  public lastVt: number = 0;
+  private streams: IStreamLike[] = [];
+
+  private options: IVirtualTimeObjOptions;
+
+  public readonly loopTimeMillis: number;
+
+  private readonly loopTimeMillsEnd: 0 | number;
+
+  private timeFront: number = 0;
 
   private eventEmitter: EventEmitter;
 
@@ -51,10 +53,9 @@ export class VirtualTimeObj {
     this.speed = Number(speed) || 1;
     this.loopTimeMillis = loopTimeMillis;
     this.virtualStartTs = +startTime; // timestamp millis from which to start uploading data
-    this.lastVt = this.virtualStartTs;
+    this.timeFront = this.virtualStartTs;
     this.loopTimeMillsEnd = loopTimeMillis && (this.virtualStartTs + loopTimeMillis);
     this.realStartTs = Date.now();
-    this.realStartTsLoopSafe = Date.now();
     this.loopNumber = 0;
     this.isCurrentTime = false; // flag: virtual time has caught up with real time
     this.eventEmitter = eventEmitter;
@@ -62,12 +63,50 @@ export class VirtualTimeObj {
       // eslint-disable-next-line no-console
       console.log(m);
     };
+    setInterval(() => {
+      if (this.locked) {
+        return;
+      }
+      this.setNextTimeFront();
+      this.loopIfNeed();
+      this.detectDayChange();
+      this.detectHourChange();
+    }, TIME_FRONT_UPDATE_INTERVAL_MILLIS);
   }
 
-  setVirtualNumbers (vt: number): number {
-    this.lastVt = vt;
-    const { prevVirtualDateNumber: pvd, prevVirtualHourNumber: pvh } = this;
-    this.prevVirtualDateNumber = Math.floor(vt / MILLIS_IN_DAY);
+  private setNextTimeFront () {
+    const now = Date.now();
+    if (this.isCurrentTime) {
+      this.timeFront = now;
+      return;
+    }
+
+    const timeShift: number = TIME_FRONT_UPDATE_INTERVAL_MILLIS * this.speed;
+    if (this.streams.length) {
+      const consensusTimeFront = Math.min(...this.streams.map((stream) => stream.getDesiredTimeFront()), this.timeFront + timeShift);
+      this.timeFront = Math.max(consensusTimeFront, this.timeFront);
+    } else {
+      this.timeFront += timeShift;
+    }
+    if (this.timeFront >= now) {
+      this.timeFront = now;
+      this.isCurrentTime = true;
+      this.eventEmitter.emit('virtual-time-is-synchronized-with-current');
+    }
+  }
+
+  private loopIfNeed () {
+    if (this.loopTimeMillis && this.timeFront >= this.loopTimeMillsEnd) {
+      this.timeFront = this.virtualStartTs;
+      this.loopNumber++;
+      this.debug(`[af-streams]: New cycle from ${this.getString()}`);
+      this.eventEmitter.emit('virtual-time-loop-back');
+    }
+  }
+
+  private detectDayChange () {
+    const pvd = this.prevVirtualDateNumber;
+    this.prevVirtualDateNumber = Math.floor(this.timeFront / MILLIS_IN_DAY);
     if (pvd && pvd < this.prevVirtualDateNumber) {
       const payload: IEmVirtualDateChanged = {
         prevN: pvd,
@@ -77,7 +116,11 @@ export class VirtualTimeObj {
       };
       this.eventEmitter.emit('virtual-date-changed', payload);
     }
-    this.prevVirtualHourNumber = Math.floor(vt / MILLIS_IN_HOUR);
+  }
+
+  private detectHourChange () {
+    const pvh = this.prevVirtualHourNumber;
+    this.prevVirtualHourNumber = Math.floor(this.timeFront / MILLIS_IN_HOUR);
     if (pvh && pvh !== this.prevVirtualHourNumber) {
       const payload: IEmVirtualHourChanged = {
         prevN: pvh,
@@ -89,17 +132,25 @@ export class VirtualTimeObj {
       };
       this.eventEmitter.emit('virtual-hour-changed', payload);
     }
-    return vt;
   }
 
+  // noinspection JSUnusedGlobalSymbols
+  getActualSpeed () {
+    return (this.timeFront - this.virtualStartTs) / (Date.now() - this.realStartTs);
+  }
+
+  // noinspection JSUnusedGlobalSymbols
   setVirtualTs (ts: number) {
-    this.lastVt = ts;
-    this.realStartTs = Date.now() - ((this.lastVt - this.virtualStartTs) / this.speed);
+    this.timeFront = ts;
+  }
+
+  // noinspection JSUnusedGlobalSymbols
+  registerStream (stream: IStreamLike) {
+    this.streams.push(stream);
   }
 
   lock () {
     if (!this.locked) {
-      this.lastVt = this.getVirtualTs();
       this.isCurrentTime = false;
       this.locked = true;
     }
@@ -108,7 +159,6 @@ export class VirtualTimeObj {
   unLock () {
     if (this.locked) {
       this.locked = false;
-      this.realStartTs = Date.now() - ((this.lastVt - this.virtualStartTs) / this.speed);
     }
   }
 
@@ -119,32 +169,7 @@ export class VirtualTimeObj {
   }
 
   getVirtualTs (): number {
-    if (this.locked) {
-      return this.setVirtualNumbers(this.lastVt);
-    }
-    const now = Date.now();
-    const { isCurrentTime, virtualStartTs, realStartTs, speed, loopTimeMillis, loopTimeMillsEnd } = this;
-    if (isCurrentTime) {
-      return this.setVirtualNumbers(now);
-    }
-
-    let vt = virtualStartTs + (now - realStartTs) * speed;
-    if (loopTimeMillis && vt >= loopTimeMillsEnd) {
-      vt = virtualStartTs;
-      this.realStartTs = now;
-      this.loopNumber++;
-      this.debug(`[af-streams]: New cycle from ${this.getString()}`);
-      this.eventEmitter.emit('virtual-time-loop-back');
-      return this.setVirtualNumbers(vt);
-    }
-
-    if (vt >= now) {
-      vt = now;
-      this.eventEmitter.emit('virtual-time-is-synchronized-with-current');
-      this.isCurrentTime = true;
-    }
-
-    return this.setVirtualNumbers(vt);
+    return this.timeFront;
   }
 
   getString (): string {
@@ -153,6 +178,7 @@ export class VirtualTimeObj {
 }
 
 let virtualTimeObj: VirtualTimeObj;
+
 export const getVirtualTimeObj = (options: IVirtualTimeObjOptions): VirtualTimeObj => {
   if (!virtualTimeObj) {
     virtualTimeObj = new VirtualTimeObj(options);
