@@ -70,7 +70,7 @@ export class DbBase {
     return true;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-unused-vars,unused-imports/no-unused-vars
   async query (strSQL: string): Promise<any> {
     return null;
   }
@@ -88,10 +88,10 @@ export class DbBase {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-  limitIt (strSQL: string, limit: number): string {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars,unused-imports/no-unused-vars
+  limitIt (_strSQL: string, _limit: number): string {
     // Stub function that is overridden in child classes
-    return strSQL;
+    return _strSQL;
   }
 
   getPortionSQL ({ startTs, endTs, limit }: { startTs: number, endTs: number, limit: number }): string {

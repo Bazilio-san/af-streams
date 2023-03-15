@@ -25,6 +25,7 @@ class AbstractSender {
     return true;
   }
 
+  // eslint-disable-next-line unused-imports/no-unused-vars
   async reconnect (force?: boolean): Promise<boolean> {
     return true;
   }
@@ -40,6 +41,7 @@ class AbstractSender {
     return true;
   }
 
+  // eslint-disable-next-line unused-imports/no-unused-vars
   async sendEvents (recordsComposite: IRecordsComposite): Promise<boolean> {
     return true;
   }
