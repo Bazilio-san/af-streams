@@ -164,7 +164,7 @@ export class VirtualTimeObj {
     return this.timeFront;
   }
 
-  getString (): string {
+  get virtualTimeString (): string {
     return `${c}<${millis2iso(this.timeFront)}${this.isCurrentTime ? '*' : ''}>${rs}`;
   }
 
@@ -195,6 +195,11 @@ export class VirtualTimeObj {
   /** @deprecated */
   getVirtualTs (): number {
     return this.timeFront;
+  }
+
+  /** @deprecated */
+  getString (): string {
+    return this.virtualTimeString;
   }
 }
 
