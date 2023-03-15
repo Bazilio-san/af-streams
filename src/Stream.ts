@@ -217,6 +217,8 @@ export class Stream {
     this.prefix = `${lCyan}STREAM: ${lBlue}${options.streamConfig.streamId}${rs}`;
   }
 
+  // ###############################  INIT & START  ############################
+
   /**
    * Preparing entities for the flow to work
    * - determination of the given speed of the flow of virtual time
@@ -330,6 +332,8 @@ ${g}================================================================`;
     return this;
   }
 
+  // ##############################  PREPARE EVENTS  ###########################
+
   // Greatest index of a value less than the specified
   findEndIndex () {
     const virtualTime = this.virtualTimeObj.virtualTs;
@@ -434,6 +438,8 @@ ${g}================================================================`;
       } loaded/skipped/used: ${lm}${loadedCount}${blue}/${lc}${skipped}${blue}/${g}${toUseCount}${rs}`);
     }
   }
+
+  // #################################  LOAD  ##################################
 
   private async _loadNextPortion () {
     const { options, recordsBuffer, virtualTimeObj, bufferLookAheadMs, nextStartTs, maxBufferSize } = this;
@@ -579,6 +585,8 @@ ${g}================================================================`;
     // onComplete, start, timeZone, context, runOnInit
   }
 
+  // #################################  SEND  ##################################
+
   private async _sendPacket (eventsPacket: TEventRecord[]): Promise<{ debugMessage: string, isError?: boolean }> {
     const { sender, sessionId, options: { eventEmitter, logger, streamConfig: { streamId } } } = this;
     return new Promise((resolve: Function) => {
@@ -658,9 +666,7 @@ ${g}================================================================`;
     }, this.sendIntervalMillis);
   }
 
-  setEventCallback (eventCallback: Function) {
-    this.sender.eventCallback = eventCallback;
-  }
+  // #################################  LOCK  ##################################
 
   lock (lockVirtualTime?: boolean) {
     this.locked = true;
@@ -674,6 +680,12 @@ ${g}================================================================`;
     if (unlockVirtualTime) {
       this.virtualTimeObj.unLock();
     }
+  }
+
+  // ===========================================================================
+
+  setEventCallback (eventCallback: Function) {
+    this.sender.eventCallback = eventCallback;
   }
 
   getDesiredTimeFront (timeFront: number, timeShift: number) {
