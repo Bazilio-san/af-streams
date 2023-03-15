@@ -76,7 +76,7 @@ async function initStream (): Promise<Stream> {
   } catch (err) {
     exitOnError(err);
   }
-  stream.virtualTimeObj.setReady();
+  stream.virtualTimeObj.unLock();
   return stream;
 }
 

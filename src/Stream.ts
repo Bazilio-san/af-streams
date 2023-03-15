@@ -100,7 +100,7 @@ export class Stream {
   /**
    * The interval for sending data from the buffer multiplied by the speed of virtual time
    */
-  public readonly sendIntervalVirtualMillis: number;
+  public sendIntervalVirtualMillis: number;
 
   public totalRowsSent: number;
 
@@ -189,11 +189,19 @@ export class Stream {
      */
     this.lastTimeRecords = new LastTimeRecords(idFields);
 
+    let { speed } = options;
+    if (/^[\d.]+$/.test(String(speed))) {
+      speed = Math.min(Math.max(0.2, parseFloat(String(speed))), 5000);
+    } else {
+      speed = 1;
+    }
+    options.speed = speed;
+
     this.virtualTimeObj = {} as VirtualTimeObj;
 
     this.sendTimer = null;
     this.sendIntervalMillis = 10; // ms
-    this.sendIntervalVirtualMillis = this.sendIntervalMillis * (this.virtualTimeObj.speed || 1);
+    this.sendIntervalVirtualMillis = this.sendIntervalMillis * speed;
     this.totalRowsSent = 0;
     this.busy = 0;
 
@@ -232,14 +240,8 @@ export class Stream {
       useStartTimeFromRedisCache,
       exitOnError,
       testMode,
+      speed,
     } = options;
-
-    let { speed } = options;
-    if (/^[\d.]+$/.test(String(speed))) {
-      speed = Math.min(Math.max(0.2, parseFloat(String(speed))), 5000);
-    } else {
-      speed = 1;
-    }
 
     const senderConstructorOptions: ISenderConstructorOptions = {
       streamConfig,
