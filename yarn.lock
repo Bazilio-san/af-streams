@@ -1199,6 +1199,20 @@ af-logger@^2.0.28:
     winston "^3.4.0"
     winston-daily-rotate-file "^4.5.5"
 
+af-streams@^2.0.115:
+  version "2.0.115"
+  resolved "https://registry.yarnpkg.com/af-streams/-/af-streams-2.0.115.tgz#b22cdce173dd094994469d79481c9afb7f232e6d"
+  integrity sha512-/4cZx3vuIG/QwEwLAHoroOvncDcYVin0QyecnXDjiltNkYLVKjuW5WCF8KEXZgYOxacBXTZGcqrALr0986k8GA==
+  dependencies:
+    cron "^2.2.0"
+    dotenv "^16.0.3"
+    luxon "^3.3.0"
+    mssql "^9.1.1"
+    pg "^8.10.0"
+    redis "^4.6.5"
+    socket.io "^4.6.1"
+    socket.io-client "^4.6.1"
+
 agent-base@6:
   version "6.0.2"
   resolved "https://registry.yarnpkg.com/agent-base/-/agent-base-6.0.2.tgz#49fff58577cfee3f37176feab4c22e00f86d7f77"

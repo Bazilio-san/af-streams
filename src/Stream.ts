@@ -33,6 +33,7 @@ import { DEBUG_LNP, DEBUG_LTR, DEBUG_STREAM, TS_FIELD } from './constants';
 const FETCH_INTERVAL_SEC_DEFAULT = 10;
 const BUFFER_MULTIPLIER_DEFAULT = 2;
 const MAX_BUFFER_SIZE_DEFAULT = 65_000;
+const STREAM_SEND_INTERVAL_DEFAULT_MILLIS = 10;
 
 export interface IStreamConstructorOptions {
   streamConfig: IStreamConfig,
@@ -54,6 +55,9 @@ export interface IStreamConstructorOptions {
   tsFieldToMillis?: Function,
   millis2dbFn?: Function,
   skipGaps?: boolean, // skip gaps in data when working in virtual time mode
+  streamSendIntervalMillis?: number, // default 10 ms
+  speedCalcIntervalMillis?: number, // default 10_000 ms
+  timeFrontUpdateIntervalMillis?: number, // default 5 ms
   testMode?: boolean,
 }
 
@@ -97,7 +101,7 @@ export class Stream {
   /**
    * The interval for sending data from the buffer
    */
-  private readonly sendIntervalMillis: number;
+  private readonly streamSendIntervalMillis: number;
 
   /**
    * The interval for sending data from the buffer multiplied by the speed of virtual time
@@ -197,8 +201,8 @@ export class Stream {
     this.virtualTimeObj = {} as VirtualTimeObj;
 
     this.sendTimer = null;
-    this.sendIntervalMillis = 10; // ms
-    this.sendIntervalVirtualMillis = this.sendIntervalMillis * this.speed;
+    this.streamSendIntervalMillis = options.streamSendIntervalMillis || STREAM_SEND_INTERVAL_DEFAULT_MILLIS;
+    this.sendIntervalVirtualMillis = this.streamSendIntervalMillis * this.speed;
     this.totalRowsSent = 0;
     this.busy = 0;
 
@@ -212,6 +216,7 @@ export class Stream {
     });
 
     options.eventEmitter?.on('virtual-time-is-synchronized-with-current', () => {
+      this.sendIntervalVirtualMillis = this.streamSendIntervalMillis; // not really needed
       this.bufferLookAheadMs = fetchIntervalSec * 1000 * bufferMultiplier;
     });
 
@@ -231,7 +236,7 @@ export class Stream {
    * Output of start information
    */
   async init (): Promise<Stream | undefined> {
-    const { options, loopTimeMillis, millis2dbFn, speed } = this;
+    const { options: streamConstructorOptions, loopTimeMillis, millis2dbFn, speed } = this;
     const {
       senderConfig,
       eventEmitter,
@@ -243,7 +248,9 @@ export class Stream {
       useStartTimeFromRedisCache,
       exitOnError,
       testMode,
-    } = options;
+      speedCalcIntervalMillis,
+      timeFrontUpdateIntervalMillis,
+    } = streamConstructorOptions;
 
     const senderConstructorOptions: ISenderConstructorOptions = {
       streamConfig,
@@ -278,10 +285,13 @@ export class Stream {
 
     const virtualTimeObjOptions: IVirtualTimeObjOptions = {
       startTime,
+      eventEmitter,
       speed,
       loopTimeMillis,
-      eventEmitter,
+      echo,
       exitOnError,
+      speedCalcIntervalMillis,
+      timeFrontUpdateIntervalMillis,
     };
 
     this.virtualTimeObj = getVirtualTimeObj(virtualTimeObjOptions);
@@ -335,8 +345,7 @@ ${g}================================================================`;
   // ##############################  PREPARE EVENTS  ###########################
 
   // Greatest index of a value less than the specified
-  findEndIndex () {
-    const virtualTime = this.virtualTimeObj.virtualTs;
+  findEndIndex (vt: number) {
     /*
     if (DEBUG_STREAM) {
       const { buffer: rb } = this.recordsBuffer;
@@ -345,7 +354,7 @@ ${g}================================================================`;
         this.options.echo(`findEndIndex() ${c}virtualTime: ${m}${millis2iso(virtualTime)}${rs} [${m}${firstISO}${rs} - ${m}${lastISO}${rs}]`);
     }
     */
-    return this.recordsBuffer.findIndexOfNearestSmaller(virtualTime);
+    return this.recordsBuffer.findIndexOfNearestSmaller(vt);
   }
 
   static packetInfo (count: number, fromRecord?: TEventRecord | null, toRecord?: TEventRecord | null) {
@@ -451,6 +460,9 @@ ${g}================================================================`;
     if (((recordsBuffer.getMsDistance()) >= bufferLookAheadMs)) {
       return;
     }
+
+    virtualTimeObj.setNextTimeFront();
+
     // Если время начала следующего запроса находится впереди текущего виртуального времени более,
     // чем на расстояние bufferLookAheadMs, новых записей подгружать не нужно
     if (nextStartTs - virtualTimeObj.virtualTs >= bufferLookAheadMs) {
@@ -638,7 +650,10 @@ ${g}================================================================`;
     if (virtualTimeObj.locked) {
       return;
     }
-    const index = this.findEndIndex();
+
+    virtualTimeObj.setNextTimeFront();
+
+    const index = this.findEndIndex(virtualTimeObj.virtualTs);
     if (index < 0) {
       return;
     }
@@ -669,7 +684,7 @@ ${g}================================================================`;
     }
     this.sendTimer = setTimeout(() => {
       self._sendLoop();
-    }, this.sendIntervalMillis);
+    }, this.streamSendIntervalMillis);
   }
 
   // #################################  LOCK  ##################################

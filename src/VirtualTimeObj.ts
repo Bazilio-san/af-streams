@@ -4,7 +4,8 @@ import { c, rs } from './utils/color';
 import { MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
 import { millis2iso } from './utils/utils';
 
-const TIME_FRONT_UPDATE_INTERVAL_MILLIS = 3;
+const TIME_FRONT_UPDATE_INTERVAL_DEFAULT_MILLIS = 5;
+const SPEED_CALC_INTERVAL_DEFAULT_MILLIS = 10_000;
 
 export interface IVirtualTimeObjOptions {
   startTime: number, // timestamp millis
@@ -13,7 +14,8 @@ export interface IVirtualTimeObjOptions {
   loopTimeMillis?: number,
   echo?: IEcho,
   exitOnError: Function,
-  speedCalcInterval?: number,
+  speedCalcIntervalMillis?: number,
+  timeFrontUpdateIntervalMillis?: number,
 }
 
 export class VirtualTimeObj {
@@ -78,7 +80,7 @@ export class VirtualTimeObj {
       this.loopIfNeed();
       this.detectDayChange();
       this.detectHourChange();
-    }, TIME_FRONT_UPDATE_INTERVAL_MILLIS);
+    }, options.timeFrontUpdateIntervalMillis || TIME_FRONT_UPDATE_INTERVAL_DEFAULT_MILLIS);
 
     this.stat = {
       lastRealTs: Date.now(),
@@ -93,17 +95,17 @@ export class VirtualTimeObj {
 
       this.stat.lastRealTs = Date.now();
       this.stat.lastFrontTs = this.timeFront;
-    }, options.speedCalcInterval || 10_000);
+    }, options.speedCalcIntervalMillis || SPEED_CALC_INTERVAL_DEFAULT_MILLIS);
   }
 
-  private setNextTimeFront () {
+  setNextTimeFront () {
     const now = Date.now();
     if (this.isCurrentTime) {
       this.timeFront = now;
       return;
     }
 
-    const timeShift: number = TIME_FRONT_UPDATE_INTERVAL_MILLIS * this.speed;
+    const timeShift: number = TIME_FRONT_UPDATE_INTERVAL_DEFAULT_MILLIS * this.speed;
     if (this.streams.length) {
       this.timeFront = Math.min(...this.streams.map((stream) => stream.getDesiredTimeFront(this.timeFront, timeShift)));
     } else {
