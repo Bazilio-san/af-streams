@@ -104,8 +104,7 @@ export class VirtualTimeObj {
 
     const timeShift: number = TIME_FRONT_UPDATE_INTERVAL_MILLIS * this.speed;
     if (this.streams.length) {
-      const consensusTimeFront = Math.min(...this.streams.map((stream) => stream.getDesiredTimeFront()));
-      this.timeFront = Math.max(consensusTimeFront, this.timeFront + timeShift);
+      this.timeFront = Math.min(...this.streams.map((stream) => stream.getDesiredTimeFront(this.timeFront, timeShift)));
     } else {
       this.timeFront += timeShift;
     }

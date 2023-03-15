@@ -268,7 +268,7 @@ export interface IEmSaveLastTs {
 }
 
 export interface IStreamLike {
-  getDesiredTimeFront: () => number,
+  getDesiredTimeFront: (timeFront: number, timeShift: number) => number,
 }
 
 export interface IEmFindNextTs {

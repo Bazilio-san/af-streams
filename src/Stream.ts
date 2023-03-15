@@ -676,13 +676,16 @@ ${g}================================================================`;
     }
   }
 
-  getDesiredTimeFront () {
-    // Если буфер заполнен, то желаемый фронт времени первая сделка в буфере + sendIntervalVirtualMillis
-    // Если буфер пуст, то желаемый фронт времени nextStartTs + sendIntervalVirtualMillis
-    const leftEdge = this.recordsBuffer.firstTs || this.nextStartTs;
-    if (!leftEdge) {
-      throw new Error(`${this.prefix} error: leftEdge = 0`); // VVR
+  getDesiredTimeFront (timeFront: number, timeShift: number) {
+    // Если буфер не пуст, то надо не допускать превышения времени отставания выше порога
+    const MAX_LAG = 30_000; // 30 с, как 1/120 часа
+    const { firstTs } = this.recordsBuffer;
+    if (firstTs) {
+      return firstTs + MAX_LAG;
     }
-    return leftEdge + this.sendIntervalVirtualMillis;
+    if (this.nextStartTs) {
+      return this.nextStartTs + this.sendIntervalVirtualMillis;
+    }
+    return timeFront + timeShift;
   }
 }
