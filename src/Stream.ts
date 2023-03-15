@@ -430,7 +430,7 @@ ${g}================================================================`;
       }
     }
     if (DEBUG_STREAM) {
-      options.echo(`${this.prefix} vt: ${this.virtualTimeObj.getString()
+      options.echo(`${this.prefix} vt: ${this.virtualTimeObj.virtualTimeString
       } loaded/skipped/used: ${lm}${loadedCount}${blue}/${lc}${skipped}${blue}/${g}${toUseCount}${rs}`);
     }
   }
@@ -548,7 +548,7 @@ ${g}================================================================`;
     cron.job(`0/${streamConfig.fetchIntervalSec} * * * * *`, async () => {
       if (this.locked) {
         if (DEBUG_STREAM) {
-          const vt = `vt: ${this.virtualTimeObj.getString()} ${this.virtualTimeObj.locked ? `${bg.red}${yellow}LOCKED${rs}` : ''}}`;
+          const vt = `vt: ${this.virtualTimeObj.virtualTimeString} ${this.virtualTimeObj.locked ? `${bg.red}${yellow}LOCKED${rs}` : ''}}`;
           echo(`${this.prefix} ${bg.red}${yellow}STREAM LOCKED${rs} ${vt}`);
         }
         return;
@@ -574,7 +574,7 @@ ${g}================================================================`;
     cron.job(`0/${streamConfig.printInfoIntervalSec || 30} * * * * *`, () => {
       const rowsSent = `rows sent: ${bold}${padL(this.totalRowsSent || 0, 6)}${boldOff}${rs}`;
       const locked = this.locked ? `  ${bg.red}${yellow}STREAM LOCKED${rs}` : '';
-      logger.info(`${this.prefix} ${rowsSent} / ${this.virtualTimeObj.getString()}${locked}`);
+      logger.info(`${this.prefix} ${rowsSent} / ${this.virtualTimeObj.virtualTimeString}${locked}`);
     }, null, true, 'GMT', undefined, false);
     // onComplete, start, timeZone, context, runOnInit
   }

@@ -99,7 +99,7 @@ export class VirtualTimeObj {
     if (this.loopTimeMillis && this.timeFront >= this.loopTimeMillsEnd) {
       this.timeFront = this.virtualStartTs;
       this.loopNumber++;
-      this.debug(`[af-streams]: New cycle from ${this.getString()}`);
+      this.debug(`[af-streams]: New cycle from ${this.virtualTimeString}`);
       this.eventEmitter.emit('virtual-time-loop-back');
     }
   }
