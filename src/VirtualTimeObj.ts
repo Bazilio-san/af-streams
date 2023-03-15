@@ -165,7 +165,19 @@ export class VirtualTimeObj {
   }
 
   getString (): string {
-    return `${c}<${millis2iso(this.virtualTs)}${this.isCurrentTime ? '*' : ''}>${rs}`;
+    return `${c}<${millis2iso(this.timeFront)}${this.isCurrentTime ? '*' : ''}>${rs}`;
+  }
+
+  get virtualTimeISO (): string {
+    return millis2iso(this.timeFront);
+  }
+
+  get virtualStartTimeISO (): string {
+    return millis2iso(this.virtualStartTs);
+  }
+
+  get realStartTimeISO (): string {
+    return millis2iso(this.realStartTs);
   }
 
   // noinspection JSUnusedGlobalSymbols
