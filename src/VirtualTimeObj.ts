@@ -13,6 +13,7 @@ export interface IVirtualTimeObjOptions {
   loopTimeMillis?: number,
   echo?: IEcho,
   exitOnError: Function,
+  speedCalcInterval?: number,
 }
 
 export class VirtualTimeObj {
@@ -46,6 +47,12 @@ export class VirtualTimeObj {
 
   private prevVirtualHourNumber: number = 0;
 
+  private speedometer: {
+    lastTs: number,
+    lastFrontTs: number,
+    speed: number,
+  };
+
   constructor (options: IVirtualTimeObjOptions) {
     const { startTime, speed, loopTimeMillis = 0, eventEmitter, echo } = options;
 
@@ -72,6 +79,20 @@ export class VirtualTimeObj {
       this.detectDayChange();
       this.detectHourChange();
     }, TIME_FRONT_UPDATE_INTERVAL_MILLIS);
+
+    this.speedometer = {
+      lastTs: Date.now(),
+      lastFrontTs: this.virtualStartTs,
+      speed: 0,
+    };
+
+    setInterval(() => {
+      const deltaReal = Date.now() - this.speedometer.lastTs;
+      const deltaVirtual = this.timeFront - this.speedometer.lastFrontTs;
+      this.speedometer.speed = deltaReal ? deltaVirtual / deltaReal : 0;
+      this.speedometer.lastTs = Date.now();
+      this.speedometer.lastFrontTs = this.timeFront;
+    }, options.speedCalcInterval || 10_000);
   }
 
   private setNextTimeFront () {
@@ -135,9 +156,14 @@ export class VirtualTimeObj {
   }
 
   // noinspection JSUnusedGlobalSymbols
-  get actualSpeed () {
+  get totalSpeed () {
     const d = Date.now() - this.realStartTs;
     return d ? (this.timeFront - this.virtualStartTs) / d : 0;
+  }
+
+  // noinspection JSUnusedGlobalSymbols
+  get lastSpeed () {
+    return this.speedometer.speed;
   }
 
   // noinspection JSUnusedGlobalSymbols
