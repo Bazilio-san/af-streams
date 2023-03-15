@@ -47,8 +47,8 @@ export class VirtualTimeObj {
 
   private prevVirtualHourNumber: number = 0;
 
-  private speedometer: {
-    lastTs: number,
+  private stat: {
+    lastRealTs: number,
     lastFrontTs: number,
     speed: number,
   };
@@ -80,18 +80,19 @@ export class VirtualTimeObj {
       this.detectHourChange();
     }, TIME_FRONT_UPDATE_INTERVAL_MILLIS);
 
-    this.speedometer = {
-      lastTs: Date.now(),
+    this.stat = {
+      lastRealTs: Date.now(),
       lastFrontTs: this.virtualStartTs,
       speed: 0,
     };
 
     setInterval(() => {
-      const deltaReal = Date.now() - this.speedometer.lastTs;
-      const deltaVirtual = this.timeFront - this.speedometer.lastFrontTs;
-      this.speedometer.speed = deltaReal ? deltaVirtual / deltaReal : 0;
-      this.speedometer.lastTs = Date.now();
-      this.speedometer.lastFrontTs = this.timeFront;
+      const dReal = Date.now() - this.stat.lastRealTs;
+      const dVirtual = this.timeFront - this.stat.lastFrontTs;
+      this.stat.speed = dReal ? Math.ceil(dVirtual / dReal) : 0;
+
+      this.stat.lastRealTs = Date.now();
+      this.stat.lastFrontTs = this.timeFront;
     }, options.speedCalcInterval || 10_000);
   }
 
@@ -157,12 +158,12 @@ export class VirtualTimeObj {
   // noinspection JSUnusedGlobalSymbols
   get totalSpeed () {
     const d = Date.now() - this.realStartTs;
-    return d ? (this.timeFront - this.virtualStartTs) / d : 0;
+    return d ? Math.ceil((this.timeFront - this.virtualStartTs) / d) : 0;
   }
 
   // noinspection JSUnusedGlobalSymbols
   get lastSpeed () {
-    return this.speedometer.speed;
+    return this.stat.speed;
   }
 
   // noinspection JSUnusedGlobalSymbols
