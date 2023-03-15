@@ -135,18 +135,16 @@ export class VirtualTimeObj {
   }
 
   // noinspection JSUnusedGlobalSymbols
-  getActualSpeed () {
-    return (this.timeFront - this.virtualStartTs) / (Date.now() - this.realStartTs);
-  }
-
-  // noinspection JSUnusedGlobalSymbols
-  setVirtualTs (ts: number) {
-    this.timeFront = ts;
+  get actualSpeed () {
+    const d = Date.now() - this.realStartTs;
+    return d ? (this.timeFront - this.virtualStartTs) / d : 0;
   }
 
   // noinspection JSUnusedGlobalSymbols
   registerStream (stream: IStreamLike) {
-    this.streams.push(stream);
+    if (!this.streams.find((s) => stream === s)) {
+      this.streams.push(stream);
+    }
   }
 
   lock () {
@@ -162,18 +160,29 @@ export class VirtualTimeObj {
     }
   }
 
+  get virtualTs (): number {
+    return this.timeFront;
+  }
+
+  getString (): string {
+    return `${c}<${millis2iso(this.virtualTs)}${this.isCurrentTime ? '*' : ''}>${rs}`;
+  }
+
+  // noinspection JSUnusedGlobalSymbols
+  /** @deprecated */
+  setVirtualTs (ts: number) {
+    this.timeFront = ts;
+  }
+
   // For compatibility
   /** @deprecated */
   setReady (): void {
     this.unLock();
   }
 
+  /** @deprecated */
   getVirtualTs (): number {
     return this.timeFront;
-  }
-
-  getString (): string {
-    return `${c}<${millis2iso(this.getVirtualTs())}${this.isCurrentTime ? '*' : ''}>${rs}`;
   }
 }
 

@@ -268,8 +268,6 @@ export interface IEmSaveLastTs {
 }
 
 export interface IStreamLike {
-  streamId: string,
-  lastTs: number,
   getDesiredTimeFront: () => number,
 }
 

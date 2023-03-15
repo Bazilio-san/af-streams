@@ -279,7 +279,9 @@ export class Stream {
       eventEmitter,
       exitOnError,
     };
+
     this.virtualTimeObj = getVirtualTimeObj(virtualTimeObjOptions);
+    this.virtualTimeObj.registerStream(this);
     this.nextStartTs = this.virtualTimeObj.virtualStartTs;
 
     const eqFill = '='.repeat(Math.max(1, (36 - streamId.length) / 2));
@@ -328,7 +330,7 @@ ${g}================================================================`;
 
   // Greatest index of a value less than the specified
   findEndIndex () {
-    const virtualTime = this.virtualTimeObj.getVirtualTs();
+    const virtualTime = this.virtualTimeObj.virtualTs;
     /*
     if (DEBUG_STREAM) {
       const { buffer: rb } = this.recordsBuffer;
@@ -441,12 +443,12 @@ ${g}================================================================`;
     }
     // Если время начала следующего запроса находится впереди текущего виртуального времени более,
     // чем на расстояние bufferLookAheadMs, новых записей подгружать не нужно
-    if (nextStartTs - virtualTimeObj.getVirtualTs() >= bufferLookAheadMs) {
+    if (nextStartTs - virtualTimeObj.virtualTs >= bufferLookAheadMs) {
       return;
     }
 
     let startTs = nextStartTs;
-    let endTs = virtualTimeObj.getVirtualTs() + bufferLookAheadMs; // С учетом предыдущих условий, тут расстояние между startTs и endTs не должно превышать
+    let endTs = virtualTimeObj.virtualTs + bufferLookAheadMs; // С учетом предыдущих условий, тут расстояние между startTs и endTs не должно превышать
 
     if (this.isFirstLoad) {
       startTs = virtualTimeObj.virtualStartTs;
@@ -468,7 +470,7 @@ ${g}================================================================`;
 
     try {
       if (DEBUG_LNP) {
-        const payload: IEmBeforeLoadNextPortion = { streamId, startTs, endTs, vt: virtualTimeObj.getVirtualTs() };
+        const payload: IEmBeforeLoadNextPortion = { streamId, startTs, endTs, vt: virtualTimeObj.virtualTs };
         options.eventEmitter?.emit('before-load-next-portion', payload);
       }
 
@@ -498,7 +500,7 @@ ${g}================================================================`;
           recordsetLength,
           isLimitExceed,
           last: recordsBuffer.last,
-          vt: virtualTimeObj.getVirtualTs(),
+          vt: virtualTimeObj.virtualTs,
         };
         options.eventEmitter?.emit('after-load-next-portion', payload);
       }
