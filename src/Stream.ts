@@ -482,7 +482,7 @@ ${g}================================================================`;
       await this._addPortionToBuffer(recordset); // Inside the function recordset is cleared
       recordset = null; // GC
 
-      const isLimitExceed = recordsetLength <= limit;
+      const isLimitExceed = recordsetLength >= limit;
 
       this.nextStartTs = isLimitExceed ? this.lastRecordTs : endTs;
       if (!recordsetLength) {
