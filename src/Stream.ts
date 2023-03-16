@@ -6,7 +6,7 @@ import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
 import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
-import { getTimeParamMillis, millis2iso, millis2isoZ, padL } from './utils/utils';
+import { copyRecord, getTimeParamMillis, millis2iso, millis2isoZ, padL } from './utils/utils';
 import getDb from './db/db';
 import {
   blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, y, bg, yellow,
@@ -134,6 +134,8 @@ export class Stream {
 
   public stat: IStreamStat = { queryTs: 0 };
 
+  private isPrepareEventAsync: boolean;
+
   constructor (options: IStreamConstructorOptions) {
     const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0 } = options;
     const { src, maxBufferSize } = streamConfig;
@@ -155,6 +157,8 @@ export class Stream {
     this.prepareEvent = typeof prepareEvent === 'function'
       ? prepareEvent.bind(this)
       : (dbRecord: TDbRecord) => dbRecord;
+
+    this.isPrepareEventAsync = this.prepareEvent.constructor.name === 'AsyncFunction';
 
     this.millis2dbFn = typeof millis2dbFn === 'function'
       ? millis2dbFn.bind(this)
@@ -371,7 +375,7 @@ ${g}================================================================`;
 
   async prepareEventsPacket (dbRecordOrRecordset: (TDbRecord | null)[]): Promise<TEventRecord[]> {
     const TIMEOUT_TO_PREPARE_EVENT = 5 * 60_000; // VVQ
-    const { options: { streamConfig: { src: { tsField } } }, prepareEvent, tsFieldToMillis } = this;
+    const { options: { streamConfig: { src: { tsField } } }, prepareEvent, isPrepareEventAsync, tsFieldToMillis } = this;
     if (!Array.isArray(dbRecordOrRecordset)) {
       if (!dbRecordOrRecordset || typeof dbRecordOrRecordset !== 'object') {
         return [];
@@ -380,20 +384,25 @@ ${g}================================================================`;
     }
 
     return Promise.all(dbRecordOrRecordset.map((record, index) => {
-      const recordCopy = { ...record };
+      if (!record) {
+        return null;
+      }
       dbRecordOrRecordset[index] = null;
-      Object.defineProperty(recordCopy, TS_FIELD, {
-        enumerable: true,
-        configurable: false,
-        writable: false,
-        value: tsFieldToMillis(recordCopy[tsField]),
-      });
+
+      const recordCopy = copyRecord(record);
+      recordCopy[TS_FIELD] = tsFieldToMillis(record[tsField]);
+
       return new Promise((resolve: (arg0: TEventRecord | null) => void) => {
         setTimeout(() => {
           resolve(null);
         }, TIMEOUT_TO_PREPARE_EVENT);
-        const eventRecord = prepareEvent(recordCopy) as TEventRecord;
-        resolve(eventRecord);
+        if (isPrepareEventAsync) {
+          prepareEvent(recordCopy).then((eventRecord: TEventRecord) => {
+            resolve(eventRecord);
+          });
+        } else {
+          resolve(prepareEvent(recordCopy) as TEventRecord);
+        }
       });
     }));
   }
@@ -406,9 +415,8 @@ ${g}================================================================`;
     let toUseCount = loadedCount;
 
     if (loadedCount) {
-      const recordsetCopy = [...recordset];
+      const forBuffer = await this.prepareEventsPacket(recordset);
       recordset.splice(0, recordset.length);
-      const forBuffer = await this.prepareEventsPacket(recordsetCopy);
 
       if (loopTimeMillis) {
         const { loopNumber } = this.virtualTimeObj;

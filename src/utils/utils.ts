@@ -2,6 +2,7 @@ import * as os from 'os';
 import * as crypto from 'crypto';
 import { ToISOTimeOptions } from 'luxon/src/datetime';
 import { DateTime } from 'luxon';
+import { TDbRecord } from '../interfaces';
 
 let instanceKey: string;
 
@@ -158,3 +159,21 @@ export const getBool = (v: any): boolean => {
   return !!v;
 };
 */
+
+export const copyRecord = (record: TDbRecord): TDbRecord => {
+  const recordCopy = { ...record };
+  Object.entries(recordCopy).forEach(([key, value]) => {
+    if (value && typeof value !== 'object') {
+      if (value instanceof Date) {
+        recordCopy[key] = Number(value);
+      } else {
+        try {
+          recordCopy[key] = JSON.parse(JSON.stringify(value));
+        } catch (err) {
+          //
+        }
+      }
+    }
+  });
+  return recordCopy;
+};
