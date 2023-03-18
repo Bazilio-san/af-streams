@@ -50,4 +50,54 @@ export {
   findSlotFloatBINARY,
   findSlotFloat,
 } from './utils/find-slot-float';
-export { TS_FIELD } from './constants';
+export { TS_FIELD, STREAM_ID_FIELD } from './constants';
+
+// =============================== CLASSES =====================================
+export {
+  NumberWindow,
+  INumberWindowItem,
+  INumberWindowSetStatOptions,
+  INumberWindowConstructorOptions,
+} from './classes/base/NumberWindow';
+
+export {
+  SingleEventTimeWindow,
+  ISingleEventTimeWindowSetStatOptions,
+  ISingleEventTimeWindowConstructorOptions,
+} from './classes/base/SingleEventTimeWindow';
+
+export {
+  TimeWindow,
+  ITimeWindowItem,
+  ITimeWindowSetStatOptions,
+  ITimeWindowConstructorOptions,
+} from './classes/base/TimeWindow';
+
+export {
+  KeyedNumberWindow,
+  IKeyedNumberWindowHash,
+  IKeyedNumberWindowOptions,
+} from './classes/KeyedNumberWindow';
+
+export {
+  KeyedSingleEventTimeWindow,
+  IKeyedSingleEventTimeWindowConstructorOptions,
+} from './classes/KeyedSingleEventTimeWindow';
+
+export {
+  KeyedTimeWindow,
+  IKeyedTimeWindowHash,
+  IKeyedTimeWindowInfo,
+  IKeyedTimeWindowOptions,
+} from './classes/KeyedTimeWindow';
+
+export {
+  Rectifier,
+  IRectifierItem,
+  IRectifierOptions,
+} from './classes/Rectifier';
+
+export {
+  SimpleEventEmitterAsyncQueue,
+  ISimpleEventEmitterQueueConstructorOptions,
+} from './classes/SimpleEventEmitterAsyncQueue';

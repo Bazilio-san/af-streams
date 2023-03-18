@@ -11,7 +11,7 @@ export class DbBase {
 
   public schemaAndTable: string;
 
-  public fieldsArray: string[];
+  public tableFieldNameArray: string[];
 
   public tsField: string;
 
@@ -49,12 +49,26 @@ export class DbBase {
     this.dbInfo = `${dbConfig.user}@${ld}${host}:${dbConfig.port}${rd}.${ld}${dbConfig.database}${rd}`;
     const { fields, src } = streamConfig;
     const { schema, table, tsField, idFields } = src;
+    const fieldDefs: string[] = [];
+    this.tableFieldNameArray = [];
     if (Array.isArray(fields)) {
-      this.fieldsArray = [...fields];
-    } else {
-      this.fieldsArray = Object.keys(fields);
+      fields.forEach((fieldDefAny: [string, string] | string) => {
+        if (Array.isArray(fieldDefAny)) {
+          const [fName, fAlias] = fieldDefAny;
+          fieldDefs.push(`${ld}${fName}${rd} AS ${ld}${fAlias}${rd}`);
+          this.tableFieldNameArray.push(fName);
+        } else {
+          fieldDefs.push(`${ld}${fieldDefAny}${rd}`);
+          this.tableFieldNameArray.push(fieldDefAny);
+        }
+      });
+      this.fieldsList = fieldDefs.join(', ');
+    } else if (typeof fields === 'object') {
+      this.tableFieldNameArray = Object.keys(fields);
+      this.fieldsList = this.tableFieldNameArray.map((fName) => `${ld}${fName}${rd}`).join(', ');
+    } else { // typeof fields === 'string'
+      this.fieldsList = fields;
     }
-    this.fieldsList = this.fieldsArray.map((fName) => `${ld}${fName}${rd}`).join(', ');
     this.schemaAndTable = `${ld}${schema}${rd}.${ld}${table}${rd}`;
     this.tsField = tsField;
     this.tsFieldQuoted = `${ld}${tsField}${rd}`;
@@ -80,9 +94,9 @@ export class DbBase {
   }
 
   async init (): Promise<void> {
-    const { schemaAndTable, options: { exitOnError, streamConfig: { streamId } }, fieldsArray } = this;
+    const { schemaAndTable, options: { exitOnError, streamConfig: { streamId } }, tableFieldNameArray } = this;
     const columnsNames = await this._getColumnsNames();
-    const unknownFields = fieldsArray.filter((name) => !columnsNames.includes(name));
+    const unknownFields = tableFieldNameArray.filter((name) => !columnsNames.includes(name));
     if (unknownFields.length) {
       exitOnError(`Table ${schemaAndTable} is missing fields specified in the ${streamId} stream configuration:\n\t${unknownFields.join('\n\t')} `);
     }

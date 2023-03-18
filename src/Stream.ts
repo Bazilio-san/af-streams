@@ -28,7 +28,7 @@ import {
 import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
 import getSender from './sender/get-sender';
-import { DEBUG_LNP, DEBUG_LTR, DEBUG_STREAM, TS_FIELD } from './constants';
+import { DEBUG_LNP, DEBUG_LTR, DEBUG_STREAM, STREAM_ID_FIELD, TS_FIELD } from './constants';
 
 const FETCH_INTERVAL_SEC_DEFAULT = 10;
 const BUFFER_MULTIPLIER_DEFAULT = 2;
@@ -378,7 +378,7 @@ ${g}================================================================`;
 
   async prepareEventsPacket (dbRecordOrRecordset: (TDbRecord | null)[]): Promise<TEventRecord[]> {
     const TIMEOUT_TO_PREPARE_EVENT = 5 * 60_000; // VVQ
-    const { options: { streamConfig: { src: { tsField } } }, prepareEvent, isPrepareEventAsync, tsFieldToMillis } = this;
+    const { options: { streamConfig: { streamId, src: { tsField } } }, prepareEvent, isPrepareEventAsync, tsFieldToMillis } = this;
     if (!Array.isArray(dbRecordOrRecordset)) {
       if (!dbRecordOrRecordset || typeof dbRecordOrRecordset !== 'object') {
         return [];
@@ -393,6 +393,7 @@ ${g}================================================================`;
       dbRecordOrRecordset[index] = null;
 
       record[TS_FIELD] = tsFieldToMillis(record[tsField]);
+      record[STREAM_ID_FIELD] = streamId;
 
       return new Promise((resolve: (arg0: TEventRecord | null) => void) => {
         const timerId = setTimeout(() => {

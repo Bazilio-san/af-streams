@@ -74,9 +74,28 @@ export type TDbRecord = { [fieldName: string | symbol]: any };
 export type TYMDms = string; // 'YYYY-MM-DDTHH:mm:ss.SSS'
 
 export type TFieldType = string;
+
+/*
+{
+  field1: 'integer',
+  field2: 'datetime',
+  ...
+}
+*/
 export type TFieldsTypes = { [fieldName: string]: TFieldType };
-export type TFieldList = string[];
-export type TFields = TFieldsTypes | TFieldList;
+
+/*
+[
+  'ID',
+  ['ID2', 'id2'],
+  'Deal:Type:Buy',
+  ['Deal:Type:Buy', 'dealType'],
+  ...
+]
+ */
+export type TFieldList = ([string, string] | string)[];
+
+export type TFields = TFieldsTypes | TFieldList | string;
 
 export interface IDbConfig {
   dialect: 'mssql' | 'pg',
@@ -284,4 +303,13 @@ export interface IEmFindNextTs {
   streamId: string,
   o: number,
   n: number,
+}
+
+// eslint-disable-next-line no-shadow
+export enum EWinInsertType {
+  REMOVE = -1,
+  FIRST = 0,
+  LEFT = 1,
+  MIDDLE = 2,
+  RIGHT = 3,
 }

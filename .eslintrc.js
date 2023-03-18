@@ -20,7 +20,6 @@ module.exports = {
     '**/dist/**/*.*',
   ],
   rules: {
-    '@typescript-eslint/no-unused-vars': 'warn',
     'object-curly-newline': [
       'error',
       {

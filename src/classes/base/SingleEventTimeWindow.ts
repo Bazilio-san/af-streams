@@ -1,0 +1,257 @@
+/* eslint-disable no-use-before-define */
+import { ITimeWindowItem } from './TimeWindow';
+import { MIN_WINDOW_MILLIS } from '../../constants';
+import { Debug } from '../../utils/debug';
+import { m } from '../../utils/color';
+import { VirtualTimeObj } from '../../VirtualTimeObj';
+import { toUTC } from '../../utils/date-utils';
+import { echo } from '../../utils/echo-simple';
+
+const debug = Debug('SingleEventTimeWindow');
+
+export interface ISingleEventTimeWindowSetStatOptions<T> {
+  singleEventTimeWindow: SingleEventTimeWindow<T>,
+  added?: ITimeWindowItem<T>,
+  removed?: ITimeWindowItem<T>,
+}
+
+export interface ISingleEventTimeWindowConstructorOptions<T> {
+  /**
+   * Отличительное имя окна для логирования
+   */
+  winName: string,
+  /**
+   * Ширина окна, мс
+   */
+  widthMillis: number,
+  /**
+   * Окно работает на основе "виртуального" времени, что важно в режиме тестирования на исторических данных.
+   * Хотя этот параметр используется только для вычисления времени устаревания событий в окне, в функции this.removeExpired()
+   */
+  virtualTimeObj?: VirtualTimeObj,
+  /**
+   * Периодичность очистки окна от устаревших событий.
+   * Если 0, то очистка происходит при добавлении каждого события
+   * Если undefined, то очистка не производится (этим управляет вышестоящий объект)
+   */
+  removeExpiredIntervalMillis?: number,
+  /**
+   * Опциональная функция для записи статистики добавления/удаления событий в окно.
+   * Если передана, то подменит собой метод this.setStat()
+   */
+  setStat?: (arg: ISingleEventTimeWindowSetStatOptions<T>) => void,
+  /**
+   * Кастомная функция для получения статистики. Она подменит метод окна this.getStat()
+   * Если не передана, то метод this.getStat() будет возвращать свойство окна stat
+   */
+  getStat?: (arg: SingleEventTimeWindow<T>) => any,
+  /**
+   * Опциональная кастомная функция добавления сведений из поступившего события в свойство this.event.
+   * Если не передана, то новое событие просто заменяет свойство this.event.
+   *
+   * Эта функция полезна, когда мы хотим хранить состояние в свойстве this.event.data и не просто заменять на новое,
+   * а внедрять данные из нового в уже имеющийся объект
+   */
+  assignData?: (instance: SingleEventTimeWindow<T>, event: ITimeWindowItem<T>) => any,
+}
+
+/**
+ * ВРЕМЕНН́ОЕ ОКНО для ОДНОГО элемента.
+ * События обязаны содержать метку времени.
+ *
+ * События поступают в окно с помощью метода this.add() и обновляют последнее событие - свойство this.event
+ * После того, как событие устареет, оно удаляется (this.event = null)
+ * Удаление устаревшего события происходит методом this.removeExpired() который вызывается:
+ * - либо периодически, через заданный интервал "this.removeExpiredIntervalMillis"
+ * - либо при каждом новом событии (если this.removeExpiredIntervalMillis = 0)
+ * - либо контролируется вышестоящим объектом (если this.removeExpiredIntervalMillis = undefined)
+ */
+export class SingleEventTimeWindow<T> {
+  /**
+   * Отличительное имя окна для логирования
+   */
+  public winName: string = '';
+
+  /**
+   * Ширина окна, мс
+   */
+  public widthMillis: number;
+
+  /**
+   * Единственный объект живущий во временном окне
+   */
+  public item: ITimeWindowItem<T> | undefined;
+
+  /**
+   * Либо временная метка последнего события в окне.
+   * Либо, в случае, когда передан virtualTimeObj и очистка окна происходит периодически на основе виртуального времени,
+   * в этом свойстве хранится время последней очистки. Это позволяет более точно контролировать процесс очистки устаревши событий.
+   */
+  public lastTs: number = 0;
+
+  /**
+   * Время в окне, левее которого событие устаревает.
+   */
+  public expireTs: number = 0;
+
+  /**
+   * Флаг, устанавливаемый при создании экземпляра класса
+   * и определяющий режим работы очистки окна от устаревшего события:
+   * Если true - очистка производится при поступлении каждого нового события, опираясь на его временную метку.
+   * Если false - очистка будет производиться периодически, опираясь на виртуальное время (или контролируется вышестоящим объектом).
+   */
+  public readonly removeExpiredOnEveryEvents: boolean = false;
+
+  /**
+   * Место хранения статистики. Заполнение этого свойства должно быть описано самостоятельно, в функции setStat,
+   * передаваемой в опциях при создании экземпляра класса
+   */
+  public stat: any;
+
+  /**
+   * Метод класса, заполняющий статистику. По умолчанию не делает ничего. Но если при создании экземпляра класса
+   * в опциях передано свойство setStat (функция), оно замещает метод класса и управление заполнением статистики
+   * передается этой кастомной функции.
+   */
+  public setStat: (arg: ISingleEventTimeWindowSetStatOptions<T>) => void;
+
+  /**
+   * Метод класса, возвращающий статистику. По умолчанию возвращает свойство класса this.stat.
+   * Но если при создании экземпляра класса в опциях передано свойство getStat (функция),
+   * оно замещает метод класса this.getStat и управление передается этой кастомной функции.
+   */
+  public getStat: (arg?: SingleEventTimeWindow<T>) => any;
+
+  /**
+   * Время поступления первого события в окно. Устанавливается единожды.
+   */
+  public inputTs: number = 0;
+
+  private removeExpiredTimer: any;
+
+  constructor (public options: ISingleEventTimeWindowConstructorOptions<T>) {
+    const { virtualTimeObj, getStat } = options;
+    const self = this;
+    this.winName = options.winName || '';
+    this.widthMillis = options.widthMillis;
+    this.setStat = options.setStat || (() => null);
+    this.getStat = getStat ? () => getStat(this) : () => this.stat;
+    if (virtualTimeObj && options.removeExpiredIntervalMillis) {
+      clearInterval(this.removeExpiredTimer);
+      this.removeExpiredTimer = setInterval(() => {
+        self.removeExpired(virtualTimeObj.virtualTs);
+      }, options.removeExpiredIntervalMillis);
+    } else {
+      this.removeExpiredOnEveryEvents = options.removeExpiredIntervalMillis !== undefined;
+    }
+  }
+
+  setExpireTs (_by?: string) {
+    // Если поступит очень старое событие, оно не должно сдвинуть в прошлое время устаревания
+    this.expireTs = Math.max(this.expireTs, this.lastTs - this.widthMillis);
+  }
+
+  /**
+   * Удаление устаревшего события
+   * Функция вызывается
+   * 1) либо при поступлении очередного события, опираясь на его метку времени,
+   * 2) либо по таймауту, опираясь на виртуальное время.
+   * 3) либо вызывается вышестоящим объектом.
+   *    Например, в коллекции именованных временных окон можно периодически совершать
+   *    обход окон и совершать очистку устаревших событий из них.
+   * Режим работы определяется наличием опции virtualTimeObj и значением опции removeExpiredIntervalMillis
+   * при создании экземпляра класса.
+   * Если есть virtualTimeObj и removeExpiredIntervalMillis > 0 запускается режим 2.
+   * Если removeExpiredIntervalMillis = undefined запускается режим 3.
+   */
+  removeExpired (virtualTs?: number): ITimeWindowItem<T> | undefined {
+    if (virtualTs) {
+      this.lastTs = virtualTs;
+      this.setExpireTs('virtualTs');
+    }
+    const { item, expireTs } = this;
+    if (item && item.ts < expireTs) {
+      this.item = undefined;
+      if (debug.enabled && this.options.removeExpiredIntervalMillis !== undefined) {
+        echo(`${m}Удалено устаревшее событие из окна [SingleEventTimeWindow] winName: ${this.winName} / -> ${toUTC(this.inputTs)} - ${toUTC(this.lastTs)} ->`);
+      }
+      return item;
+    }
+  }
+
+  /**
+   * Добавление нового события в окно
+   *
+   * Новое событие будет внедрено в свойство this.item.
+   * В простейшем случае, когда не передана опция-функция assignData,
+   * this.item будет заменено на новое событие.
+   * В общем случае, с помощью assignData() данные нового события внедряются в this.item.data
+   *
+   * Тут же:
+   * - выставляются свойства this.lastTs и this.expireTs
+   * - вызывается метод this.setStat()
+   * - вызывается метод this.removeExpired(), если взведен флаг removeExpiredOnEveryEvents.
+   * Возвращает только что добавленное событие или null.
+   */
+  add (item: ITimeWindowItem<T>, noChangeTs?: boolean): ITimeWindowItem<T> | undefined {
+    if (!item) {
+      return undefined;
+    }
+    const { ts } = item;
+    let removed: ITimeWindowItem<T> | undefined;
+    let added: ITimeWindowItem<T> | undefined;
+
+    if (ts < this.expireTs) {
+      removed = item;
+    } else {
+      if (!noChangeTs) {
+        this.lastTs = Math.max(ts, this.item?.ts || 0);
+      }
+      if (!this.inputTs) {
+        this.inputTs = ts;
+      }
+      if (this.options.assignData) {
+        this.options.assignData(this, item);
+      } else {
+        this.item = item;
+      }
+      added = item;
+    }
+    this.setExpireTs('item');
+    // Здесь может быть случай, когда новое событие сразу же устарело.
+    // Тога оно будет штатно удалено при следующей очистке.
+    if (this.removeExpiredOnEveryEvents) {
+      removed = this.removeExpired() || removed;
+    }
+    this.setStat({ singleEventTimeWindow: this, added, removed });
+    return this.item;
+  }
+
+  /**
+   * Динамическое изменение ширины окна.
+   * Сразу же вызывается метод удаления устаревших событий.
+   */
+  setWidth (widthMillis: number) {
+    if (widthMillis < MIN_WINDOW_MILLIS || widthMillis === this.widthMillis) {
+      return;
+    }
+    const isShrink = this.widthMillis > widthMillis;
+    this.widthMillis = widthMillis;
+    this.setExpireTs('setWidth');
+    if (isShrink) {
+      this.removeExpired();
+    }
+  }
+
+  destroy () {
+    clearInterval(this.removeExpiredTimer);
+    this.removeExpiredTimer = undefined;
+    // @ts-ignore
+    this.item = undefined;
+    this.stat = undefined;
+    // @ts-ignore
+    this.setStat = undefined;
+    // @ts-ignore
+    this.getStat = undefined;
+  }
+}
