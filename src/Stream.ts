@@ -6,7 +6,7 @@ import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
 import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
-import { copyRecord, getTimeParamMillis, millis2iso, millis2isoZ, padL } from './utils/utils';
+import { copyRecord, getTimeParamMillis, memUsage, millis2iso, millis2isoZ, padL } from './utils/utils';
 import getDb from './db/db';
 import {
   blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, y, bg, yellow,
@@ -59,6 +59,7 @@ export interface IStreamConstructorOptions {
   speedCalcIntervalMillis?: number, // default 10_000 ms
   timeFrontUpdateIntervalMillis?: number, // default 5 ms
   testMode?: boolean,
+  timeDelayMillis?: number, // Искусственное отставание при выборке данных
 }
 
 export class Stream {
@@ -135,6 +136,8 @@ export class Stream {
   public stat: IStreamStat = { queryTs: 0 };
 
   private isPrepareEventAsync: boolean;
+
+  private timeDelayMillis: number = 0;
 
   constructor (options: IStreamConstructorOptions) {
     const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0 } = options;
@@ -389,19 +392,22 @@ ${g}================================================================`;
       }
       dbRecordOrRecordset[index] = null;
 
-      const recordCopy = copyRecord(record);
+      const recordCopy = copyRecord(record); // VVQ возможно упразднить
       recordCopy[TS_FIELD] = tsFieldToMillis(record[tsField]);
 
       return new Promise((resolve: (arg0: TEventRecord | null) => void) => {
-        setTimeout(() => {
+        const timerId = setTimeout(() => {
           resolve(null);
         }, TIMEOUT_TO_PREPARE_EVENT);
         if (isPrepareEventAsync) {
           prepareEvent(recordCopy).then((eventRecord: TEventRecord) => {
             resolve(eventRecord);
+            clearTimeout(timerId);
           });
         } else {
-          resolve(prepareEvent(recordCopy) as TEventRecord);
+          const eventRecord = prepareEvent(recordCopy);
+          resolve(eventRecord);
+          clearTimeout(timerId);
         }
       });
     }));
@@ -460,7 +466,7 @@ ${g}================================================================`;
 
   private async _loadNextPortion () {
     const {
-      options, recordsBuffer, virtualTimeObj, bufferLookAheadMs, nextStartTs, maxBufferSize, stat, speed,
+      options, recordsBuffer, virtualTimeObj, bufferLookAheadMs, nextStartTs, maxBufferSize, stat, speed, timeDelayMillis,
     } = this;
     const { streamConfig: { streamId } } = options;
 
@@ -500,12 +506,12 @@ ${g}================================================================`;
 
     try {
       if (DEBUG_LNP) {
-        const payload: IEmBeforeLoadNextPortion = { streamId, startTs, endTs, vt: virtualTimeObj.virtualTs };
+        const payload: IEmBeforeLoadNextPortion = { streamId, startTs, endTs, vt: virtualTimeObj.virtualTs, timeDelayMillis };
         options.eventEmitter?.emit('before-load-next-portion', payload);
       }
       const st = Date.now();
       // ================= get Portion Of Data =================
-      let recordset: TDbRecord[] | null = await this.db.getPortionOfData({ startTs, endTs, limit });
+      let recordset: TDbRecord[] | null = await this.db.getPortionOfData({ startTs, endTs, limit, timeDelayMillis });
       // =======================================================
       stat.queryTs = Date.now() - st;
 
@@ -515,7 +521,7 @@ ${g}================================================================`;
 
       const isLimitExceed = recordsetLength >= limit;
 
-      this.nextStartTs = isLimitExceed ? this.lastRecordTs : endTs;
+      this.nextStartTs = isLimitExceed && this.lastRecordTs ? this.lastRecordTs : endTs;
       if (!recordsetLength) {
         await this.skipGap();
       }
@@ -525,6 +531,7 @@ ${g}================================================================`;
           streamId,
           startTs,
           endTs,
+          timeDelayMillis,
           limit,
           lastRecordTs: this.lastRecordTs,
           nextStartTs: this.nextStartTs,
@@ -606,7 +613,7 @@ ${g}================================================================`;
     cron.job(`0/${streamConfig.printInfoIntervalSec || 30} * * * * *`, () => {
       const rowsSent = `rows sent: ${bold}${padL(this.totalRowsSent || 0, 6)}${boldOff}${rs}`;
       const locked = this.locked ? `  ${bg.red}${yellow}STREAM LOCKED${rs}` : '';
-      logger.info(`${this.prefix} ${rowsSent} / ${this.virtualTimeObj.virtualTimeString}${locked}`);
+      logger.info(`${this.prefix} ${rowsSent} / ${this.virtualTimeObj.virtualTimeString}${locked} / ${memUsage()}`);
     }, null, true, 'GMT', undefined, false);
     // onComplete, start, timeZone, context, runOnInit
   }
@@ -618,7 +625,8 @@ ${g}================================================================`;
     return new Promise((resolve: Function) => {
       let debugMessage = '';
 
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        clearTimeout(timer);
         if (DEBUG_STREAM) {
           debugMessage += `${this.prefix}`;
         }
@@ -665,7 +673,9 @@ ${g}================================================================`;
     if (index < 0) {
       return;
     }
+
     let eventsPacket: any[] | null = rb.shiftBy(index + 1);
+
     let debugMessage;
     if (eventsPacket.length) {
       ({ debugMessage } = await this._sendPacket(eventsPacket));
@@ -728,5 +738,9 @@ ${g}================================================================`;
       return this.nextStartTs + this.sendIntervalVirtualMillis;
     }
     return timeFront + timeShift;
+  }
+
+  setTimeDelay (timeDelayMillis: number) {
+    this.timeDelayMillis = Math.max(0, timeDelayMillis);
   }
 }

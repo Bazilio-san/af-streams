@@ -242,6 +242,7 @@ export interface IEmBeforeLoadNextPortion {
   streamId: string,
   startTs: number,
   endTs: number,
+  timeDelayMillis: number,
   vt: number,
 }
 
@@ -255,6 +256,7 @@ export interface IEmAfterLoadNextPortion {
   startTs: number,
   // Right time limit in last request
   endTs: number,
+  timeDelayMillis: number,
   limit: number,
   // Timestamp of the last received record
   lastRecordTs: number,

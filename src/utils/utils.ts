@@ -33,10 +33,25 @@ export const padL = (str: any, strLength: number, padSymbol: string = ' ') => {
 };
 
 export const sleep = async (timeOut: number) => new Promise((resolve) => {
-  setTimeout(resolve, timeOut);
+  const timer = setTimeout(() => {
+    clearTimeout(timer);
+    resolve(true);
+  }, timeOut);
 });
 
 export const timeParamRE = /^(\d+)\s*(years?|y|months?|mo|weeks?|w|days?|d|hours?|h|minutes?|min|m|seconds?|sec|s|milliseconds?|millis|ms|)$/i;
+
+const rn = (x: number, digits: number = 2) => {
+  const p = 10 ** digits;
+  return Math.round(Number(x) * p) / p;
+};
+
+const mb = (bytes: number): string => `${rn(bytes / 1024 / 1024)} mb`;
+
+export const memUsage = (): string => {
+  const { heapUsed, rss } = process.memoryUsage();
+  return `MEM: ${mb(heapUsed)} / ${mb(rss)}`;
+};
 
 export const getTimeParamMillis = (val: string | number): number => {
   const [, nn, dhms] = timeParamRE.exec(String(val) || '') || [];

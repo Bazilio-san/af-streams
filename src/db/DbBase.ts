@@ -104,8 +104,10 @@ export class DbBase {
     return sql;
   }
 
-  async getPortionOfData ({ startTs, endTs, limit }: { startTs: number, endTs: number, limit: number }): Promise<TDbRecord[]> {
+  async getPortionOfData ({ startTs, endTs, limit, timeDelayMillis }: { startTs: number, endTs: number, limit: number, timeDelayMillis: number }): Promise<TDbRecord[]> {
     const { options: { eventEmitter, streamConfig: { streamId } }, dbInfo } = this;
+    startTs += timeDelayMillis;
+    endTs += timeDelayMillis;
     const sql = this.getPortionSQL({ startTs, endTs, limit });
     if (DEBUG_SQL) {
       const payload: IEmPortionOfDataSql = { streamId, sql, startTs, endTs, limit, dbInfo };
