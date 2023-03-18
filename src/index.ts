@@ -94,7 +94,6 @@ export {
 
 export {
   Rectifier,
-  IRectifierItem,
   IRectifierOptions,
 } from './classes/Rectifier';
 

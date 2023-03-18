@@ -4,7 +4,7 @@ import * as cron from 'cron';
 import { Promise } from 'mssql';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
-import { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
+import { getStartTimeRedis, IStartTimeRedisOptions } from './StartTimeRedis';
 import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
 import { getTimeParamMillis, memUsage, millis2iso, millis2isoZ, padL } from './utils/utils';
 import getDb from './db/db';
@@ -286,7 +286,7 @@ export class Stream {
       exitOnError,
       logger,
     };
-    const startTimeRedis = new StartTimeRedis(startTimeRedisOptions);
+    const startTimeRedis = getStartTimeRedis(startTimeRedisOptions);
 
     const { isUsedSavedStartTime, startTime } = await startTimeRedis.getStartTime();
 

@@ -17,6 +17,7 @@ export interface IStartTimeRedisOptions {
 }
 
 const prefix = '[af-streams:redis]: ';
+
 export class StartTimeRedis {
   private readonly options: IStartTimeRedisOptions;
 
@@ -119,3 +120,12 @@ export class StartTimeRedis {
     return { isUsedSavedStartTime, startTime };
   }
 }
+
+let startTimeRedis: StartTimeRedis;
+
+export const getStartTimeRedis = (options: IStartTimeRedisOptions): StartTimeRedis => {
+  if (!startTimeRedis) {
+    startTimeRedis = new StartTimeRedis(options);
+  }
+  return startTimeRedis;
+};

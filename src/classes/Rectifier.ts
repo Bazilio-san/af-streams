@@ -1,10 +1,8 @@
+// noinspection JSUnusedGlobalSymbols
+
 import { findIndexOfNearestSmaller } from '../utils/find-index-of-nearest-smaller';
 import { VirtualTimeObj } from '../VirtualTimeObj';
-
-export interface IRectifierItem {
-  // ts: number,
-  [propName: string]: any,
-}
+import { TEventRecord } from '../interfaces';
 
 export interface IRectifierOptions {
   virtualTimeObj: VirtualTimeObj,
@@ -31,7 +29,7 @@ export interface IRectifierOptions {
    * Callback, которому передается массив ts-объектов, упорядоченный по возрастанию
    * значения поля fieldNameToSort (или ts)
    */
-  sendFunction: (rectifierItemsArray: IRectifierItem[]) => number,
+  sendFunction: (rectifierItemsArray: TEventRecord[]) => number,
 }
 
 /**
@@ -51,7 +49,7 @@ export class Rectifier {
   /**
    * Упорядоченный по времени массив ts-объектов
    */
-  public accumulator: IRectifierItem[] = [];
+  public accumulator: TEventRecord[] = [];
 
   /**
    * Временная метка последнего ts-объекта в окне или 0, если окно пусто.
@@ -65,7 +63,7 @@ export class Rectifier {
 
   private virtualTimeObj: VirtualTimeObj;
 
-  private readonly sendFunction: (rectifierItemsArray: IRectifierItem[]) => number;
+  private readonly sendFunction: (eventRecordsArray: TEventRecord[]) => number;
 
   private readonly fieldNameToSort: string;
 
@@ -98,7 +96,7 @@ export class Rectifier {
     return 0;
   }
 
-  add (item: IRectifierItem): void {
+  add (item: TEventRecord): void {
     const { accumulator, fieldNameToSort } = this;
     const ts = item[fieldNameToSort];
     if (!accumulator.length) {
