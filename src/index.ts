@@ -9,6 +9,7 @@ export {
   IEmVirtualHourChanged, IEmVirtualDateChanged,
   IEmSubtractedLastTimeRecords, IEmCurrentLastTimeRecords,
   IEmBeforeLoadNextPortion, IEmAfterLoadNextPortion, IEmSaveLastTs,
+  EWinInsertType,
 } from './interfaces';
 export {
   getTimeParamMillis,
