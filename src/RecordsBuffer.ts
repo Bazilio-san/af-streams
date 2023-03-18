@@ -32,7 +32,6 @@ export class RecordsBuffer {
 
   add (forBuffer: TEventRecord[]) {
     this.buffer.push(...forBuffer);
-    forBuffer.splice(0, forBuffer.length); // GC // VVQ Может убрать?
   }
 
   shiftBy (length: number) {

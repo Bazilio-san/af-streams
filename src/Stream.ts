@@ -6,7 +6,7 @@ import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { IStartTimeRedisOptions, StartTimeRedis } from './StartTimeRedis';
 import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
-import { copyRecord, getTimeParamMillis, memUsage, millis2iso, millis2isoZ, padL } from './utils/utils';
+import { getTimeParamMillis, memUsage, millis2iso, millis2isoZ, padL } from './utils/utils';
 import getDb from './db/db';
 import {
   blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, y, bg, yellow,
@@ -392,20 +392,19 @@ ${g}================================================================`;
       }
       dbRecordOrRecordset[index] = null;
 
-      const recordCopy = copyRecord(record); // VVQ возможно упразднить
-      recordCopy[TS_FIELD] = tsFieldToMillis(record[tsField]);
+      record[TS_FIELD] = tsFieldToMillis(record[tsField]);
 
       return new Promise((resolve: (arg0: TEventRecord | null) => void) => {
         const timerId = setTimeout(() => {
           resolve(null);
         }, TIMEOUT_TO_PREPARE_EVENT);
         if (isPrepareEventAsync) {
-          prepareEvent(recordCopy).then((eventRecord: TEventRecord) => {
+          prepareEvent(record).then((eventRecord: TEventRecord) => {
             resolve(eventRecord);
             clearTimeout(timerId);
           });
         } else {
-          const eventRecord = prepareEvent(recordCopy);
+          const eventRecord = prepareEvent(record);
           resolve(eventRecord);
           clearTimeout(timerId);
         }
@@ -511,13 +510,12 @@ ${g}================================================================`;
       }
       const st = Date.now();
       // ================= get Portion Of Data =================
-      let recordset: TDbRecord[] | null = await this.db.getPortionOfData({ startTs, endTs, limit, timeDelayMillis });
+      const recordset: TDbRecord[] | null = await this.db.getPortionOfData({ startTs, endTs, limit, timeDelayMillis });
       // =======================================================
       stat.queryTs = Date.now() - st;
 
       const recordsetLength = recordset?.length || 0;
       await this._addPortionToBuffer(recordset); // Inside the function recordset is cleared
-      recordset = null; // GC
 
       const isLimitExceed = recordsetLength >= limit;
 
@@ -674,7 +672,7 @@ ${g}================================================================`;
       return;
     }
 
-    let eventsPacket: any[] | null = rb.shiftBy(index + 1);
+    const eventsPacket: any[] | null = rb.shiftBy(index + 1);
 
     let debugMessage;
     if (eventsPacket.length) {
@@ -682,9 +680,7 @@ ${g}================================================================`;
       if (eventsPacket.length) {
         rb.unshiftEvents(eventsPacket);
       }
-      eventsPacket.splice(0, eventsPacket.length); // GC
     }
-    eventsPacket = null; // GC
     if (DEBUG_STREAM) {
       let bufferInfo = Stream.packetInfo(rb.length, rb.first, rb.last);
       bufferInfo = bufferInfo.trim() ? `BUFFER: ${bufferInfo}` : `BUFFER empty`;
