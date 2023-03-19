@@ -304,9 +304,9 @@ export class Stream {
     this.virtualTimeObj = getVirtualTimeObj(virtualTimeObjOptions);
     this.virtualTimeObj.registerStream(this);
     this.nextStartTs = this.virtualTimeObj.virtualStartTs;
-
-    const eqFill = '='.repeat(Math.max(1, (36 - streamId.length) / 2));
-    const info = `${g}${eqFill} [af-streams: ${streamId}] ${eqFill}
+    const msg = ` [af-streams: ${streamId}] `;
+    const eq = '='.repeat(Math.max(1, Math.ceil((64 - msg.length) / 2)));
+    const info = `${g}${eq}${msg}${eq}
 ${g}Time field TZ:         ${m}${timezoneOfTsField}
 ${g}Start from beginning:  ${m}${useStartTimeFromRedisCache ? 'NOT' : 'YES'}
 ${g}Start time:            ${m}${millis2isoZ(startTime)}${isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}

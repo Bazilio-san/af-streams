@@ -16,7 +16,9 @@ class CallbackSender extends AbstractSender {
   }
 
   async connect () {
-    this.options.echo.info(`=================== Callback Sender is Ready ===================`);
+    const msg = ` Callback Sender for stream ${this.options.streamConfig.streamId} is Ready `;
+    const eq = '='.repeat(Math.ceil((64 - msg.length) / 2));
+    this.options.echo.info(`${eq}${msg}${eq}`.substring(0, 64));
     return true;
   }
 
