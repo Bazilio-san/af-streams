@@ -60,6 +60,7 @@ export interface IStreamConstructorOptions {
   timeFrontUpdateIntervalMillis?: number, // default 5 ms
   testMode?: boolean,
   timeDelayMillis?: number, // Искусственное отставание при выборке данных
+  maximumRunUpOfFirstElementAndVirtualTime?: number, // Не допускаем увеличение разницы между ts первого элемента и виртуальным временем боле, чем на это значение
 }
 
 export class Stream {
@@ -138,6 +139,8 @@ export class Stream {
   private isPrepareEventAsync: boolean;
 
   private timeDelayMillis: number = 0;
+
+  private readonly maximumRunUpOfFirstElementAndVirtualTime: number;
 
   constructor (options: IStreamConstructorOptions) {
     const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn, loopTime = 0 } = options;
@@ -228,6 +231,8 @@ export class Stream {
     });
 
     this.prefix = `${lCyan}STREAM: ${lBlue}${options.streamConfig.streamId}${rs}`;
+
+    this.maximumRunUpOfFirstElementAndVirtualTime = options.maximumRunUpOfFirstElementAndVirtualTime || 2_000;
   }
 
   // ###############################  INIT & START  ############################
@@ -725,13 +730,14 @@ ${g}================================================================`;
   }
 
   getDesiredTimeFront (timeFront: number, timeShift: number) {
-    // Если буфер не пуст, то надо не допускать превышения времени отставания выше порога
-    const MAX_LAG = 30_000; // 30 с, как 1/120 часа
     const { firstTs } = this.recordsBuffer;
     if (firstTs) {
-      return firstTs + MAX_LAG;
+      // Если буфер не пуст
+      // Не допускаем увеличение разницы между ts первого элемента и виртуальным временем боле, чем на maximumRunUpOfFirstElementAndVirtualTime
+      return firstTs + this.maximumRunUpOfFirstElementAndVirtualTime;
     }
     if (this.nextStartTs) {
+      // Если буфер пуст
       return this.nextStartTs + this.sendIntervalVirtualMillis;
     }
     return timeFront + timeShift;
