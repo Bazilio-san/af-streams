@@ -1,8 +1,5 @@
 import * as os from 'os';
 import * as crypto from 'crypto';
-import { ToISOTimeOptions } from 'luxon/src/datetime';
-import { DateTime } from 'luxon';
-import { TDbRecord } from '../interfaces';
 
 let instanceKey: string;
 
@@ -39,8 +36,6 @@ export const sleep = async (timeOut: number) => new Promise((resolve) => {
   }, timeOut);
 });
 
-export const timeParamRE = /^(\d+)\s*(years?|y|months?|mo|weeks?|w|days?|d|hours?|h|minutes?|min|m|seconds?|sec|s|milliseconds?|millis|ms|)$/i;
-
 const rn = (x: number, digits: number = 2) => {
   const p = 10 ** digits;
   return Math.round(Number(x) * p) / p;
@@ -52,6 +47,8 @@ export const memUsage = (): string => {
   const { heapUsed, rss } = process.memoryUsage();
   return `MEM: ${mb(heapUsed)} / ${mb(rss)}`;
 };
+
+export const timeParamRE = /^(\d+)\s*(years?|y|months?|mo|weeks?|w|days?|d|hours?|h|minutes?|min|m|seconds?|sec|s|milliseconds?|millis|ms|)$/i;
 
 export const getTimeParamMillis = (val: string | number): number => {
   const [, nn, dhms] = timeParamRE.exec(String(val) || '') || [];
@@ -160,11 +157,73 @@ export const getTimeParamFromMillis = (millis: number, roundTo: 'd' | 'h' | 'm' 
   return `${days} d`;
 };
 
-// 2022-05-15T16:56:42.349Z
-export const millis2isoZ = (millis: number, options?: ToISOTimeOptions): string => DateTime.fromMillis(millis).setZone('UTC').toISO(options);
+export const cloneDeep = <T = any> (
+  obj: any,
+  options: { pureObj?: boolean, skipSymbols?: boolean } = {},
+  hash = new WeakMap(),
+): T => {
+  // https://stackoverflow.com/a/40294058/5239731
+  const { pureObj = false, skipSymbols = false } = options;
+  if (Object(obj) !== obj) return obj; // primitives
+  if (hash.has(obj)) return hash.get(obj); // cyclic reference
+  let result;
+  if (obj instanceof Set) {
+    result = new Set(obj); // See note about this!
+  } else if (obj instanceof Map) {
+    result = new Map(Array.from(obj, ([key, val]) => [key, cloneDeep(val, options, hash)]));
+  } else if (obj instanceof Date) {
+    result = new Date(obj);
+  } else if (obj instanceof RegExp) {
+    result = new RegExp(obj.source, obj.flags);
+  } else if (obj instanceof Function) {
+    result = obj;
+  } else if (!pureObj && obj.constructor) {
+    result = new obj.constructor();
+  } else {
+    result = Object.create(null);
+  }
+  hash.set(obj, result);
+  const keys = [...Object.keys(obj), ...(skipSymbols ? [] : Object.getOwnPropertySymbols(obj))];
+  return Object.assign(result, ...keys.map(
+    (key) => ({ [key]: cloneDeep(obj[key], options, hash) }),
+  ));
+};
 
-// 2022-05-15T19:56:42.349+03:00
-export const millis2iso = (millis: number, options?: ToISOTimeOptions): string => DateTime.fromMillis(millis).toISO(options);
+export const getBool = (v: any, def = false): boolean => {
+  if (v == null) {
+    return def;
+  }
+  if (typeof v === 'string') {
+    if (/^(false|0|no|нет)$/i.test(v)) {
+      return false;
+    }
+    if (/^(true|1|yes|да)$/i.test(v)) {
+      return true;
+    }
+    return def;
+  }
+  if (typeof v === 'boolean') {
+    return v;
+  }
+  if (typeof v === 'number') {
+    return !!v;
+  }
+  return !!v;
+};
+
+export const intEnv = (name: string, def: number) => {
+  let v = process.env[name];
+  if (!v) {
+    return def;
+  }
+  v = v.replace(/_/g, '');
+  const val = parseFloat(v);
+  return val || val === 0 ? Math.ceil(val) : def;
+};
+
+export const strEnv = (name: string, def: string) => process.env[name] || def;
+
+export const boolEnv = (name: string, def = false) => getBool(process.env[name], def);
 
 /*
 export const getBool = (v: any): boolean => {
@@ -173,7 +232,6 @@ export const getBool = (v: any): boolean => {
   }
   return !!v;
 };
-*/
 
 export const copyRecord = (record: TDbRecord): TDbRecord => {
   const recordCopy = { ...record };
@@ -192,3 +250,4 @@ export const copyRecord = (record: TDbRecord): TDbRecord => {
   });
   return recordCopy;
 };
+*/
