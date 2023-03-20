@@ -16,7 +16,11 @@ export const streamsManager = {
     return stream;
   },
 
-  list (): Stream[] {
+  get streamIds (): string[] {
+    return Object.keys(this.map);
+  },
+
+  get list (): Stream[] {
     return Object.values(this.map);
   },
 
@@ -78,7 +82,7 @@ export const streamsManager = {
   },
 
   changeStreamsParams (data: any) {
-    const { streamIds, params } = data;
+    const { params } = data;
     if (!params || typeof params !== 'object') {
       return;
     }
@@ -96,10 +100,11 @@ export const streamsManager = {
       process.env.STREAM_TIME_FRONT_UPDATE_INTERVAL_MILLIS = String(v);
       virtualTimeObj.setTimeFrontUpdateIntervalMillis(v);
     }
+    let { streamIds } = data;
     if (!Array.isArray(streamIds)) {
-      return;
+      ({ streamIds } = this);
     }
-    streamIds.forEach((streamId) => {
+    streamIds.forEach((streamId: string) => {
       if (this.has(streamId)) {
         const stream = this.getStream(streamId);
         if (stream) {
@@ -107,5 +112,30 @@ export const streamsManager = {
         }
       }
     });
+  },
+  getConfigs (): IStreamConstructorOptions[] {
+    return this.list.map((stream) => (stream.getActualConfig() as IStreamConstructorOptions));
+  },
+  pause () {
+    this.list.forEach((stream) => {
+      stream.lock(true);
+    });
+  },
+  resume () {
+    this.list.forEach((stream) => {
+      stream.unLock(true);
+    });
+  },
+  stop () {
+    this.list.forEach((stream) => {
+      stream.stop();
+    });
+  },
+  async start () {
+    return Promise.all(this.list.map((stream) => stream.start()));
+  },
+  async restart () {
+    this.stop();
+    return this.start();
   },
 };

@@ -64,6 +64,8 @@ export interface IStreamConstructorOptions {
   testMode?: boolean,
 }
 
+const getInitStat = () => ({ queryTs: 0 });
+
 export class Stream {
   /**
    * Timestamp of the last loaded record
@@ -122,7 +124,7 @@ export class Stream {
 
   public prefix: string;
 
-  public stat: IStreamStat = { queryTs: 0 };
+  public stat: IStreamStat = getInitStat();
 
   private isPrepareEventAsync: boolean;
 
@@ -402,6 +404,7 @@ ${g}================================================================`;
    * Запуск
    */
   async start (): Promise<Stream> {
+    this.isPrepareEventAsync = this.prepareEvent.constructor.name === 'AsyncFunction';
     if (!this.initialized) {
       await this.init();
     }
@@ -409,7 +412,7 @@ ${g}================================================================`;
     this._fetchLoop();
     this._printInfoLoop();
     // Additional external call loop in case of interruption of the chain of internal calls _sendLoop()
-    setInterval(() => {
+    this._sendTimer = setInterval(() => {
       this._sendLoop().then(() => null);
     }, 1000);
     return this;
@@ -843,5 +846,24 @@ ${g}================================================================`;
       return JSON.stringify(optionsCopy, undefined, 2);
     }
     return optionsCopy;
+  }
+
+  stop () {
+    this.lock(true);
+    this.virtualTimeObj.init();
+
+    this.lastRecordTs = 0;
+    this.nextStartTs = this.virtualTimeObj.virtualStartTs;
+    this.recordsBuffer.flush();
+    this.lastTimeRecords.flush();
+    this.totalRowsSent = 0;
+    this.isFirstLoad = true;
+
+    this.prevLastRecordTs = 0;
+    this.noRecordsQueryCounter = 0;
+
+    clearTimeout(this._sendTimer);
+    clearTimeout(this._printTimer);
+    this.stat = getInitStat();
   }
 }

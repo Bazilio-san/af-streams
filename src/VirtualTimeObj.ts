@@ -17,14 +17,20 @@ export interface IVirtualTimeObjOptions {
   timeFrontUpdateIntervalMillis?: number,
 }
 
+export interface IVirtualTimeStat {
+  lastRealTs: number,
+  lastFrontTs: number,
+  speed: number,
+}
+
 export class VirtualTimeObj {
-  public readonly realStartTs: number;
+  public realStartTs: number = 0;
 
   public readonly virtualStartTs: number;
 
-  public loopNumber: number;
+  public loopNumber: number = 0;
 
-  public isCurrentTime: boolean;
+  public isCurrentTime: boolean = false;
 
   public locked: boolean = true;
 
@@ -44,11 +50,7 @@ export class VirtualTimeObj {
 
   private prevVirtualHourNumber: number = 0;
 
-  private stat: {
-    lastRealTs: number,
-    lastFrontTs: number,
-    speed: number,
-  };
+  private stat: IVirtualTimeStat = { lastRealTs: 0, lastFrontTs: 0, speed: 0 };
 
   private frontUpdateInterval: any;
 
@@ -61,11 +63,11 @@ export class VirtualTimeObj {
     this.setSpeed();
     this.loopTimeMillis = loopTimeMillis;
     this.virtualStartTs = +startTime; // timestamp millis from which to start uploading data
-    this.timeFront = this.virtualStartTs;
+
+    this.init();
+
+    /// this.timeFront = this.virtualStartTs;
     this.loopTimeMillsEnd = loopTimeMillis && (this.virtualStartTs + loopTimeMillis);
-    this.realStartTs = Date.now();
-    this.loopNumber = 0;
-    this.isCurrentTime = false; // flag: virtual time has caught up with real time
     this.eventEmitter = eventEmitter;
     this.debug = echo ? echo.debug.bind(echo) : (m: string) => {
       // eslint-disable-next-line no-console
@@ -74,13 +76,20 @@ export class VirtualTimeObj {
 
     this.setTimeFrontUpdateIntervalMillis();
 
+    this.setSpeedCalcIntervalSec();
+  }
+
+  init () {
+    const now = Date.now();
+    this.timeFront = this.virtualStartTs;
+    this.realStartTs = now; // Переустанавливать при запуске
+    this.loopNumber = 0;
+    this.isCurrentTime = false; // flag: virtual time has caught up with real time
     this.stat = {
-      lastRealTs: Date.now(),
+      lastRealTs: now,
       lastFrontTs: this.virtualStartTs,
       speed: 0,
     };
-
-    this.setSpeedCalcIntervalSec();
   }
 
   setSpeed (value?: number) {
