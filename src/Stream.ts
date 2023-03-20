@@ -39,7 +39,7 @@ export interface IStreamConstructorOptions {
   serviceName?: string,
   redis?: {
     host: string,
-    port: string | number
+    port?: string | number
   },
   logger: ILoggerEx,
   echo: IEcho,
@@ -56,10 +56,10 @@ export interface IStreamConstructorOptions {
   /**
    * The interval for sending data from the buffer
    */
-  streamSendIntervalMillis: number, // default 10 ms
+  streamSendIntervalMillis?: number, // default 10 ms
   speedCalcIntervalSec?: number, // default 10 s
-  timeFrontUpdateIntervalMillis: number, // default 5 ms
-  maxRunUpFirstTsVtMillis: number, // Не допускаем увеличение разницы между ts первого элемента и виртуальным временем боле, чем на это значение
+  timeFrontUpdateIntervalMillis?: number, // default 5 ms
+  maxRunUpFirstTsVtMillis?: number, // Не допускаем увеличение разницы между ts первого элемента и виртуальным временем боле, чем на это значение
   timeDelayMillis?: number, // Искусственное отставание при выборке данных
   testMode?: boolean,
 }
@@ -822,9 +822,9 @@ ${g}================================================================`;
   getDesiredTimeFront (timeFront: number, timeShift: number) {
     const { firstTs } = this.recordsBuffer;
     if (firstTs) {
-      // Если буфер не пуст
+      // Если буфер не пуст:
       // Не допускаем увеличение разницы между ts первого элемента и виртуальным временем боле, чем на maximumRunUp...
-      return firstTs + this.options.maxRunUpFirstTsVtMillis;
+      return firstTs + (this.options.maxRunUpFirstTsVtMillis || DEFAULTS.MAX_RUNUP_FIRST_TS_VT_MILLIS);
     }
     if (this.nextStartTs) {
       // Если буфер пуст
