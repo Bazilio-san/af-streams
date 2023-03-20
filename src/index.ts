@@ -51,7 +51,7 @@ export {
   findSlotFloatBINARY,
   findSlotFloat,
 } from './utils/find-slot-float';
-export { TS_FIELD, STREAM_ID_FIELD } from './constants';
+export { TS_FIELD, STREAM_ID_FIELD, DEFAULTS } from './constants';
 
 // =============================== CLASSES =====================================
 export {
@@ -101,3 +101,5 @@ export {
   SimpleEventEmitterAsyncQueue,
   ISimpleEventEmitterQueueConstructorOptions,
 } from './classes/SimpleEventEmitterAsyncQueue';
+
+export { streamsManager } from './streams-manager';

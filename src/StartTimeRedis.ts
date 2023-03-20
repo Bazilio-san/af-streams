@@ -3,8 +3,9 @@ import EventEmitter from 'events';
 import { createClient, RedisClientType, RedisDefaultModules, RedisModules, RedisScripts } from 'redis';
 import { DateTime } from 'luxon';
 import { RedisFunctions } from '@redis/client';
-import { getStreamKey, getTimeParamMillis, millis2iso, timeParamRE } from './utils/utils';
+import { getStreamKey, getTimeParamMillis, timeParamRE } from './utils/utils';
 import { ILoggerEx } from './interfaces';
+import { millis2iso } from './utils/date-utils';
 
 export interface IStartTimeRedisOptions {
   useStartTimeFromRedisCache: boolean,

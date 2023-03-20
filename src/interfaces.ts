@@ -188,7 +188,7 @@ export interface IStreamConfig {
 export interface ISenderConstructorOptions {
   streamConfig: IStreamConfig,
   senderConfig: ISenderConfig,
-  serviceName: string,
+  serviceName?: string,
   logger: ILoggerEx,
   echo: IEcho,
   exitOnError: Function,

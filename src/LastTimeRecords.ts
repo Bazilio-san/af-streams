@@ -1,6 +1,6 @@
 import { DEBUG_LTR, TS_FIELD } from './constants';
 import { TDbRecord } from './interfaces';
-import { millis2isoZ } from './utils/utils';
+import { millis2isoZ } from './utils/date-utils';
 
 export class LastTimeRecords {
   private idFields: string[];

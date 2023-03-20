@@ -1,11 +1,10 @@
 import EventEmitter from 'events';
+import { clearInterval } from 'timers';
 import { IEcho, IEmVirtualDateChanged, IEmVirtualHourChanged, IStreamLike } from './interfaces';
 import { c, rs } from './utils/color';
-import { MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
-import { millis2iso } from './utils/utils';
-
-const TIME_FRONT_UPDATE_INTERVAL_DEFAULT_MILLIS = 5;
-const SPEED_CALC_INTERVAL_DEFAULT_MILLIS = 10_000;
+import { DEFAULTS, MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
+import { millis2iso } from './utils/date-utils';
+import { intEnv } from './utils/utils';
 
 export interface IVirtualTimeObjOptions {
   startTime: number, // timestamp millis
@@ -14,13 +13,11 @@ export interface IVirtualTimeObjOptions {
   loopTimeMillis?: number,
   echo?: IEcho,
   exitOnError: Function,
-  speedCalcIntervalMillis?: number,
+  speedCalcIntervalSec?: number,
   timeFrontUpdateIntervalMillis?: number,
 }
 
 export class VirtualTimeObj {
-  public speed: number;
-
   public readonly realStartTs: number;
 
   public readonly virtualStartTs: number;
@@ -32,8 +29,6 @@ export class VirtualTimeObj {
   public locked: boolean = true;
 
   private streams: IStreamLike[] = [];
-
-  private options: IVirtualTimeObjOptions;
 
   public readonly loopTimeMillis: number;
 
@@ -55,11 +50,15 @@ export class VirtualTimeObj {
     speed: number,
   };
 
-  constructor (options: IVirtualTimeObjOptions) {
-    const { startTime, speed, loopTimeMillis = 0, eventEmitter, echo } = options;
+  private frontUpdateInterval: any;
+
+  private timeFrontUpdateInterval: any;
+
+  constructor (public options: IVirtualTimeObjOptions) {
+    const { startTime, loopTimeMillis = 0, eventEmitter, echo } = options;
 
     this.options = options;
-    this.speed = Number(speed) || 1;
+    this.setSpeed();
     this.loopTimeMillis = loopTimeMillis;
     this.virtualStartTs = +startTime; // timestamp millis from which to start uploading data
     this.timeFront = this.virtualStartTs;
@@ -72,15 +71,8 @@ export class VirtualTimeObj {
       // eslint-disable-next-line no-console
       console.log(m);
     };
-    setInterval(() => {
-      if (this.locked) {
-        return;
-      }
-      this.setNextTimeFront();
-      this.loopIfNeed();
-      this.detectDayChange();
-      this.detectHourChange();
-    }, options.timeFrontUpdateIntervalMillis || TIME_FRONT_UPDATE_INTERVAL_DEFAULT_MILLIS);
+
+    this.setTimeFrontUpdateIntervalMillis();
 
     this.stat = {
       lastRealTs: Date.now(),
@@ -88,24 +80,56 @@ export class VirtualTimeObj {
       speed: 0,
     };
 
-    setInterval(() => {
+    this.setSpeedCalcIntervalSec();
+  }
+
+  setSpeed (value?: number) {
+    this.options.speed = (value && Number(value))
+      || Number(this.options.speed)
+      || intEnv('STREAM_SPEED', 1);
+  }
+
+  setTimeFrontUpdateIntervalMillis (value?: number) {
+    value = (value && Number(value))
+      || Number(this.options.timeFrontUpdateIntervalMillis)
+      || intEnv('STREAM_TIME_FRONT_UPDATE_INTERVAL_MILLIS', DEFAULTS.TIME_FRONT_UPDATE_INTERVAL_MILLIS); // 5 ms
+    this.options.timeFrontUpdateIntervalMillis = value;
+    clearInterval(this.frontUpdateInterval);
+    this.frontUpdateInterval = setInterval(() => {
+      if (this.locked) {
+        return;
+      }
+      this.setNextTimeFront();
+      this.loopIfNeed();
+      this.detectDayChange();
+      this.detectHourChange();
+    }, this.options.timeFrontUpdateIntervalMillis);
+  }
+
+  setSpeedCalcIntervalSec (value?: number) {
+    value = (value && Number(value))
+      || Number(this.options.speedCalcIntervalSec)
+      || intEnv('STREAM_SPEED_CALC_INTERVAL_SEC', DEFAULTS.SPEED_CALC_INTERVAL_SEC); // 10 s
+    this.options.speedCalcIntervalSec = value;
+    clearInterval(this.timeFrontUpdateInterval);
+    this.timeFrontUpdateInterval = setInterval(() => {
       const dReal = Date.now() - this.stat.lastRealTs;
       const dVirtual = this.timeFront - this.stat.lastFrontTs;
       this.stat.speed = dReal ? Math.ceil(dVirtual / dReal) : 0;
 
       this.stat.lastRealTs = Date.now();
       this.stat.lastFrontTs = this.timeFront;
-    }, options.speedCalcIntervalMillis || SPEED_CALC_INTERVAL_DEFAULT_MILLIS);
+    }, this.options.speedCalcIntervalSec * 1000);
   }
 
-  setNextTimeFront () {
+  setNextTimeFront (): [boolean, number] {
     const now = Date.now();
     if (this.isCurrentTime) {
       this.timeFront = now;
-      return;
+      return [true, now];
     }
 
-    const timeShift: number = TIME_FRONT_UPDATE_INTERVAL_DEFAULT_MILLIS * this.speed;
+    const timeShift: number = (this.options.timeFrontUpdateIntervalMillis || DEFAULTS.TIME_FRONT_UPDATE_INTERVAL_MILLIS) * (this.options.speed || 1);
     if (this.streams.length) {
       this.timeFront = Math.min(...this.streams.map((stream) => stream.getDesiredTimeFront(this.timeFront, timeShift)));
     } else {
@@ -116,6 +140,7 @@ export class VirtualTimeObj {
       this.isCurrentTime = true;
       this.eventEmitter.emit('virtual-time-is-synchronized-with-current');
     }
+    return [this.isCurrentTime, this.timeFront];
   }
 
   private loopIfNeed () {

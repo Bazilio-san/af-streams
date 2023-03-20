@@ -52,7 +52,9 @@ class WSSender extends AbstractSender {
   async connect (): Promise<boolean> {
     const { address, mConsulServiceName, token, options } = this;
     const { echo, logger, serviceName } = options;
-
+    if (!serviceName) {
+      throw new Error(`No host serviceName specified in senders.${this.options.senderConfig.type} configuration`);
+    }
     const mAddress = `${lBlue}${address}${reset}`;
 
     echo.info(`Connect to ${cyan}WEB SOCKET${reset} on ${lBlue}${address}${reset}`);
