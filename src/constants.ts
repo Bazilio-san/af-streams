@@ -11,6 +11,18 @@ export const MILLIS_IN_DAY = 86_400_000;
 export const MILLIS_IN_HOUR = 3_600_000;
 export const MIN_WINDOW_MILLIS = 2;
 
+export const DEFAULTS = {
+  FETCH_INTERVAL_SEC: 10,
+  BUFFER_MULTIPLIER: 2,
+  MAX_BUFFER_SIZE: 65_000,
+  MAX_RUNUP_FIRST_TS_VT_MILLIS: 2_000,
+  STREAM_SEND_INTERVAL_MILLIS: 10,
+  TIME_FRONT_UPDATE_INTERVAL_MILLIS: 5,
+  SPEED_CALC_INTERVAL_SEC: 10,
+  SKIP_GAPS: false,
+  PRINT_INFO_INTERVAL_SEC: 60,
+};
+
 // VVQ
 const DEBUG = (String(process.env.DEBUG || '')).trim();
 const isTotalDebug = DEBUG === '*';
