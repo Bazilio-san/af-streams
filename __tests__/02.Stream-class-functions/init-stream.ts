@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import * as EventEmitter from 'events';
 import { DateTime } from 'luxon';
-import { IStreamConstructorOptions, Stream, TDbRecord, TEventRecord } from '../../src';
+import { DEFAULTS, IStreamConstructorOptions, Stream, TDbRecord, TEventRecord } from '../../src';
 import { echo, exitOnError, logger } from '../lib/logger';
 
 const eventEmitter = new EventEmitter();
@@ -39,6 +39,9 @@ async function initStream (): Promise<Stream> {
         buysell: 'string',
       },
       // printInfoIntervalSec: 10,
+      fetchIntervalSec: 10,
+      bufferMultiplier: 2,
+      maxBufferSize: 65000,
     },
     senderConfig: {
       type: 'console',
@@ -68,6 +71,10 @@ async function initStream (): Promise<Stream> {
       eventRecord.orderno = Number(dbRecord.orderno);
       return eventRecord;
     },
+    skipGaps: false,
+    streamSendIntervalMillis: DEFAULTS.STREAM_SEND_INTERVAL_MILLIS,
+    timeFrontUpdateIntervalMillis: DEFAULTS.TIME_FRONT_UPDATE_INTERVAL_MILLIS,
+    maxRunUpFirstTsVtMillis: DEFAULTS.MAX_RUNUP_FIRST_TS_VT_MILLIS,
     testMode: true,
   };
   const stream = new Stream(streamConstructorOptions);
