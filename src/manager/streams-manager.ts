@@ -1,7 +1,9 @@
+// noinspection JSUnusedGlobalSymbols
+
 import EventEmitter from 'events';
 import { IStreamConstructorOptions, Stream } from '../Stream';
 import { echo } from '../utils/echo-simple';
-import { VirtualTimeObj } from '../VirtualTimeObj';
+import { getVirtualTimeObjByStreamConfig, VirtualTimeObj } from '../VirtualTimeObj';
 import { IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion, IOFnArgs, TEventRecord } from '../interfaces';
 import { intEnv } from '../utils/utils';
 import { DEFAULTS, STREAM_ID_FIELD } from '../constants';
@@ -88,30 +90,19 @@ export class StreamsManager {
 
   private _statLoopTimerId: any;
 
-  private _locked: boolean = false;
+  private _locked: boolean = true;
 
   private _connectedSockets: Set<string> = new Set();
 
-  new (
+  async new (
     optionsArray: IStreamConstructorOptions | IStreamConstructorOptions[],
     prepareRectifierOptions?: IPrepareRectifierOptions,
-  ): Stream[] {
+  ): Promise<Stream[]> {
     if (!Array.isArray(optionsArray)) {
       optionsArray = [optionsArray];
     }
-    const streams = optionsArray.map((options: IStreamConstructorOptions) => {
-      const { streamId } = options.streamConfig;
-      if (this.map[streamId]) {
-        echo(`Stream '${streamId}' already exists`);
-        return this.map[streamId];
-      }
-      const stream = new Stream(options);
-      this.map[streamId] = stream;
-      return stream;
-    });
-
     if (prepareRectifierOptions) {
-      const { virtualTimeObj } = streams[0];
+      const virtualTimeObj = await getVirtualTimeObjByStreamConfig(optionsArray[0]);
       const { sendIntervalMillis, fieldNameToSort, accumulationTimeMillis, sendFunction } = prepareRectifierOptions;
       const rectifierOptions: IRectifierOptions = {
         virtualTimeObj,
@@ -122,12 +113,23 @@ export class StreamsManager {
       };
       // Подготавливаем "Выпрямитель". Он будет получать все события потоков
       this.rectifier = new Rectifier(rectifierOptions);
-      streams.forEach((stream) => {
-        stream.setEventCallback = (eventRecord: TEventRecord) => this.rectifier.add(eventRecord);
-      });
     }
-
-    return streams;
+    return optionsArray.map((options: IStreamConstructorOptions) => {
+      if (prepareRectifierOptions) {
+        options.senderConfig.type = 'callback';
+        // Заглушка. Поскольку инициализируется Выпрямитель, сюда будет
+        // прописана функция передачи событий в выпрямитель
+        options.senderConfig.eventCallback = (eventRecord: TEventRecord) => this.rectifier.add(eventRecord);
+      }
+      const { streamId } = options.streamConfig;
+      if (this.map[streamId]) {
+        echo(`Stream '${streamId}' already exists`);
+        return this.map[streamId];
+      }
+      const stream = new Stream(options);
+      this.map[streamId] = stream;
+      return stream;
+    });
   }
 
   async initStreams () {
@@ -278,7 +280,7 @@ export class StreamsManager {
     const socketId = socket.id;
 
     this._connectedSockets.add(socketId);
-    socket.on('disconnect', (msg) => {
+    socket.on('disconnect', () => {
       this._connectedSockets.delete(socketId);
       if (!this._connectedSockets.size) {
         this.stopIoStatistics();

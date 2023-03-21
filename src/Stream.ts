@@ -1,10 +1,12 @@
+// noinspection JSUnusedGlobalSymbols
+
 import EventEmitter from 'events';
 import { DateTime } from 'luxon';
 import * as cron from 'cron';
 import { Promise } from 'mssql';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
-import { getStartTimeRedis, IStartTimeRedisOptions } from './StartTimeRedis';
+import { getStartTimeRedisByStreamConfig } from './StartTimeRedis';
 import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
 import {
   boolEnv, cloneDeep, getBool, getTimeParamMillis, intEnv, memUsage, padL, strEnv,
@@ -271,6 +273,11 @@ export class Stream {
       || intEnv('STREAM_PRINT_INFO_INTERVAL_SEC', DEFAULTS.PRINT_INFO_INTERVAL_SEC); // Default 60;
   }
 
+  setEventCallback (eventCallback: Function) {
+    this.options.senderConfig.eventCallback = eventCallback;
+    this.sender.eventCallback = eventCallback;
+  }
+
   resetSendIntervalVirtualMillis () {
     const streamSendIntervalMillis = this.options.streamSendIntervalMillis || DEFAULTS.STREAM_SEND_INTERVAL_MILLIS;
     const speed = this.virtualTimeObj.isCurrentTime ? 1 : (this.options.speed || 1);
@@ -333,30 +340,7 @@ export class Stream {
       return;
     }
 
-    const { src: { dbOptions, dbConfig, timezoneOfTsField }, streamId } = streamConfig;
-
-    streamConstructorOptions.redis = streamConstructorOptions.redis || { host: '', port: 0 };
-    const { redis } = streamConstructorOptions;
-    redis.host = redis.host || strEnv('STREAM_REDIS_HOST', '');
-    if (!redis.host) {
-      exitOnError(`Не указан redis.host при инициализации потока ${streamId}`);
-      return;
-    }
-    redis.port = redis.port || intEnv('STREAM_REDIS_PORT', 6379);
-
-    const startTimeRedisOptions: IStartTimeRedisOptions = {
-      useStartTimeFromRedisCache:
-        useStartTimeFromRedisCache == null
-          ? boolEnv('STREAM_USE_START_TIME_FROM_REDIS_CACHE', true)
-          : getBool(useStartTimeFromRedisCache, true),
-      host: redis.host,
-      port: redis.port,
-      streamId,
-      eventEmitter,
-      exitOnError,
-      logger,
-    };
-    const startTimeRedis = getStartTimeRedis(startTimeRedisOptions);
+    const startTimeRedis = getStartTimeRedisByStreamConfig(streamConstructorOptions);
 
     const { isUsedSavedStartTime, startTime } = await startTimeRedis.getStartTime();
 
@@ -370,6 +354,8 @@ export class Stream {
       speedCalcIntervalSec,
       timeFrontUpdateIntervalMillis,
     };
+
+    const { src: { dbOptions, dbConfig, timezoneOfTsField }, streamId } = streamConfig;
 
     this.virtualTimeObj = getVirtualTimeObj(virtualTimeObjOptions);
     this.virtualTimeObj.registerStream(this);
@@ -821,10 +807,6 @@ ${g}================================================================`;
   }
 
   // ===========================================================================
-
-  setEventCallback (eventCallback: Function) {
-    this.sender.eventCallback = eventCallback;
-  }
 
   getDesiredTimeFront (timeFront: number, timeShift: number) {
     const { firstTs } = this.recordsBuffer;

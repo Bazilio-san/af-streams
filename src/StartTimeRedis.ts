@@ -1,11 +1,14 @@
 /* eslint-disable no-console */
+// noinspection JSUnusedGlobalSymbols
+
 import EventEmitter from 'events';
 import { createClient, RedisClientType, RedisDefaultModules, RedisModules, RedisScripts } from 'redis';
 import { DateTime } from 'luxon';
 import { RedisFunctions } from '@redis/client';
-import { getStreamKey, getTimeParamMillis, timeParamRE } from './utils/utils';
+import { boolEnv, getBool, getStreamKey, getTimeParamMillis, intEnv, strEnv, timeParamRE } from './utils/utils';
 import { ILoggerEx } from './interfaces';
 import { millis2iso } from './utils/date-utils';
+import { IStreamConstructorOptions } from './Stream';
 
 export interface IStartTimeRedisOptions {
   useStartTimeFromRedisCache: boolean,
@@ -128,5 +131,42 @@ export const getStartTimeRedis = (options: IStartTimeRedisOptions): StartTimeRed
   if (!startTimeRedis) {
     startTimeRedis = new StartTimeRedis(options);
   }
+  return startTimeRedis;
+};
+
+export const getStartTimeRedisByStreamConfig = (streamConstructorOptions: IStreamConstructorOptions): StartTimeRedis => {
+  if (startTimeRedis) {
+    return startTimeRedis;
+  }
+  const {
+    eventEmitter,
+    logger,
+    streamConfig,
+    useStartTimeFromRedisCache,
+    exitOnError,
+  } = streamConstructorOptions;
+
+  const { streamId } = streamConfig;
+
+  streamConstructorOptions.redis = streamConstructorOptions.redis || { host: '', port: 0 };
+  const { redis } = streamConstructorOptions;
+  redis.host = redis.host || strEnv('STREAM_REDIS_HOST', '');
+  if (!redis.host) {
+    exitOnError(`Не указан redis.host при инициализации потока ${streamId}`);
+  }
+  redis.port = redis.port || intEnv('STREAM_REDIS_PORT', 6379);
+
+  const startTimeRedisOptions: IStartTimeRedisOptions = {
+    useStartTimeFromRedisCache: useStartTimeFromRedisCache == null
+      ? boolEnv('STREAM_USE_START_TIME_FROM_REDIS_CACHE', true)
+      : getBool(useStartTimeFromRedisCache, true),
+    host: redis.host,
+    port: redis.port,
+    streamId,
+    eventEmitter,
+    exitOnError,
+    logger,
+  };
+  startTimeRedis = new StartTimeRedis(startTimeRedisOptions);
   return startTimeRedis;
 };

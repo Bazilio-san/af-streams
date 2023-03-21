@@ -1,10 +1,14 @@
+// noinspection JSUnusedGlobalSymbols
+
 import EventEmitter from 'events';
 import { clearInterval } from 'timers';
 import { IEcho, IEmVirtualDateChanged, IEmVirtualHourChanged, IStreamLike } from './interfaces';
 import { c, rs } from './utils/color';
 import { DEFAULTS, MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
 import { millis2iso } from './utils/date-utils';
-import { intEnv } from './utils/utils';
+import { getTimeParamMillis, intEnv, strEnv } from './utils/utils';
+import { IStreamConstructorOptions } from './Stream';
+import { getStartTimeRedisByStreamConfig } from './StartTimeRedis';
 
 export interface IVirtualTimeObjOptions {
   startTime: number, // timestamp millis
@@ -271,5 +275,27 @@ export const getVirtualTimeObj = (options: IVirtualTimeObjOptions): VirtualTimeO
   if (!virtualTimeObj) {
     virtualTimeObj = new VirtualTimeObj(options);
   }
+  return virtualTimeObj;
+};
+
+export const getVirtualTimeObjByStreamConfig = async (streamConstructorOptions: IStreamConstructorOptions): Promise<VirtualTimeObj> => {
+  if (virtualTimeObj) {
+    return virtualTimeObj;
+  }
+
+  const { eventEmitter, echo, exitOnError, speedCalcIntervalSec, timeFrontUpdateIntervalMillis, speed } = streamConstructorOptions;
+  const startTimeRedis = getStartTimeRedisByStreamConfig(streamConstructorOptions);
+  const { startTime } = await startTimeRedis.getStartTime();
+  const virtualTimeObjOptions: IVirtualTimeObjOptions = {
+    startTime,
+    eventEmitter,
+    speed,
+    loopTimeMillis: getTimeParamMillis(strEnv('STREAM_LOOP_TIME', '')),
+    echo,
+    exitOnError,
+    speedCalcIntervalSec,
+    timeFrontUpdateIntervalMillis,
+  };
+  virtualTimeObj = new VirtualTimeObj(virtualTimeObjOptions);
   return virtualTimeObj;
 };
