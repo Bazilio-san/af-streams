@@ -322,4 +322,4 @@ export interface ISocket extends Socket {
   applyFn: Function
 }
 
-export interface IOFnArgs extends Socket { socket: ISocket, io: Server }
+export interface IOFnArgs { socket: ISocket, io: Server }
