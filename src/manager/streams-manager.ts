@@ -291,12 +291,12 @@ export class StreamsManager {
 
     localEventEmitter.on('before-lnp', (data: IEmBeforeLoadNextPortion) => {
       const { heapUsed, rss } = process.memoryUsage();
-      socket.emit('before-load-next-portion', { ...data, heapUsed, rss });
+      socket.emit('before-lnp', { ...data, heapUsed, rss });
     });
 
     localEventEmitter.on('after-lnp', (data: IEmAfterLoadNextPortion) => {
       const { heapUsed, rss } = process.memoryUsage();
-      socket.emit('after-load-next-portion', { ...data, heapUsed, rss });
+      socket.emit('after-lnp', { ...data, heapUsed, rss });
     });
 
     localEventEmitter.on('time-stat', (data: any) => {
