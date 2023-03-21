@@ -9,7 +9,7 @@ import { RecordsBuffer } from './RecordsBuffer';
 import { getStartTimeRedisByStreamConfig } from './StartTimeRedis';
 import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
 import {
-  boolEnv, cloneDeep, getBool, getTimeParamMillis, intEnv, memUsage, padL, strEnv,
+  boolEnv, cloneDeep, floatEnv, getBool, getTimeParamMillis, intEnv, memUsage, padL, strEnv,
 } from './utils/utils';
 import getDb from './db/db';
 import {
@@ -227,7 +227,7 @@ export class Stream {
   setBufferMultiplier (value?: number) {
     value = (value && Number(value))
       || Number(this.options.streamConfig.bufferMultiplier)
-      || intEnv('STREAM_BUFFER_MULTIPLIER', DEFAULTS.BUFFER_MULTIPLIER); // Default 2
+      || floatEnv('STREAM_BUFFER_MULTIPLIER', DEFAULTS.BUFFER_MULTIPLIER); // Default 2
     this.options.streamConfig.bufferMultiplier = Math.max(value, 1);
   }
 
@@ -625,7 +625,7 @@ ${g}================================================================`;
         totalSpeed: virtualTimeObj.totalSpeed,
         stat,
       };
-      localEventEmitter.emit('after-lnp', payloadBefore);
+      localEventEmitter.emit('after-lnp', payloadAfter);
       if (DEBUG_LNP) {
         options.eventEmitter?.emit('after-load-next-portion', payloadAfter);
       }

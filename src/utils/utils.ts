@@ -211,15 +211,17 @@ export const getBool = (v: any, def = false): boolean => {
   return !!v;
 };
 
-export const intEnv = (name: string, def: number) => {
+export const floatEnv = (name: string, def: number) => {
   let v = process.env[name];
   if (!v) {
     return def;
   }
   v = v.replace(/_/g, '');
   const val = parseFloat(v);
-  return val || val === 0 ? Math.ceil(val) : def;
+  return val || val === 0 ? val : def;
 };
+
+export const intEnv = (name: string, def: number) => Math.ceil(floatEnv(name, def));
 
 export const strEnv = (name: string, def: string) => process.env[name] || def;
 
