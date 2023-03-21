@@ -1,6 +1,6 @@
 {
   "name": "af-streams",
-  "version": "2.0.134",
+  "version": "2.0.135",
   "description": "Data stream from database table",
   "main": "./dist/cjs/src/index.js",
   "module": "./dist/esm/index.js",
@@ -25,6 +25,7 @@
     "cb": "npm run clean && npm run build"
   },
   "dependencies": {
+    "array.prototype.findlast": "^1.2.2",
     "cron": "^2.2.0",
     "dotenv": "^16.0.3",
     "luxon": "^3.3.0",

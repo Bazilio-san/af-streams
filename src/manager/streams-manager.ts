@@ -1,10 +1,14 @@
-import { IStreamConstructorOptions, Stream } from './Stream';
-import { echo } from './utils/echo-simple';
-import { VirtualTimeObj } from './VirtualTimeObj';
-import { TEventRecord } from './interfaces';
-import { intEnv } from './utils/utils';
-import { DEFAULTS } from './constants';
-import { IRectifierOptions, Rectifier } from './classes/Rectifier';
+import EventEmitter from 'events';
+import { IStreamConstructorOptions, Stream } from '../Stream';
+import { echo } from '../utils/echo-simple';
+import { VirtualTimeObj } from '../VirtualTimeObj';
+import { IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion, IOFnArgs, TEventRecord } from '../interfaces';
+import { intEnv } from '../utils/utils';
+import { DEFAULTS, STREAM_ID_FIELD } from '../constants';
+import { IRectifierOptions, Rectifier } from '../classes/Rectifier';
+import localEventEmitter from '../local-ee';
+
+const findLast = require('array.prototype.findlast');
 
 export interface IPrepareRectifierOptions {
   /**
@@ -82,6 +86,12 @@ export class StreamsManager {
 
   public rectifier: Rectifier = null as unknown as Rectifier;
 
+  private _statLoopTimerId: any;
+
+  private _locked: boolean = false;
+
+  private _connectedSockets: Set<string> = new Set();
+
   new (
     optionsArray: IStreamConstructorOptions | IStreamConstructorOptions[],
     prepareRectifierOptions?: IPrepareRectifierOptions,
@@ -144,6 +154,10 @@ export class StreamsManager {
     return Object.values(this.map)[0]?.virtualTimeObj;
   }
 
+  get eventEmitter (): EventEmitter {
+    return Object.values(this.map)[0]?.options.eventEmitter;
+  }
+
   changeStreamsParams (data: any) {
     const { params } = data;
     if (!params || typeof params !== 'object') {
@@ -182,6 +196,8 @@ export class StreamsManager {
   }
 
   pause () {
+    this._locked = true;
+    this.stopIoStatistics();
     this.streams.forEach((stream) => {
       stream.lock(true);
     });
@@ -191,21 +207,153 @@ export class StreamsManager {
     this.streams.forEach((stream) => {
       stream.unLock(true);
     });
+    this._locked = false;
+    this.startIoStatistics();
   }
 
   stop () {
+    this._locked = true;
+    this.stopIoStatistics();
     this.streams.forEach((stream) => {
       stream.stop();
     });
   }
 
-  async start () {
-    return Promise.all(this.streams.map((stream) => stream.start()));
+  async start (): Promise<Stream[]> {
+    const streams = await Promise.all(this.streams.map((stream) => stream.start()));
+    this._locked = false;
+    this.startIoStatistics();
+    return streams;
   }
 
   async restart () {
     this.stop();
     return this.start();
+  }
+
+  collectAndEmitStatistics () {
+    /*
+    виртуальное время
+    диапазон запроса потока 1
+    диапазон запроса потока 2
+
+    ширина окна выпрямителя
+    мин-макс события в выпрямителе
+     - первого потока
+     - второго потока
+    мин-макс события в буфере 1 потока + количество
+    мин-макс события в буфере 2 потока + количество
+    */
+    const { rectifier, virtualTimeObj, streams } = this;
+    const { accumulator } = rectifier;
+    const { length } = accumulator;
+
+    const data = {
+      vt: virtualTimeObj.virtualTs,
+      isCurrentTime: virtualTimeObj.isCurrentTime,
+      rectifier: {
+        widthMillis: rectifier.options.accumulationTimeMillis,
+        rectifierItemsCount: length,
+      },
+      streams: streams.map((stream) => {
+        const { options: { streamConfig: { streamId } }, recordsBuffer: rb } = stream;
+        return {
+          buf: {
+            firstTs: rb.firstTs,
+            lastTs: rb.lastTs,
+            len: rb.length,
+          },
+          rec: {
+            firstTs: length && accumulator.find((d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
+            lastTs: length && findLast(accumulator, (d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
+            len: length && accumulator.reduce((accum, d) => accum + (d[STREAM_ID_FIELD] === streamId ? 1 : 0), 0),
+          },
+        };
+      }),
+    };
+    localEventEmitter.emit('time-stat', data);
+  }
+
+  streamsSocketIO ({ socket }: IOFnArgs) {
+    const socketId = socket.id;
+
+    this._connectedSockets.add(socketId);
+    socket.on('disconnect', (msg) => {
+      this._connectedSockets.delete(socketId);
+      if (!this._connectedSockets.size) {
+        this.stopIoStatistics();
+      }
+    });
+
+    this.startIoStatistics();
+
+    localEventEmitter.on('before-lnp', (data: IEmBeforeLoadNextPortion) => {
+      const { heapUsed, rss } = process.memoryUsage();
+      socket.emit('before-load-next-portion', { ...data, heapUsed, rss });
+    });
+
+    localEventEmitter.on('after-lnp', (data: IEmAfterLoadNextPortion) => {
+      const { heapUsed, rss } = process.memoryUsage();
+      socket.emit('after-load-next-portion', { ...data, heapUsed, rss });
+    });
+
+    localEventEmitter.on('time-stat', (data: any) => {
+      socket.emit('time-stat', data);
+    });
+
+    socket.on('pause', (...args) => {
+      this.pause();
+      socket.applyFn(args, true);
+    });
+
+    socket.on('resume', (...args) => {
+      this.resume();
+      socket.applyFn(args, true);
+    });
+
+    socket.on('stop', (...args) => {
+      this.stop();
+      socket.applyFn(args, true);
+    });
+
+    socket.on('start', async (...args) => {
+      await this.start();
+      socket.applyFn(args, true);
+    });
+
+    socket.on('restart', async (...args) => {
+      await this.restart();
+      socket.applyFn(args, true);
+    });
+
+    socket.on('change-streams-params', (data, ...args) => {
+      this.changeStreamsParams(data);
+      const actualConfigs = this.getConfigs();
+      if (!socket.applyFn(args, { actualConfigs })) {
+        socket.emit('actual-streams-configs', { actualConfigs });
+      }
+    });
+  }
+
+  startIoStatistics () {
+    if (this._locked || !this._connectedSockets.size) {
+      return;
+    }
+    const statLoop = () => {
+      clearTimeout(this._statLoopTimerId);
+      if (this._locked || !this._connectedSockets.size) {
+        return;
+      }
+      this.collectAndEmitStatistics();
+      this._statLoopTimerId = setTimeout(() => {
+        statLoop();
+      }, 200);
+    };
+    statLoop();
+  }
+
+  stopIoStatistics () {
+    clearTimeout(this._statLoopTimerId);
   }
 }
 

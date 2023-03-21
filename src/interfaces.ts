@@ -1,5 +1,7 @@
 import EventEmitter from 'events';
+import { Socket } from 'socket.io/dist/socket';
 import { CallbackOrPromise, PoolOptions } from 'tarn/dist/Pool';
+import { Server } from 'socket.io';
 
 export type TEventRecord = { [fieldName: string | symbol]: any };
 export type Nullable<T> = T | null;
@@ -313,3 +315,11 @@ export enum EWinInsertType {
   MIDDLE = 2,
   RIGHT = 3,
 }
+
+export interface ISocket extends Socket {
+  getCallback: Function
+  callBack: Function
+  applyFn: Function
+}
+
+export interface IOFnArgs extends Socket { socket: ISocket, io: Server }

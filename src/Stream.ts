@@ -32,6 +32,7 @@ import { DbPostgres } from './db/DbPostgres';
 import getSender from './sender/get-sender';
 import { DEBUG_LNP, DEBUG_LTR, DEBUG_STREAM, DEFAULTS, STREAM_ID_FIELD, TS_FIELD } from './constants';
 import { millis2iso, millis2isoZ } from './utils/date-utils';
+import localEventEmitter from './local-ee';
 
 export interface IStreamConstructorOptions {
   streamConfig: IStreamConfig,
@@ -589,9 +590,10 @@ ${g}================================================================`;
     }
 
     try {
+      const payloadBefore: IEmBeforeLoadNextPortion = { streamId, startTs, endTs, vt: virtualTimeObj.virtualTs, timeDelayMillis };
+      localEventEmitter.emit('before-lnp', payloadBefore);
       if (DEBUG_LNP) {
-        const payload: IEmBeforeLoadNextPortion = { streamId, startTs, endTs, vt: virtualTimeObj.virtualTs, timeDelayMillis };
-        options.eventEmitter?.emit('before-load-next-portion', payload);
+        options.eventEmitter?.emit('before-load-next-portion', payloadBefore);
       }
       const st = Date.now();
       // ================= get Portion Of Data =================
@@ -621,24 +623,25 @@ ${g}================================================================`;
         await this.skipGap();
       }
 
+      const payloadAfter: IEmAfterLoadNextPortion = {
+        streamId,
+        startTs,
+        endTs,
+        timeDelayMillis,
+        limit,
+        lastRecordTs: this.lastRecordTs,
+        nextStartTs: this.nextStartTs,
+        recordsetLength,
+        isLimitExceed,
+        last: recordsBuffer.last,
+        vt: virtualTimeObj.virtualTs,
+        lastSpeed: virtualTimeObj.lastSpeed,
+        totalSpeed: virtualTimeObj.totalSpeed,
+        stat,
+      };
+      localEventEmitter.emit('after-lnp', payloadBefore);
       if (DEBUG_LNP) {
-        const payload: IEmAfterLoadNextPortion = {
-          streamId,
-          startTs,
-          endTs,
-          timeDelayMillis,
-          limit,
-          lastRecordTs: this.lastRecordTs,
-          nextStartTs: this.nextStartTs,
-          recordsetLength,
-          isLimitExceed,
-          last: recordsBuffer.last,
-          vt: virtualTimeObj.virtualTs,
-          lastSpeed: virtualTimeObj.lastSpeed,
-          totalSpeed: virtualTimeObj.totalSpeed,
-          stat,
-        };
-        options.eventEmitter?.emit('after-load-next-portion', payload);
+        options.eventEmitter?.emit('after-load-next-portion', payloadAfter);
       }
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;

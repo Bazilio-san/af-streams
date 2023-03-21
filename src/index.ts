@@ -9,7 +9,7 @@ export {
   IEmVirtualHourChanged, IEmVirtualDateChanged,
   IEmSubtractedLastTimeRecords, IEmCurrentLastTimeRecords,
   IEmBeforeLoadNextPortion, IEmAfterLoadNextPortion, IEmSaveLastTs,
-  EWinInsertType,
+  EWinInsertType, ISocket, IOFnArgs,
 } from './interfaces';
 export {
   getTimeParamMillis,
@@ -102,4 +102,4 @@ export {
   ISimpleEventEmitterQueueConstructorOptions,
 } from './classes/SimpleEventEmitterAsyncQueue';
 
-export { streamsManager, StreamsManager, IPrepareRectifierOptions } from './streams-manager';
+export { streamsManager, StreamsManager, IPrepareRectifierOptions } from './manager/streams-manager';

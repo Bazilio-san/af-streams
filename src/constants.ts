@@ -26,7 +26,6 @@ export const DEFAULTS = {
   RECTIFIER_FIELD_NAME_TO_SORT: 'ts',
 };
 
-// VVQ
 const DEBUG = (String(process.env.DEBUG || '')).trim();
 const isTotalDebug = DEBUG === '*';
 const isTotalStreamDebug = isTotalDebug || /\baf-streams:?\*/i.test(DEBUG);
