@@ -32,7 +32,7 @@ import { DbPostgres } from './db/DbPostgres';
 import getSender from './sender/get-sender';
 import { DEBUG_LNP, DEBUG_LTR, DEBUG_STREAM, DEFAULTS, STREAM_ID_FIELD, TS_FIELD } from './constants';
 import { millis2iso, millis2isoZ } from './utils/date-utils';
-import localEventEmitter from './local-ee';
+import localEventEmitter from './ee-scoped';
 
 export interface IStreamConstructorOptions {
   streamConfig: IStreamConfig,
