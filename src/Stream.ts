@@ -156,15 +156,6 @@ export class Stream {
       : (millis: number) => `'${millis2iso(millis)}'`;
 
     const { idFields } = src;
-    this.setFetchIntervalSec();
-    this.setSpeed();
-    this.setBufferMultiplier();
-    this.setMaxBufferSize();
-    this.setStreamSendIntervalMillis();
-    this.setMaxRunUpFirstTsVtMillis();
-    this.setTimeDelay();
-    this.setSkipGaps();
-    this.setLoopTime();
 
     this.sender = {} as ISender;
     this.db = {} as DbMsSql | DbPostgres;
@@ -298,6 +289,16 @@ export class Stream {
    * Output of start information
    */
   async init (): Promise<Stream | undefined> {
+    this.setFetchIntervalSec();
+    this.setSpeed();
+    this.setBufferMultiplier();
+    this.setMaxBufferSize();
+    this.setStreamSendIntervalMillis();
+    this.setMaxRunUpFirstTsVtMillis();
+    this.setTimeDelay();
+    this.setSkipGaps();
+    this.setLoopTime();
+
     const { options: streamConstructorOptions, loopTimeMillis, millis2dbFn } = this;
     const {
       senderConfig,

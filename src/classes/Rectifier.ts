@@ -1,8 +1,11 @@
 // noinspection JSUnusedGlobalSymbols
 
+import { clearInterval } from 'timers';
 import { findIndexOfNearestSmaller } from '../utils/find-index-of-nearest-smaller';
 import { VirtualTimeObj } from '../VirtualTimeObj';
 import { TEventRecord } from '../interfaces';
+import { DEFAULTS } from '../constants';
+import { intEnv } from '../utils/utils';
 
 export interface IRectifierOptions {
   virtualTimeObj: VirtualTimeObj,
@@ -56,11 +59,6 @@ export class Rectifier {
    */
   public lastTs: number = 0;
 
-  /**
-   * Время, в пределах которого происходит аккумуляция и выпрямление событий
-   */
-  private accumulationTimeMillis: number;
-
   private virtualTimeObj: VirtualTimeObj;
 
   private readonly sendFunction: (eventRecordsArray: TEventRecord[]) => number;
@@ -70,23 +68,33 @@ export class Rectifier {
   private sendTimer: any;
 
   constructor (public options: IRectifierOptions) {
-    const { sendIntervalMillis } = options;
     this.virtualTimeObj = options.virtualTimeObj;
-    this.accumulationTimeMillis = options.accumulationTimeMillis;
-    this.fieldNameToSort = options.fieldNameToSort || 'ts';
+    this.setAccumulationTimeMillis();
+    this.fieldNameToSort = options.fieldNameToSort || DEFAULTS.RECTIFIER_FIELD_NAME_TO_SORT;
     this.sendFunction = options.sendFunction;
-    this.sendTimer = setInterval(() => {
-      this.sendItemsFromLeft();
-    }, sendIntervalMillis);
+    this.setSendIntervalMillis();
   }
 
-  setAccumulationTimeMillis (accumulationTimeMillis: number) {
-    this.accumulationTimeMillis = accumulationTimeMillis;
+  setAccumulationTimeMillis (value?: number) {
+    this.options.accumulationTimeMillis = (value && Number(value))
+      || Number(this.options.accumulationTimeMillis)
+      || intEnv('RECTIFIER_ACCUMULATION_TIME_MILLIS', DEFAULTS.RECTIFIER_ACCUMULATION_TIME_MILLIS); // Default 300_000;
+  }
+
+  setSendIntervalMillis (value?: number) {
+    value = (value && Number(value))
+      || Number(this.options.sendIntervalMillis)
+      || intEnv('RECTIFIER_SEND_INTERVAL_MILLIS', DEFAULTS.RECTIFIER_SEND_INTERVAL_MILLIS); // 10 ms
+    this.options.sendIntervalMillis = value;
+    clearInterval(this.sendTimer);
+    this.sendTimer = setInterval(() => {
+      this.sendItemsFromLeft();
+    }, this.options.sendIntervalMillis);
   }
 
   sendItemsFromLeft (): number {
     const { accumulator, fieldNameToSort } = this;
-    const index = findIndexOfNearestSmaller(accumulator, this.virtualTimeObj.virtualTs - this.accumulationTimeMillis, fieldNameToSort);
+    const index = findIndexOfNearestSmaller(accumulator, this.virtualTimeObj.virtualTs - this.options.accumulationTimeMillis, fieldNameToSort);
     if (index > -1) {
       const toSend = accumulator.splice(0, index + 1);
       const { length } = accumulator;

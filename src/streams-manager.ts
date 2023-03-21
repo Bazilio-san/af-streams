@@ -1,85 +1,148 @@
 import { IStreamConstructorOptions, Stream } from './Stream';
 import { echo } from './utils/echo-simple';
 import { VirtualTimeObj } from './VirtualTimeObj';
+import { TEventRecord } from './interfaces';
+import { intEnv } from './utils/utils';
+import { DEFAULTS } from './constants';
+import { IRectifierOptions, Rectifier } from './classes/Rectifier';
 
-export const streamsManager = {
-  map: {} as { [streamId: string]: Stream },
+export interface IPrepareRectifierOptions {
+  /**
+   * Периодичность отправки ts-объектов,
+   * время которых старше <virtualTs> - <accumulationTimeMillis>
+   */
+  sendIntervalMillis?: number,
 
-  new (options: IStreamConstructorOptions): Stream {
-    const { streamId } = options.streamConfig;
-    if (this.map[streamId]) {
-      echo(`Stream '${streamId}' already exists`);
-      return this.map[streamId];
+  /**
+   * Имя свойства ts-объектов, содержащих метку времени,
+   * по которому нужно производить упорядочивание внутри аккумулятора.
+   * Если не передано, используется "ts"
+   */
+  fieldNameToSort?: string,
+
+  /**
+   * Время, в пределах которого происходит аккумуляция и выпрямление событий
+   */
+  accumulationTimeMillis?: number,
+
+  /**
+   * Callback, которому передается массив ts-объектов, упорядоченный по возрастанию
+   * значения поля fieldNameToSort (или ts)
+   */
+  sendFunction: (rectifierItemsArray: TEventRecord[]) => number,
+}
+
+const changeStreamParams = (stream: Stream, params: any) => {
+  Object.entries(params).forEach(([key, value]: [string, any]) => {
+    let isSetEnv = true;
+    switch (key) {
+      case 'STREAM_BUFFER_MULTIPLIER':
+        stream.setBufferMultiplier(value);
+        break;
+      case 'STREAM_FETCH_INTERVAL_SEC':
+        stream.setFetchIntervalSec(value);
+        break;
+      case 'STREAM_LOOP_TIME':
+        stream.setLoopTime(value);
+        break;
+      case 'STREAM_MAX_BUFFER_SIZE':
+        stream.setMaxBufferSize(value);
+        break;
+      case 'STREAM_MAX_RUNUP_FIRST_TS_VT_MILLIS':
+        stream.setMaxRunUpFirstTsVtMillis(value);
+        break;
+      case 'STREAM_PRINT_INFO_INTERVAL_SEC':
+        stream.setPrintInfoIntervalSec(value);
+        break;
+      case 'STREAM_SEND_INTERVAL_MILLIS':
+        stream.setStreamSendIntervalMillis(value);
+        break;
+      case 'STREAM_SKIP_GAPS':
+        stream.setSkipGaps(value);
+        break;
+      case 'STREAM_SPEED':
+        stream.setSpeed(value);
+        break;
+      case 'STREAM_START_BEFORE':
+      case 'STREAM_START_TIME':
+      case 'STREAM_USE_START_TIME_FROM_REDIS_CACHE':
+        // только прописать ENV
+        break;
+      default:
+        isSetEnv = false;
     }
-    const stream = new Stream(options);
-    this.map[streamId] = stream;
-    return stream;
-  },
+    if (isSetEnv) {
+      process.env[key] = String(value);
+    }
+  });
+};
+
+export class StreamsManager {
+  public map = {} as { [streamId: string]: Stream };
+
+  public rectifier: Rectifier = null as unknown as Rectifier;
+
+  new (
+    optionsArray: IStreamConstructorOptions | IStreamConstructorOptions[],
+    prepareRectifierOptions?: IPrepareRectifierOptions,
+  ): Stream[] {
+    if (!Array.isArray(optionsArray)) {
+      optionsArray = [optionsArray];
+    }
+    const streams = optionsArray.map((options: IStreamConstructorOptions) => {
+      const { streamId } = options.streamConfig;
+      if (this.map[streamId]) {
+        echo(`Stream '${streamId}' already exists`);
+        return this.map[streamId];
+      }
+      const stream = new Stream(options);
+      this.map[streamId] = stream;
+      return stream;
+    });
+
+    if (prepareRectifierOptions) {
+      const { virtualTimeObj } = streams[0];
+      const { sendIntervalMillis, fieldNameToSort, accumulationTimeMillis, sendFunction } = prepareRectifierOptions;
+      const rectifierOptions: IRectifierOptions = {
+        virtualTimeObj,
+        accumulationTimeMillis: accumulationTimeMillis || intEnv('RECTIFIER_ACCUMULATION_TIME_MILLIS', DEFAULTS.RECTIFIER_ACCUMULATION_TIME_MILLIS),
+        sendIntervalMillis: sendIntervalMillis || intEnv('RECTIFIER_SEND_INTERVAL_MILLIS', DEFAULTS.RECTIFIER_SEND_INTERVAL_MILLIS),
+        fieldNameToSort: fieldNameToSort || DEFAULTS.RECTIFIER_FIELD_NAME_TO_SORT,
+        sendFunction,
+      };
+      // Подготавливаем "Выпрямитель". Он будет получать все события потоков
+      this.rectifier = new Rectifier(rectifierOptions);
+      streams.forEach((stream) => {
+        stream.setEventCallback = (eventRecord: TEventRecord) => this.rectifier.add(eventRecord);
+      });
+    }
+
+    return streams;
+  }
+
+  async initStreams () {
+    return Promise.all(this.streams.map((stream) => stream.init()));
+  }
 
   get streamIds (): string[] {
     return Object.keys(this.map);
-  },
+  }
 
-  get list (): Stream[] {
+  get streams (): Stream[] {
     return Object.values(this.map);
-  },
+  }
 
   has (streamId: string): boolean {
     return Boolean(this.map[streamId]);
-  },
+  }
 
   getStream (streamId: string): Stream | undefined {
     return this.map[streamId];
-  },
+  }
 
   get virtualTimeObj (): VirtualTimeObj {
     return Object.values(this.map)[0]?.virtualTimeObj;
-  },
-
-  changeStreamParams (stream: Stream, params: any) {
-    Object.entries(params).forEach(([key, value]: [string, any]) => {
-      let isSetEnv = true;
-      switch (key) {
-        case 'STREAM_BUFFER_MULTIPLIER':
-          stream.setBufferMultiplier(value);
-          break;
-        case 'STREAM_FETCH_INTERVAL_SEC':
-          stream.setFetchIntervalSec(value);
-          break;
-        case 'STREAM_LOOP_TIME':
-          stream.setLoopTime(value);
-          break;
-        case 'STREAM_MAX_BUFFER_SIZE':
-          stream.setMaxBufferSize(value);
-          break;
-        case 'STREAM_MAX_RUNUP_FIRST_TS_VT_MILLIS':
-          stream.setMaxRunUpFirstTsVtMillis(value);
-          break;
-        case 'STREAM_PRINT_INFO_INTERVAL_SEC':
-          stream.setPrintInfoIntervalSec(value);
-          break;
-        case 'STREAM_SEND_INTERVAL_MILLIS':
-          stream.setStreamSendIntervalMillis(value);
-          break;
-        case 'STREAM_SKIP_GAPS':
-          stream.setSkipGaps(value);
-          break;
-        case 'STREAM_SPEED':
-          stream.setSpeed(value);
-          break;
-        case 'STREAM_START_BEFORE':
-        case 'STREAM_START_TIME':
-        case 'STREAM_USE_START_TIME_FROM_REDIS_CACHE':
-          // только прописать ENV
-          break;
-        default:
-          isSetEnv = false;
-      }
-      if (isSetEnv) {
-        process.env[key] = String(value);
-      }
-    });
-  },
+  }
 
   changeStreamsParams (data: any) {
     const { params } = data;
@@ -108,34 +171,42 @@ export const streamsManager = {
       if (this.has(streamId)) {
         const stream = this.getStream(streamId);
         if (stream) {
-          this.changeStreamParams(stream, params);
+          changeStreamParams(stream, params);
         }
       }
     });
-  },
+  }
+
   getConfigs (): IStreamConstructorOptions[] {
-    return this.list.map((stream) => (stream.getActualConfig() as IStreamConstructorOptions));
-  },
+    return this.streams.map((stream) => (stream.getActualConfig() as IStreamConstructorOptions));
+  }
+
   pause () {
-    this.list.forEach((stream) => {
+    this.streams.forEach((stream) => {
       stream.lock(true);
     });
-  },
+  }
+
   resume () {
-    this.list.forEach((stream) => {
+    this.streams.forEach((stream) => {
       stream.unLock(true);
     });
-  },
+  }
+
   stop () {
-    this.list.forEach((stream) => {
+    this.streams.forEach((stream) => {
       stream.stop();
     });
-  },
+  }
+
   async start () {
-    return Promise.all(this.list.map((stream) => stream.start()));
-  },
+    return Promise.all(this.streams.map((stream) => stream.start()));
+  }
+
   async restart () {
     this.stop();
     return this.start();
-  },
-};
+  }
+}
+
+export const streamsManager = new StreamsManager();

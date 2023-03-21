@@ -102,4 +102,4 @@ export {
   ISimpleEventEmitterQueueConstructorOptions,
 } from './classes/SimpleEventEmitterAsyncQueue';
 
-export { streamsManager } from './streams-manager';
+export { streamsManager, StreamsManager, IPrepareRectifierOptions } from './streams-manager';
