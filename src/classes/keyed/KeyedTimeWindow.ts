@@ -1,13 +1,13 @@
 // noinspection JSUnusedGlobalSymbols
 
-import { ITimeWindowItem, ITimeWindowSetStatOptions, TimeWindow } from './base/TimeWindow';
-import { echo } from '../utils/echo-simple';
-import { MILLIS_IN_HOUR, MIN_WINDOW_MILLIS } from '../constants';
-import { Debug } from '../utils/debug';
-import { lBlue, m } from '../utils/color';
-import { toUTC } from '../utils/date-utils';
-import { VirtualTimeObj } from '../VirtualTimeObj';
-import { getTimeParamFromMillis } from '../utils/utils';
+import { ITimeWindowItem, ITimeWindowSetStatOptions, TimeWindow } from '../base/TimeWindow';
+import { echo } from '../../utils/echo-simple';
+import { MILLIS_IN_HOUR, MIN_WINDOW_MILLIS } from '../../constants';
+import { Debug } from '../../utils/debug';
+import { lBlue, m } from '../../utils/color';
+import { toUTC } from '../../utils/date-utils';
+import { VirtualTimeObj } from '../../VirtualTimeObj';
+import { getTimeParamFromMillis } from '../../utils/utils';
 
 const debug = Debug('KeyedTimeWindow');
 
@@ -117,18 +117,17 @@ export class KeyedTimeWindow<T> {
   add (key: string | number, ts: number, data: T) {
     const { hash, widthMillis } = this;
     const item: ITimeWindowItem<T> = { ts, data };
-    const timeWindow = hash[key];
+    let timeWindow = hash[key];
     if (!timeWindow) {
       hash[key] = new TimeWindow<T>({
         winName: `TW/${this.options.winName}/${key}`,
         widthMillis,
-        item,
         getStat: this.options.getStat,
         setStat: this.options.setStat,
         virtualTimeObj: this.options.virtualTimeObj,
         initStat: this.options.initStat,
       });
-      return;
+      timeWindow = hash[key];
     }
     timeWindow.add(item);
   }

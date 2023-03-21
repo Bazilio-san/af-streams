@@ -1,13 +1,13 @@
 // noinspection JSUnusedGlobalSymbols
 
-import { ISingleEventTimeWindowConstructorOptions, SingleEventTimeWindow } from './base/SingleEventTimeWindow';
-import { ITimeWindowItem } from './base/TimeWindow';
-import { MIN_WINDOW_MILLIS, PRINT_EVERY_REMOVED_ITEM_FROM_KEYED_SINGLE_EVENT_TIME_WINDOW } from '../constants';
-import { lBlue, g, m, rs } from '../utils/color';
-import { toUTC } from '../utils/date-utils';
-import { Debug } from '../utils/debug';
-import { echo } from '../utils/echo-simple';
-import { getTimeParamFromMillis, padR } from '../utils/utils';
+import { ISingleEventTimeWindowConstructorOptions, SingleEventTimeWindow } from '../base/SingleEventTimeWindow';
+import { ITimeWindowItem } from '../base/TimeWindow';
+import { MIN_WINDOW_MILLIS, PRINT_EVERY_REMOVED_ITEM_FROM_KEYED_SINGLE_EVENT_TIME_WINDOW } from '../../constants';
+import { lBlue, g, m, rs } from '../../utils/color';
+import { toUTC } from '../../utils/date-utils';
+import { Debug } from '../../utils/debug';
+import { echo } from '../../utils/echo-simple';
+import { getTimeParamFromMillis, padR } from '../../utils/utils';
 
 const debug = Debug('KeyedSingleEventTimeWindow');
 
@@ -75,15 +75,17 @@ export class KeyedSingleEventTimeWindow<T> {
    */
   add (key: string, ts: number, data: T, noChangeTs?: boolean): ITimeWindowItem<T> | undefined {
     const { hash } = this;
-    if (!hash[key]) {
+    let timeWindow = hash[key];
+    if (!timeWindow) {
       hash[key] = new SingleEventTimeWindow({
         ...this.windowOptionsTemplate,
         winName: `SETW/${this.options.winName}/${key}`,
       });
+      timeWindow = hash[key];
       noChangeTs = false;
     }
     const item: ITimeWindowItem<T> = { ts, data };
-    return hash[key].add(item, noChangeTs);
+    return timeWindow.add(item, noChangeTs);
   }
 
   /**

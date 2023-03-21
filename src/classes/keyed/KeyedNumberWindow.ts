@@ -1,12 +1,12 @@
 // noinspection JSUnusedGlobalSymbols
 
-import { INumberWindowItem, INumberWindowSetStatOptions, NumberWindow } from './base/NumberWindow';
-import { toUTC } from '../utils/date-utils';
-import { Debug } from '../utils/debug';
-import { echo } from '../utils/echo-simple';
-import { lBlue, m } from '../utils/color';
-import { VirtualTimeObj } from '../VirtualTimeObj';
-import { getTimeParamFromMillis } from '../utils/utils';
+import { INumberWindowItem, INumberWindowSetStatOptions, NumberWindow } from '../base/NumberWindow';
+import { toUTC } from '../../utils/date-utils';
+import { Debug } from '../../utils/debug';
+import { echo } from '../../utils/echo-simple';
+import { lBlue, m } from '../../utils/color';
+import { VirtualTimeObj } from '../../VirtualTimeObj';
+import { getTimeParamFromMillis } from '../../utils/utils';
 
 const debug = Debug('KeyedNumberWindow');
 
@@ -94,7 +94,7 @@ export class KeyedNumberWindow<T> {
   add (key: string | number, ts: number, data: T): void {
     const { hash } = this;
     const item: INumberWindowItem<T> = { ts, data };
-    const numberWindow = hash[key];
+    let numberWindow = hash[key];
     if (!numberWindow) {
       const { setStat, getStat } = this.options;
       hash[key] = new NumberWindow<T>({
@@ -102,11 +102,10 @@ export class KeyedNumberWindow<T> {
         width: this.width,
         setStat,
         getStat,
-        item,
       });
-      return;
+      numberWindow = hash[key];
     }
-    hash[key].add(item);
+    numberWindow.add(item);
   }
 
   /**

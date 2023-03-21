@@ -7,7 +7,7 @@ import { getVirtualTimeObjByStreamConfig, VirtualTimeObj } from '../VirtualTimeO
 import { IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion, IOFnArgs, TEventRecord } from '../interfaces';
 import { intEnv } from '../utils/utils';
 import { DEFAULTS, STREAM_ID_FIELD } from '../constants';
-import { IRectifierOptions, Rectifier } from '../classes/Rectifier';
+import { IRectifierOptions, Rectifier } from '../classes/applied/Rectifier';
 import localEventEmitter from '../ee-scoped';
 
 const findLast = require('array.prototype.findlast');

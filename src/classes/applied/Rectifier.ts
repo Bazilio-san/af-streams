@@ -1,11 +1,11 @@
 // noinspection JSUnusedGlobalSymbols
 
 import { clearInterval } from 'timers';
-import { findIndexOfNearestSmaller } from '../utils/find-index-of-nearest-smaller';
-import { VirtualTimeObj } from '../VirtualTimeObj';
-import { TEventRecord } from '../interfaces';
-import { DEFAULTS } from '../constants';
-import { intEnv } from '../utils/utils';
+import { findIndexOfNearestSmaller } from '../../utils/find-index-of-nearest-smaller';
+import { VirtualTimeObj } from '../../VirtualTimeObj';
+import { TEventRecord } from '../../interfaces';
+import { DEFAULTS } from '../../constants';
+import { intEnv } from '../../utils/utils';
 
 export interface IRectifierOptions {
   virtualTimeObj: VirtualTimeObj,

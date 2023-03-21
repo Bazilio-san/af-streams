@@ -78,28 +78,28 @@ export {
   KeyedNumberWindow,
   IKeyedNumberWindowHash,
   IKeyedNumberWindowOptions,
-} from './classes/KeyedNumberWindow';
+} from './classes/keyed/KeyedNumberWindow';
 
 export {
   KeyedSingleEventTimeWindow,
   IKeyedSingleEventTimeWindowConstructorOptions,
-} from './classes/KeyedSingleEventTimeWindow';
+} from './classes/keyed/KeyedSingleEventTimeWindow';
 
 export {
   KeyedTimeWindow,
   IKeyedTimeWindowHash,
   IKeyedTimeWindowInfo,
   IKeyedTimeWindowOptions,
-} from './classes/KeyedTimeWindow';
+} from './classes/keyed/KeyedTimeWindow';
 
 export {
   Rectifier,
   IRectifierOptions,
-} from './classes/Rectifier';
+} from './classes/applied/Rectifier';
 
 export {
   SimpleEventEmitterAsyncQueue,
   ISimpleEventEmitterQueueConstructorOptions,
-} from './classes/SimpleEventEmitterAsyncQueue';
+} from './classes/applied/SimpleEventEmitterAsyncQueue';
 
 export { streamsManager, StreamsManager, IPrepareRectifierOptions } from './manager/streams-manager';

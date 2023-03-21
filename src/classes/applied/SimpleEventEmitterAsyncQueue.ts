@@ -2,8 +2,8 @@
 // noinspection JSUnusedGlobalSymbols
 
 import EventEmitter from 'events';
-import { echo } from '../utils/echo-simple';
-import { Stream } from '../Stream';
+import { echo } from '../../utils/echo-simple';
+import { Stream } from '../../Stream';
 
 const interval = require('interval-promise');
 
