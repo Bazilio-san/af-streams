@@ -1,4 +1,3 @@
-import { Promise } from 'mssql';
 import AbstractSender from './AbstractSender';
 import { IRecordsComposite, ISenderConstructorOptions, TEventRecord } from '../interfaces';
 
