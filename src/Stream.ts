@@ -28,7 +28,7 @@ import { DEBUG_LNP, DEBUG_LTR, DEBUG_STREAM, DEFAULTS, STREAM_ID_FIELD, TS_FIELD
 import localEventEmitter from './ee-scoped';
 
 export interface IStreamConstructorOptions {
-  commonConfig: ICommonConfig
+  commonConfig: ICommonConfig,
   streamConfig: IStreamConfig,
   senderConfig: ISenderConfig,
 

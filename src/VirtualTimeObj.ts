@@ -34,7 +34,7 @@ export class VirtualTimeObj {
 
   public locked: boolean = true;
 
-  private streams: IStreamLike[] = [];
+  public streams: IStreamLike[] = [];
 
   public loopTimeMillis: number = 0;
 

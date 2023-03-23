@@ -25,14 +25,6 @@ export {
   findIndexOfNearestSmallerRIGHT,
   findIndexOfNearestSmallerBINARY,
   findIndexOfNearestSmaller,
-  // Deprecated
-  findIndexOfNearestSmallerLEFT as findSmallestIndexLinear, // compatibility
-  // Deprecated
-  findIndexOfNearestSmallerRIGHT as findIndexOfNearestSmallFromRight, // compatibility
-  // Deprecated
-  findIndexOfNearestSmallerBINARY as findSmallestIndexBinary, // compatibility
-  // Deprecated
-  findIndexOfNearestSmaller as findSmallestIndex, // compatibility
 } from './utils/find-index-of-nearest-smaller';
 export {
   findIndexOfNearestSmallerInNumArrayLEFT,
