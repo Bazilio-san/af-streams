@@ -10,7 +10,7 @@ export {
   IEmSubtractedLastTimeRecords, IEmCurrentLastTimeRecords,
   IEmBeforeLoadNextPortion, IEmAfterLoadNextPortion, IEmSaveLastTs,
   EWinInsertType, ISocket, IOFnArgs, ICommonConfig, IVirtualTimeConfig,
-  ISenderConfig, IStreamConfig,
+  ISenderConfig, IStreamConfig, IStartTimeConfig,
 } from './interfaces';
 export {
   getTimeParamMillis,

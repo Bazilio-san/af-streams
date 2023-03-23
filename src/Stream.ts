@@ -2,7 +2,6 @@
 
 import { DateTime } from 'luxon';
 import * as cron from 'cron';
-import { Promise } from 'mssql';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { VirtualTimeObj } from './VirtualTimeObj';
@@ -330,7 +329,7 @@ ${g}${'='.repeat(64)}`;
       dbRecordOrRecordset = [dbRecordOrRecordset];
     }
 
-    return Promise.all(dbRecordOrRecordset.map((record, index) => {
+    const eventRecords = await Promise.all(dbRecordOrRecordset.map((record, index) => {
       if (!record) {
         return null;
       }
@@ -355,6 +354,7 @@ ${g}${'='.repeat(64)}`;
         }
       });
     }));
+    return eventRecords.filter(Boolean) as TEventRecord[];
   }
 
   async _addPortionToBuffer (recordset: TDbRecord[]): Promise<void> {
