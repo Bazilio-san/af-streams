@@ -1,5 +1,5 @@
 import * as sql from 'mssql';
-import { IDbConstructorOptions, IMsSqlConfig } from '../interfaces';
+import { IDbConstructorOptions, IMsSqlConfig, IPostgresConfig } from '../interfaces';
 import { DbBase } from './DbBase';
 import { MILLIS_IN_HOUR } from '../constants';
 
@@ -37,11 +37,15 @@ export class DbMsSql extends DbBase {
     this.pool = null;
     const { dbOptions, dbConfig } = options.streamConfig.src;
     const mssqlDbOptions = { ...mssqlDefaults, ...(dbOptions || {}) };
-    ['options', 'pool'].forEach((propName) => {
-      if (typeof dbOptions?.[propName] === 'object') {
-        Object.assign(mssqlDbOptions[propName], dbOptions[propName]);
-      }
-    });
+    if (dbOptions) {
+      ['options', 'pool'].forEach((propName) => {
+        const v = dbOptions[propName as keyof (IMsSqlConfig | IPostgresConfig)];
+        if (typeof v === 'object') {
+          Object.assign((mssqlDbOptions as any)[propName], v);
+        }
+      });
+    }
+
     this.cfg = { ...mssqlDbOptions, ...dbConfig, server: dbConfig.server || dbConfig.host } as IMsSqlConfig;
     this.request = null;
   }

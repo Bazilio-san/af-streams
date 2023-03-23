@@ -60,7 +60,7 @@ class WSSender extends AbstractSender {
     echo.info(`Connect to ${cyan}WEB SOCKET${reset} on ${lBlue}${address}${reset}`);
 
     const opt = {
-      query: { fromService: serviceName }, // VVT
+      query: { fromService: serviceName },
       auth: { token },
       extraHeaders: { authorization: token },
     };

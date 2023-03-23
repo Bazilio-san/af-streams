@@ -27,12 +27,12 @@ export interface IKeyedNumberWindowOptions<T> {
    * Опциональная функция для записи статистики при добавлении(удалении) событий в ключеванное окно.
    * Если передана, то подменит собой метод NumberWindow.setStat()
    */
-  setStat?: (setStatOptions: INumberWindowSetStatOptions<T>) => void,
+  setStat?: (_setStatOptions: INumberWindowSetStatOptions<T>) => void,
   /**
    * Кастомная функция для получения статистики. Она подменит метод окна NumberWindow.getStat()
    * Если не передана, то метод this.getStatByKey() будет возвращать свойство окна NumberWindow.stat
    */
-  getStat?: (numberWindow: NumberWindow<T>) => any,
+  getStat?: (_numberWindow: NumberWindow<T>) => any,
 
   /**
    * Параметры удаления устаревших окон и событий в них.

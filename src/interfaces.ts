@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import EventEmitter from 'events';
 import { Socket } from 'socket.io/dist/socket';
 import { CallbackOrPromise, PoolOptions } from 'tarn/dist/Pool';
@@ -53,7 +54,7 @@ export interface TAccessPoint {
   host: Nullable<string>;
   token: string
   socketRequestId: string
-  waitForHostPortUpdated: (timeout: number) => Promise<boolean>,
+  waitForHostPortUpdated: (_timeout: number) => Promise<boolean>,
 }
 
 export interface ISenderConfig {
@@ -113,7 +114,7 @@ export interface IDbConfig {
 
 export interface IPoolOptions<T> extends Omit<PoolOptions<T>, 'create' | 'destroy'> {
   create?: CallbackOrPromise<T>;
-  destroy?: (resource: T) => any;
+  destroy?: (_resource: T) => any;
 }
 
 export interface IMsSqlConfig {
@@ -164,7 +165,7 @@ export interface IPostgresConfig extends IPostgresClientConfig {
   max?: number | undefined;
   min?: number | undefined;
   idleTimeoutMillis?: number | undefined;
-  log?: ((...messages: any[]) => void) | undefined;
+  log?: ((..._messages: any[]) => void) | undefined;
   allowExitOnIdle?: boolean | undefined;
   maxUses?: number | undefined;
 }
@@ -322,7 +323,7 @@ export interface IEmSaveLastTs {
 }
 
 export interface IStreamLike {
-  getDesiredTimeFront: (timeFront: number, timeShift: number) => number,
+  getDesiredTimeFront: (_timeFront: number, _timeShift: number) => number,
 }
 
 export interface IEmFindNextTs {

@@ -32,7 +32,7 @@ export interface IRectifierOptions {
    * Callback, которому передается массив ts-объектов, упорядоченный по возрастанию
    * значения поля fieldNameToSort (или ts)
    */
-  sendFunction: (rectifierItemsArray: TEventRecord[]) => number,
+  sendFunction: (_rectifierItemsArray: TEventRecord[]) => number,
 }
 
 /**
@@ -61,7 +61,7 @@ export class Rectifier {
 
   private virtualTimeObj: VirtualTimeObj;
 
-  private readonly sendFunction: (eventRecordsArray: TEventRecord[]) => number;
+  private readonly sendFunction: (_eventRecordsArray: TEventRecord[]) => number;
 
   private readonly fieldNameToSort: string;
 

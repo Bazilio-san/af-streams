@@ -164,13 +164,17 @@ Connection established with ${msg}
   async sendEvents (recordsComposite: IRecordsComposite): Promise<boolean> {
     const MAX_PACKET_SIZE = 32000;
 
-    const { streamId, eventsPacket, isSingleRecordAsObject, first } = recordsComposite;
+    const { streamId, isSingleRecordAsObject, first } = recordsComposite;
+    let { eventsPacket } = recordsComposite;
+    if (!Array.isArray(eventsPacket)) {
+      eventsPacket = [eventsPacket];
+    }
     if (!eventsPacket.length) {
       return false;
     }
     let { sessionId } = recordsComposite;
     if (!sessionId) {
-      sessionId = `sid${+(new Date())}`; // VVQ add \00\00 before sid
+      sessionId = `sid${+(new Date())}`; // add \00\00 before sid
     }
     const MAX_DATA_SIZE = MAX_PACKET_SIZE - this.getTcpHeaderLength({ sessionId, streamId }) - 1;
     let stop = false;

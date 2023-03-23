@@ -38,6 +38,8 @@ export interface IStreamConstructorOptions {
 
 const getInitStat = () => ({ queryTs: 0 });
 
+const TIMEOUT_TO_PREPARE_EVENT = 5 * 60_000;
+
 export class Stream {
   /**
    * Timestamp of the last loaded record
@@ -160,7 +162,7 @@ export class Stream {
     });
 
     options.commonConfig.eventEmitter?.on('virtual-time-is-synchronized-with-current', () => {
-      this.resetSendIntervalVirtualMillis();
+      this.setStreamSendIntervalMillis(); // => resetSendIntervalVirtualMillis
     });
 
     this.prefix = `${lCyan}STREAM: ${lBlue}${streamConfig.streamId}${rs}`;
@@ -225,7 +227,7 @@ export class Stream {
   }
 
   resetSendIntervalVirtualMillis () {
-    const streamSendIntervalMillis = this.options.streamConfig.streamSendIntervalMillis || DEFAULTS.STREAM_SEND_INTERVAL_MILLIS; // VVQ as number
+    const streamSendIntervalMillis = this.options.streamConfig.streamSendIntervalMillis || DEFAULTS.STREAM_SEND_INTERVAL_MILLIS;
     this.sendIntervalVirtualMillis = streamSendIntervalMillis * (this.virtualTimeObj.isCurrentTime ? 1 : this.virtualTimeObj.speed);
   }
 
@@ -320,7 +322,6 @@ ${g}${'='.repeat(64)}`;
   }
 
   async prepareEventsPacket (dbRecordOrRecordset: (TDbRecord | null)[]): Promise<TEventRecord[]> {
-    const TIMEOUT_TO_PREPARE_EVENT = 5 * 60_000; // VVQ
     const { options: { streamConfig: { streamId, src: { tsField } } }, prepareEvent, isPrepareEventAsync, tsFieldToMillis } = this;
     if (!Array.isArray(dbRecordOrRecordset)) {
       if (!dbRecordOrRecordset || typeof dbRecordOrRecordset !== 'object') {
@@ -338,7 +339,7 @@ ${g}${'='.repeat(64)}`;
       record[TS_FIELD] = tsFieldToMillis(record[tsField]);
       record[STREAM_ID_FIELD] = streamId;
 
-      return new Promise((resolve: (arg0: TEventRecord | null) => void) => {
+      return new Promise((resolve: (_arg: TEventRecord | null) => void) => {
         const timerId = setTimeout(() => {
           resolve(null);
         }, TIMEOUT_TO_PREPARE_EVENT);
@@ -409,9 +410,7 @@ ${g}${'='.repeat(64)}`;
     const { fetchIntervalSec, bufferMultiplier } = this.options.streamConfig;
     const { isCurrentTime, speed } = this.virtualTimeObj;
     // Запрос данных со сдвигом виртуального времени на bufferMultiplier интервалов опроса
-    return (fetchIntervalSec || DEFAULTS.FETCH_INTERVAL_SEC) * 1000 // VVQ as number
-      * Math.max(bufferMultiplier || DEFAULTS.BUFFER_MULTIPLIER, 1) // VVQ as number
-      * (isCurrentTime ? 1 : speed || 1);
+    return (fetchIntervalSec as number) * 1000 * Math.max(bufferMultiplier as number, 1) * (isCurrentTime ? 1 : speed);
   }
 
   private async _loadNextPortion () {
@@ -721,7 +720,7 @@ ${g}${'='.repeat(64)}`;
      */
 
     ['prepareEvent', 'tsFieldToMillis', 'millis2dbFn'].forEach((p) => {
-      delete streamConfig[p];
+      delete streamConfig[p as keyof IStreamConfig];
     });
     delete senderConfig.eventCallback;
     const optionsCopy = { streamConfig, senderConfig };

@@ -28,12 +28,12 @@ export interface INumberWindowConstructorOptions<T> {
    * Опциональная функция для записи статистики при добавлении(удалении) событий в окно.
    * Если передана, то подменит собой метод this.setStat()
    */
-  setStat?: (arg: INumberWindowSetStatOptions<T>) => void,
+  setStat?: (_arg: INumberWindowSetStatOptions<T>) => void,
   /**
    * Кастомная функция для получения статистики. Она подменит метод окна this.getStat()
    * Если не передана, то метод this.getStat() будет возвращать свойство окна stat
    */
-  getStat?: (arg: NumberWindow<T>) => any,
+  getStat?: (_arg: NumberWindow<T>) => any,
   /**
    * Первое событие, которое можно передать в момент создания экземпляра класса.
    * Это может быть удобно, когда окна создаются по мере поступления событий определенного класса.
@@ -69,14 +69,14 @@ export class NumberWindow<T> {
    * в опциях передано свойство setStat (функция), оно замещает метод класса и управление заполнением статистики
    * передается этой кастомной функции.
    */
-  public setStat: (setStatOptions: INumberWindowSetStatOptions<T>) => void;
+  public setStat: (_setStatOptions: INumberWindowSetStatOptions<T>) => void;
 
   /**
    * Метод класса, возвращающий статистику. По умолчанию возвращает свойство класса this.stat.
    * Но если при создании экземпляра класса в опциях передано свойство getStat (функция),
    * оно замещает метод класса this.getStat и управление передается этой кастомной функции.
    */
-  public getStat: (numberWindow?: NumberWindow<T>) => any;
+  public getStat: (_numberWindow?: NumberWindow<T>) => any;
 
   constructor (options: INumberWindowConstructorOptions<T>) {
     const { width, setStat, getStat, item } = options;

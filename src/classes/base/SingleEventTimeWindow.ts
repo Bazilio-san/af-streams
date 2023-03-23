@@ -39,12 +39,12 @@ export interface ISingleEventTimeWindowConstructorOptions<T> {
    * Опциональная функция для записи статистики добавления/удаления событий в окно.
    * Если передана, то подменит собой метод this.setStat()
    */
-  setStat?: (arg: ISingleEventTimeWindowSetStatOptions<T>) => void,
+  setStat?: (_arg: ISingleEventTimeWindowSetStatOptions<T>) => void,
   /**
    * Кастомная функция для получения статистики. Она подменит метод окна this.getStat()
    * Если не передана, то метод this.getStat() будет возвращать свойство окна stat
    */
-  getStat?: (arg: SingleEventTimeWindow<T>) => any,
+  getStat?: (_arg: SingleEventTimeWindow<T>) => any,
   /**
    * Опциональная кастомная функция добавления сведений из поступившего события в свойство this.event.
    * Если не передана, то новое событие просто заменяет свойство this.event.
@@ -52,7 +52,7 @@ export interface ISingleEventTimeWindowConstructorOptions<T> {
    * Эта функция полезна, когда мы хотим хранить состояние в свойстве this.event.data и не просто заменять на новое,
    * а внедрять данные из нового в уже имеющийся объект
    */
-  assignData?: (instance: SingleEventTimeWindow<T>, event: ITimeWindowItem<T>) => any,
+  assignData?: (_instance: SingleEventTimeWindow<T>, _event: ITimeWindowItem<T>) => any,
 }
 
 /**
@@ -113,14 +113,14 @@ export class SingleEventTimeWindow<T> {
    * в опциях передано свойство setStat (функция), оно замещает метод класса и управление заполнением статистики
    * передается этой кастомной функции.
    */
-  public setStat: (arg: ISingleEventTimeWindowSetStatOptions<T>) => void;
+  public setStat: (_arg: ISingleEventTimeWindowSetStatOptions<T>) => void;
 
   /**
    * Метод класса, возвращающий статистику. По умолчанию возвращает свойство класса this.stat.
    * Но если при создании экземпляра класса в опциях передано свойство getStat (функция),
    * оно замещает метод класса this.getStat и управление передается этой кастомной функции.
    */
-  public getStat: (arg?: SingleEventTimeWindow<T>) => any;
+  public getStat: (_arg?: SingleEventTimeWindow<T>) => any;
 
   /**
    * Время поступления первого события в окно. Устанавливается единожды.

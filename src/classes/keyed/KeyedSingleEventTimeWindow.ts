@@ -23,7 +23,7 @@ export interface IKeyedSingleEventTimeWindowConstructorOptions<T> extends Omit<I
   // removeExpiredIntervalMillis?: number,
   // setStat?: (arg: ITimeWindowSetStatOptions<T>) => void,
   // getStat?: (arg: TimeWindow<T>) => any,
-  assignData?: (instance: SingleEventTimeWindow<T>, event: ITimeWindowItem<T>) => void,
+  assignData?: (_instance: SingleEventTimeWindow<T>, _event: ITimeWindowItem<T>) => void,
 }
 
 export class KeyedSingleEventTimeWindow<T> {

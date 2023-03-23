@@ -39,16 +39,16 @@ export interface IKeyedTimeWindowOptions<T> {
    * Опциональная функция для записи статистики при добавлении(удалении) событий в ключеванное окно.
    * Если передана, то подменит собой метод NumberWindow.setStat()
    */
-  setStat?: (setStatOptions: ITimeWindowSetStatOptions<T>) => void,
+  setStat?: (_setStatOptions: ITimeWindowSetStatOptions<T>) => void,
   /**
    * Кастомная функция для получения статистики. Она подменит метод окна NumberWindow.getStat()
    * Если не передана, то метод this.getStatByKey() будет возвращать свойство окна NumberWindow.stat
    */
-  getStat?: (timeWindow: TimeWindow<T>) => any,
+  getStat?: (_timeWindow: TimeWindow<T>) => any,
   /**
    * Кастомная функция для инициализации статистики ключеванных окон.
    */
-  initStat?: (timeWindow: TimeWindow<T>) => void,
+  initStat?: (_timeWindow: TimeWindow<T>) => void,
 }
 
 export interface IKeyedTimeWindowHash<T> {

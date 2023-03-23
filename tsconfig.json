@@ -20,7 +20,6 @@
     "experimentalDecorators": true,
     "sourceMap": true,
     "strict": true,
-    "suppressImplicitAnyIndexErrors": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "outDir": "dist/cjs"

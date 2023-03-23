@@ -1,11 +1,13 @@
 import initStream from './init-stream';
-import { Stream, TS_FIELD } from '../../src';
+import { Stream, STREAM_ID_FIELD, TS_FIELD } from '../../src';
 import { Nullable, TEventRecord } from '../../src/interfaces';
 
 let stream: Stream;
 
 const convertToDbRecord = (item: Nullable<TEventRecord>) => {
-  const { [TS_FIELD]: tsf, tradeno, tradetime, orderno, shortname, seccode, buysell } = item || {};
+  const {
+    [STREAM_ID_FIELD]: sif, [TS_FIELD]: tsf, tradeno, tradetime, orderno, shortname, seccode, buysell,
+  } = item || {};
   return {
     tradeno: String(tradeno),
     tradetime: (new Date(tradetime)).toISOString(),
@@ -14,12 +16,14 @@ const convertToDbRecord = (item: Nullable<TEventRecord>) => {
     seccode,
     buysell,
     [TS_FIELD]: tsf,
+    [STREAM_ID_FIELD]: sif,
   };
 };
 
 const removeSymbolTs = (item: Nullable<TEventRecord>) => {
   const item2 = { ...item };
   delete item2[TS_FIELD];
+  delete item2[STREAM_ID_FIELD];
   return item2;
 };
 

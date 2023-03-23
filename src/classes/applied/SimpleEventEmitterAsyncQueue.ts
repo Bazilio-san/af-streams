@@ -12,15 +12,15 @@ const QUERY_QUEUE_PERIOD_DEFAULT_MILLIS = 10;
 export interface ISimpleEventEmitterQueueConstructorOptions<T> {
   name: string,
   eventId: string,
-  callback: (event: T) => any,
+  callback: (_event: T) => any,
   context: any,
   maxObjectsInQueueForLockStream: number,
   stream: Stream
   eventEmitter: EventEmitter,
   queryQueuePeriodMillis?: number,
   logger?: {
-    info: (msg: string) => void,
-    error: (msg: string | Error) => void,
+    info: (_msg: string) => void,
+    error: (_msg: string | Error) => void,
   }
 }
 

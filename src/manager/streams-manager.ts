@@ -37,7 +37,7 @@ export interface IPrepareRectifierOptions {
    * Callback, которому передается массив ts-объектов, упорядоченный по возрастанию
    * значения поля fieldNameToSort (или ts)
    */
-  sendFunction: (rectifierItemsArray: TEventRecord[]) => number,
+  sendFunction: (_rectifierItemsArray: TEventRecord[]) => number,
 }
 
 const changeStreamParams = (stream: Stream, params: any) => {
