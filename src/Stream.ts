@@ -242,7 +242,7 @@ export class Stream {
    *
    * Output of start information
    */
-  async init (): Promise<Stream | undefined> {
+  async init (): Promise<Stream> {
     this.setFetchIntervalSec();
     this.setBufferMultiplier();
     this.setMaxBufferSize();
@@ -254,9 +254,6 @@ export class Stream {
     const { commonConfig, streamConfig, senderConfig } = this.options;
     const { streamId } = streamConfig;
 
-    // SENDER
-    this.sender = await getSender({ streamId, senderConfig, commonConfig });
-
     this.virtualTimeObj.registerStream(this);
     this.nextStartTs = this.virtualTimeObj.virtualStartTs;
 
@@ -264,9 +261,13 @@ export class Stream {
     const eq = '='.repeat(Math.max(1, Math.ceil((64 - msg.length) / 2)));
     const info = `${g}${eq}${msg}${eq}
 ${g}Time field TZ:         ${m}${streamConfig.src.timezoneOfTsField}
-${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec
-${g}${'='.repeat(64)}`;
+${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     commonConfig.echo(info);
+
+    // SENDER
+    this.sender = await getSender({ streamId, senderConfig, commonConfig });
+
+    commonConfig.echo(`${g}${'='.repeat(64)}`);
 
     if (!commonConfig.testMode) {
       this.db = await getDb({ commonConfig, streamConfig });

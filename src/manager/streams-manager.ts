@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 // noinspection JSUnusedGlobalSymbols
 
 import EventEmitter from 'events';
@@ -144,8 +145,14 @@ export class StreamsManager {
     });
   }
 
-  async initStreams () {
-    return Promise.all(this.streams.map((stream) => stream.init()));
+  async initStreams (): Promise<Stream[]> {
+    const streams: Stream[] = [];
+
+    for (let i = 0; i < this.streams.length; i++) {
+      const stream = await this.streams[i].init();
+      streams.push(stream);
+    }
+    return streams;
   }
 
   get streamIds (): string[] {

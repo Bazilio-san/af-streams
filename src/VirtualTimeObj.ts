@@ -38,7 +38,7 @@ export class VirtualTimeObj {
 
   public loopTimeMillis: number = 0;
 
-  private loopTimeMillsEnd: number = 0;
+  public loopTimeMillsEnd: number = 0;
 
   private timeFront: number = 0;
 
@@ -249,28 +249,6 @@ ${g}${'='.repeat(64)}`;
 
   get realStartTimeISO (): string {
     return millis2iso(this.realStartTs);
-  }
-
-  // noinspection JSUnusedGlobalSymbols
-  /** @deprecated */
-  setVirtualTs (ts: number) {
-    this.timeFront = ts;
-  }
-
-  // For compatibility
-  /** @deprecated */
-  setReady (): void {
-    this.unLock();
-  }
-
-  /** @deprecated */
-  getVirtualTs (): number {
-    return this.timeFront;
-  }
-
-  /** @deprecated */
-  getString (): string {
-    return this.virtualTimeString;
   }
 }
 
