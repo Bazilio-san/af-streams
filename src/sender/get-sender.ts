@@ -10,14 +10,14 @@ const sendersCache: { [streamId: string]: ISender } = {};
 const accessPointTimeOutMillis = 10_000;
 const checkAccessPointAvailability = async (options: ISenderConstructorOptions) => {
   const accessPoint = options.senderConfig.accessPoint as TAccessPoint;
-  const exitOnError = options.exitOnError as Function;
+  const exitOnError = options.commonConfig.exitOnError as Function;
   if (!(await accessPoint?.waitForHostPortUpdated?.(10_000))) {
     exitOnError(`Access point "${accessPoint?.id}" update timed out ${accessPointTimeOutMillis} ms`);
   }
 };
 
-const getSender = async (options: ISenderConstructorOptions) => {
-  const { streamId } = options.streamConfig;
+const getSender = async (options: ISenderConstructorOptions): Promise<ISender> => {
+  const { streamId } = options;
   let sender = sendersCache[streamId];
   if (sender) {
     return sender;
@@ -46,6 +46,12 @@ const getSender = async (options: ISenderConstructorOptions) => {
       sender = new ConsoleSender(options);
   }
   sendersCache[streamId] = sender;
+
+  const isConnectedToTarget = await sender.connect();
+  if (!isConnectedToTarget) {
+    options.commonConfig.exitOnError('No connection to sender');
+  }
+
   return sender;
 };
 

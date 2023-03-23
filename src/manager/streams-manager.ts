@@ -3,9 +3,11 @@
 import EventEmitter from 'events';
 import { IStreamConstructorOptions, Stream } from '../Stream';
 import { echo } from '../utils/echo-simple';
-import { getVirtualTimeObjByStreamConfig, VirtualTimeObj } from '../VirtualTimeObj';
-import { IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion, IOFnArgs, TEventRecord } from '../interfaces';
-import { intEnv } from '../utils/utils';
+import { VirtualTimeObj, getVirtualTimeObj, IVirtualTimeObjOptions } from '../VirtualTimeObj';
+import {
+  ICommonConfig, IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion, IOFnArgs, ISenderConfig, IStartTimeConfig, IStreamConfig, IVirtualTimeConfig, TEventRecord,
+} from '../interfaces';
+import { cloneDeep, intEnv } from '../utils/utils';
 import { DEFAULTS, STREAM_ID_FIELD } from '../constants';
 import { IRectifierOptions, Rectifier } from '../classes/applied/Rectifier';
 import localEventEmitter from '../ee-scoped';
@@ -48,9 +50,6 @@ const changeStreamParams = (stream: Stream, params: any) => {
       case 'STREAM_FETCH_INTERVAL_SEC':
         stream.setFetchIntervalSec(value);
         break;
-      case 'STREAM_LOOP_TIME':
-        stream.setLoopTime(value);
-        break;
       case 'STREAM_MAX_BUFFER_SIZE':
         stream.setMaxBufferSize(value);
         break;
@@ -65,9 +64,6 @@ const changeStreamParams = (stream: Stream, params: any) => {
         break;
       case 'STREAM_SKIP_GAPS':
         stream.setSkipGaps(value);
-        break;
-      case 'STREAM_SPEED':
-        stream.setSpeed(value);
         break;
       case 'STREAM_START_BEFORE':
       case 'STREAM_START_TIME':
@@ -88,13 +84,29 @@ export class StreamsManager {
 
   public rectifier: Rectifier = null as unknown as Rectifier;
 
+  public virtualTimeObj: VirtualTimeObj = null as unknown as VirtualTimeObj;
+
+  public commonConfig: ICommonConfig = null as unknown as ICommonConfig;
+
   private _statLoopTimerId: any;
 
   private _locked: boolean = true;
 
   private _connectedSockets: Set<string> = new Set();
 
-  async new (
+  async getVirtualTimeObj (
+    args: {
+      commonConfig: ICommonConfig,
+      virtualTimeConfig: IVirtualTimeConfig,
+      startTimeConfig: IStartTimeConfig,
+    },
+  ): Promise<VirtualTimeObj> {
+    this.commonConfig = args.commonConfig;
+    this.virtualTimeObj = await getVirtualTimeObj(args);
+    return this.virtualTimeObj;
+  }
+
+  async newStreams (
     optionsArray: IStreamConstructorOptions | IStreamConstructorOptions[],
     prepareRectifierOptions?: IPrepareRectifierOptions,
   ): Promise<Stream[]> {
@@ -102,7 +114,7 @@ export class StreamsManager {
       optionsArray = [optionsArray];
     }
     if (prepareRectifierOptions) {
-      const virtualTimeObj = await getVirtualTimeObjByStreamConfig(optionsArray[0]);
+      const { virtualTimeObj } = this;
       const { sendIntervalMillis, fieldNameToSort, accumulationTimeMillis, sendFunction } = prepareRectifierOptions;
       const rectifierOptions: IRectifierOptions = {
         virtualTimeObj,
@@ -152,12 +164,8 @@ export class StreamsManager {
     return this.map[streamId];
   }
 
-  get virtualTimeObj (): VirtualTimeObj {
-    return Object.values(this.map)[0]?.virtualTimeObj;
-  }
-
   get eventEmitter (): EventEmitter {
-    return Object.values(this.map)[0]?.options.eventEmitter;
+    return this.commonConfig.eventEmitter;
   }
 
   changeStreamsParams (data: any) {
@@ -169,16 +177,30 @@ export class StreamsManager {
     if (!virtualTimeObj) {
       return;
     }
-    let v = params.STREAM_SPEED_CALC_INTERVAL_SEC;
-    if (v) {
-      process.env.STREAM_SPEED_CALC_INTERVAL_SEC = String(v);
-      virtualTimeObj.setSpeedCalcIntervalSec(v);
-    }
-    v = params.STREAM_TIME_FRONT_UPDATE_INTERVAL_MILLIS;
-    if (v) {
-      process.env.STREAM_TIME_FRONT_UPDATE_INTERVAL_MILLIS = String(v);
-      virtualTimeObj.setTimeFrontUpdateIntervalMillis(v);
-    }
+
+    Object.entries(params).forEach(([key, value]: [string, any]) => {
+      let isSetEnv = true;
+      switch (key) {
+        case 'STREAM_LOOP_TIME_MILLIS':
+          virtualTimeObj.setLoopTimeMillis(value);
+          break;
+        case 'STREAM_SPEED':
+          virtualTimeObj.setSpeed(value);
+          break;
+        case 'STREAM_SPEED_CALC_INTERVAL_SEC':
+          virtualTimeObj.setSpeedCalcIntervalSec(value);
+          break;
+        case 'STREAM_TIME_FRONT_UPDATE_INTERVAL_MILLIS':
+          virtualTimeObj.setTimeFrontUpdateIntervalMillis(value);
+          break;
+        default:
+          isSetEnv = false;
+      }
+      if (isSetEnv) {
+        process.env[key] = String(value);
+      }
+    });
+
     let { streamIds } = data;
     if (!Array.isArray(streamIds)) {
       ({ streamIds } = this);
@@ -193,8 +215,12 @@ export class StreamsManager {
     });
   }
 
-  getConfigs (): IStreamConstructorOptions[] {
-    return this.streams.map((stream) => (stream.getActualConfig() as IStreamConstructorOptions));
+  getConfigs (): { virtualTimeConfig: IVirtualTimeObjOptions, streamConfigs: { streamConfig: IStreamConfig, senderConfig: ISenderConfig }[] } {
+    const streamConfigs = this.streams.map((stream) => (stream.getActualConfig() as { streamConfig: IStreamConfig, senderConfig: ISenderConfig }));
+    const virtualTimeConfig = cloneDeep<IVirtualTimeObjOptions>(this.virtualTimeObj.options);
+    // @ts-ignore
+    delete virtualTimeConfig.commonConfig;
+    return { virtualTimeConfig, streamConfigs };
   }
 
   pause () {

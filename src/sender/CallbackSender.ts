@@ -10,15 +10,15 @@ class CallbackSender extends AbstractSender {
 
     const { eventCallback } = options.senderConfig;
     if (typeof eventCallback !== 'function') {
-      options.exitOnError(`Missing event callback function when instantiating CallbackSender class`);
+      options.commonConfig.exitOnError(`Missing event callback function when instantiating CallbackSender class`);
     }
     this.eventCallback = eventCallback as Function;
   }
 
   async connect () {
-    const msg = ` Callback Sender for stream ${this.options.streamConfig.streamId} is Ready `;
+    const msg = ` Callback Sender for stream ${this.options.streamId} is Ready `;
     const eq = '='.repeat(Math.ceil((64 - msg.length) / 2));
-    this.options.echo.info(`${eq}${msg}${eq}`.substring(0, 64));
+    this.options.commonConfig.echo.info(`${eq}${msg}${eq}`.substring(0, 64));
     return true;
   }
 

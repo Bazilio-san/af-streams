@@ -1,49 +1,50 @@
 /* eslint-disable no-console */
 // noinspection JSUnusedGlobalSymbols
 
-import EventEmitter from 'events';
 import { createClient, RedisClientType, RedisDefaultModules, RedisModules, RedisScripts } from 'redis';
 import { DateTime } from 'luxon';
 import { RedisFunctions } from '@redis/client';
-import { boolEnv, getBool, getStreamKey, getTimeParamMillis, intEnv, strEnv, timeParamRE } from './utils/utils';
-import { ILoggerEx } from './interfaces';
+import { boolEnv, getStreamKey, getTimeParamMillis, intEnv, strEnv, timeParamRE } from './utils/utils';
+import { ICommonConfig, IStartTimeConfig } from './interfaces';
 import { millis2iso } from './utils/date-utils';
-import { IStreamConstructorOptions } from './Stream';
-
-export interface IStartTimeRedisOptions {
-  useStartTimeFromRedisCache: boolean,
-  host: string,
-  port: string | number,
-  streamId: string,
-  eventEmitter: EventEmitter,
-  exitOnError: Function,
-  logger: ILoggerEx,
-}
 
 const prefix = '[af-streams:redis]: ';
 
-export class StartTimeRedis {
-  private readonly options: IStartTimeRedisOptions;
+export interface StartTimeRedisConstructorOptions {
+  commonConfig: ICommonConfig,
+  startTimeConfig: IStartTimeConfig
+}
 
+export class StartTimeRedis {
   private readonly client: RedisClientType<RedisDefaultModules & RedisModules, RedisFunctions, RedisScripts>;
 
   private readonly streamKey: string;
 
   private readonly url: string;
 
-  constructor (options: IStartTimeRedisOptions) {
-    this.options = options;
-    const { logger } = this.options;
-    this.url = `redis://${options.host}:${options.port}`;
-    const streamKey = getStreamKey(options.streamId);
+  constructor (private options: StartTimeRedisConstructorOptions) {
+    const { commonConfig, startTimeConfig } = options;
+    const { redis = { port: 0, host: '' } } = startTimeConfig;
+    const { logger, exitOnError, serviceName } = commonConfig;
+    redis.port = redis.port || intEnv('STREAM_REDIS_PORT', 6379);
+    redis.host = redis.host || strEnv('STREAM_REDIS_HOST', '');
+    if (!redis?.host) {
+      exitOnError(`Не указан redis.host при инициализации потока потоков для сервиса ${serviceName}`);
+    }
+    startTimeConfig.useStartTimeFromRedisCache = startTimeConfig.useStartTimeFromRedisCache == null
+      ? boolEnv('STREAM_USE_START_TIME_FROM_REDIS_CACHE', true)
+      : Boolean(startTimeConfig.useStartTimeFromRedisCache);
+
+    this.url = `redis://${redis.host}:${redis.port}`;
+    const streamKey = getStreamKey(serviceName);
     this.streamKey = streamKey;
     logger.info(`${prefix}Redis expected at ${this.url}`);
     this.client = createClient({ url: this.url });
     this.client.on('error', (err: Error | any) => {
       console.error('Redis Client Error');
-      options.exitOnError(err);
+      exitOnError(err);
     });
-    options.eventEmitter.on('save-last-ts', async ({ lastTs }: { streamId: string, lastTs: number }) => {
+    commonConfig.eventEmitter.on('save-last-ts', async ({ lastTs }: { serviceName: string, lastTs: number }) => {
       const redisClient = await this.getRedisClient();
       redisClient?.set(streamKey, lastTs).catch((err: Error | any) => {
         logger.error(err);
@@ -55,45 +56,44 @@ export class StartTimeRedis {
     if (this.client.isOpen) {
       return this.client;
     }
-    const { logger } = this.options;
+    const { logger, exitOnError } = this.options.commonConfig;
     try {
       await this.client.connect();
       logger.info(`${prefix}Connected to REDIS on URL: ${this.url} / streamKey: ${this.streamKey}`);
     } catch (err: Error | any) {
       logger.error('Failed to initialize Redis client');
-      this.options.exitOnError(err);
+      exitOnError(err);
     }
     if (!this.client.isOpen) {
-      this.options.exitOnError('Failed to initialize Redis client');
+      exitOnError('Failed to initialize Redis client');
     }
     return this.client;
   }
 
   async getStartTimeFromRedis (): Promise<number> {
-    const { logger } = this.options;
+    const { logger } = this.options.commonConfig;
     const redisClient = await this.getRedisClient();
-    let startTime;
+    let startTimeMillis: number;
     try {
-      startTime = await redisClient.get(this.streamKey);
+      startTimeMillis = Number(await redisClient.get(this.streamKey)) || 0;
     } catch (err) {
       logger.error(err);
       return 0;
     }
-    startTime = Number(startTime);
-    if (!startTime) {
+    if (!startTimeMillis) {
       return 0;
     }
-    if (!DateTime.fromMillis(startTime).isValid) {
-      logger.error(`Cache stored data is not a unix timestamp: ${startTime}`);
+    if (!DateTime.fromMillis(startTimeMillis).isValid) {
+      logger.error(`Cache stored data is not a unix timestamp: ${startTimeMillis}`);
       return 0;
     }
-    logger.info(`${prefix}Get time of last sent entry: ${millis2iso(startTime, { includeOffset: true })} from the Redis cache using key ${this.streamKey}`);
-    return startTime;
+    logger.info(`${prefix}Get time of last sent entry: ${millis2iso(startTimeMillis, { includeOffset: true })} from the Redis cache using key ${this.streamKey}`);
+    return startTimeMillis;
   }
 
   // !!!Attention!!! STREAM_START_TIME - time in GMT
   getStartTimeFromENV (): number {
-    const { logger } = this.options;
+    const { logger } = this.options.commonConfig;
     const { STREAM_START_TIME = '', STREAM_START_BEFORE = '' } = process.env;
     const dt = DateTime.fromISO(STREAM_START_TIME, { zone: 'GMT' });
     if (STREAM_START_TIME) {
@@ -111,62 +111,28 @@ export class StartTimeRedis {
     return 0;
   }
 
-  async getStartTime (): Promise<{ isUsedSavedStartTime: boolean, startTime: number }> {
+  async getStartTime (): Promise<{ isUsedSavedStartTime: boolean, startTimeMillis: number }> {
     // initialize connection with Redis to save state later
     await this.getRedisClient();
-    let startTime = 0;
+    let startTimeMillis = 0;
     let isUsedSavedStartTime = false;
-    if (this.options.useStartTimeFromRedisCache) {
-      startTime = await this.getStartTimeFromRedis();
-      isUsedSavedStartTime = !!startTime;
+    if (this.options.startTimeConfig.useStartTimeFromRedisCache) {
+      startTimeMillis = await this.getStartTimeFromRedis();
+      isUsedSavedStartTime = !!startTimeMillis;
     }
-    startTime = startTime || this.getStartTimeFromENV() || Date.now();
-    return { isUsedSavedStartTime, startTime };
+    startTimeMillis = startTimeMillis || this.getStartTimeFromENV() || Date.now();
+    return { isUsedSavedStartTime, startTimeMillis };
   }
 }
 
 let startTimeRedis: StartTimeRedis;
 
-export const getStartTimeRedis = (options: IStartTimeRedisOptions): StartTimeRedis => {
+export const getStartTimeRedis = (options: StartTimeRedisConstructorOptions): StartTimeRedis => {
   if (!startTimeRedis) {
     startTimeRedis = new StartTimeRedis(options);
   }
   return startTimeRedis;
 };
 
-export const getStartTimeRedisByStreamConfig = (streamConstructorOptions: IStreamConstructorOptions): StartTimeRedis => {
-  if (startTimeRedis) {
-    return startTimeRedis;
-  }
-  const {
-    eventEmitter,
-    logger,
-    streamConfig,
-    useStartTimeFromRedisCache,
-    exitOnError,
-  } = streamConstructorOptions;
-
-  const { streamId } = streamConfig;
-
-  streamConstructorOptions.redis = streamConstructorOptions.redis || { host: '', port: 0 };
-  const { redis } = streamConstructorOptions;
-  redis.host = redis.host || strEnv('STREAM_REDIS_HOST', '');
-  if (!redis.host) {
-    exitOnError(`Не указан redis.host при инициализации потока ${streamId}`);
-  }
-  redis.port = redis.port || intEnv('STREAM_REDIS_PORT', 6379);
-
-  const startTimeRedisOptions: IStartTimeRedisOptions = {
-    useStartTimeFromRedisCache: useStartTimeFromRedisCache == null
-      ? boolEnv('STREAM_USE_START_TIME_FROM_REDIS_CACHE', true)
-      : getBool(useStartTimeFromRedisCache, true),
-    host: redis.host,
-    port: redis.port,
-    streamId,
-    eventEmitter,
-    exitOnError,
-    logger,
-  };
-  startTimeRedis = new StartTimeRedis(startTimeRedisOptions);
-  return startTimeRedis;
-};
+export const getStartTime = async (options: StartTimeRedisConstructorOptions):
+  Promise<{ isUsedSavedStartTime: boolean, startTimeMillis: number }> => getStartTimeRedis(options).getStartTime();

@@ -12,20 +12,20 @@ class EmitterSender extends AbstractSender {
   constructor (options: ISenderConstructorOptions) {
     super(options);
 
-    const { eventEmitter, senderConfig: { emitSingleEvent = false, emitId } } = options;
-    if (!eventEmitter) {
-      options.exitOnError(`Missing eventEmitter when instantiating EmitterSender class`);
+    const { commonConfig, senderConfig: { emitSingleEvent = false, emitId } } = options;
+    if (!commonConfig.eventEmitter) {
+      options.commonConfig.exitOnError(`Missing eventEmitter when instantiating EmitterSender class`);
     }
     if (!emitId) {
-      options.exitOnError(`Missing emitId when instantiating EmitterSender class`);
+      options.commonConfig.exitOnError(`Missing emitId when instantiating EmitterSender class`);
     }
-    this.eventEmitter = eventEmitter;
+    this.eventEmitter = commonConfig.eventEmitter;
     this.emitId = String(emitId);
     this.emitSingleEvent = emitSingleEvent;
   }
 
   async connect () {
-    this.options.echo.info(`=================== Emitter Sender is Ready ===================`);
+    this.options.commonConfig.echo.info(`=================== Emitter Sender is Ready ===================`);
     return true;
   }
 
@@ -40,7 +40,7 @@ class EmitterSender extends AbstractSender {
     recordsComposite.sendCount = pl;
     recordsComposite.last = packet[pl - 1];
 
-    const { eventEmitter, emitId, options: { streamConfig: { streamId } } } = this;
+    const { eventEmitter, emitId, options: { streamId } } = this;
     if (this.emitSingleEvent) {
       packet.forEach((event: TEventRecord) => {
         eventEmitter.emit(emitId, { streamId, event });

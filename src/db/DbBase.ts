@@ -1,6 +1,7 @@
 /* eslint-disable class-methods-use-this */
 import { IDbConstructorOptions, IEmNextRecordTsSql, IEmPortionOfDataCount, IEmPortionOfDataSql, TDbRecord } from '../interfaces';
 import { DEBUG_SQL } from '../constants';
+import { millis2iso } from '../utils/date-utils';
 
 export class DbBase {
   public readonly options: IDbConstructorOptions;
@@ -29,9 +30,18 @@ export class DbBase {
 
   private readonly recordsetPropName: string;
 
+  public readonly millis2dbFn: Function;
+
   constructor (options: IDbConstructorOptions) {
     this.options = options;
-    const { streamConfig, dbConfig } = options;
+    const { streamConfig } = options;
+    const { src: { dbConfig }, millis2dbFn } = streamConfig;
+
+    this.millis2dbFn = typeof millis2dbFn === 'function'
+      ? millis2dbFn.bind(this)
+      : (millis: number) => `'${millis2iso(millis)}'`;
+    streamConfig.millis2dbFn = this.millis2dbFn;
+
     let host;
     if (dbConfig.dialect === 'mssql') {
       this.ld = '[';
@@ -94,11 +104,11 @@ export class DbBase {
   }
 
   async init (): Promise<void> {
-    const { schemaAndTable, options: { exitOnError, streamConfig: { streamId } }, tableFieldNameArray } = this;
+    const { schemaAndTable, options, tableFieldNameArray } = this;
     const columnsNames = await this._getColumnsNames();
     const unknownFields = tableFieldNameArray.filter((name) => !columnsNames.includes(name));
     if (unknownFields.length) {
-      exitOnError(`Table ${schemaAndTable} is missing fields specified in the ${streamId} stream configuration:\n\t${unknownFields.join('\n\t')} `);
+      options.commonConfig.exitOnError(`Table ${schemaAndTable} is missing fields specified in the ${options.streamConfig.streamId} stream configuration:\n\t${unknownFields.join('\n\t')} `);
     }
   }
 
@@ -109,7 +119,7 @@ export class DbBase {
   }
 
   getPortionSQL ({ startTs, endTs, limit }: { startTs: number, endTs: number, limit: number }): string {
-    const { tsFieldQuoted, options: { millis2dbFn } } = this;
+    const { tsFieldQuoted, millis2dbFn } = this;
     let sql = `${'    SELECT'} ${this.fieldsList}
     FROM ${this.schemaAndTable} WHERE ${tsFieldQuoted} >= ${millis2dbFn(startTs)} AND ${tsFieldQuoted} <= ${millis2dbFn(endTs)} ORDER BY ${this.sortBy}`;
     if (limit) {
@@ -119,7 +129,9 @@ export class DbBase {
   }
 
   async getPortionOfData ({ startTs, endTs, limit, timeDelayMillis }: { startTs: number, endTs: number, limit: number, timeDelayMillis: number }): Promise<TDbRecord[]> {
-    const { options: { eventEmitter, streamConfig: { streamId } }, dbInfo } = this;
+    const { dbInfo, options } = this;
+    const { streamId } = options.streamConfig;
+    const { eventEmitter } = options.commonConfig;
     startTs += timeDelayMillis;
     endTs += timeDelayMillis;
     const sql = this.getPortionSQL({ startTs, endTs, limit });
@@ -136,7 +148,7 @@ export class DbBase {
   }
 
   getNextRecordSQL (fromTs: number): string {
-    const { tsFieldQuoted, options: { millis2dbFn } } = this;
+    const { tsFieldQuoted, millis2dbFn } = this;
     let sql = `${'    SELECT'} ${tsFieldQuoted} AS ts
     FROM ${this.schemaAndTable} WHERE ${tsFieldQuoted} > ${millis2dbFn(fromTs)} ORDER BY ${tsFieldQuoted}`;
     sql = this.limitIt(sql, 1);
@@ -144,7 +156,9 @@ export class DbBase {
   }
 
   async getNextRecordTs (fromTs: number): Promise<number | undefined> {
-    const { options: { eventEmitter, streamConfig: { streamId } }, dbInfo } = this;
+    const { dbInfo, options } = this;
+    const { streamId } = options.streamConfig;
+    const { eventEmitter, logger } = options.commonConfig;
     const sql = this.getNextRecordSQL(fromTs);
     let result;
     let nextRecordTs: number | undefined;
@@ -152,7 +166,7 @@ export class DbBase {
       result = await this.query(sql);
       nextRecordTs = result?.[this.recordsetPropName]?.[0]?.ts;
     } catch (err) {
-      this.options.logger.error(err);
+      logger.error(err);
     }
     if (DEBUG_SQL) {
       const payload: IEmNextRecordTsSql = { streamId, sql, fromTs, dbInfo, nextRecordTs };

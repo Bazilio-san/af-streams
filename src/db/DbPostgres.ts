@@ -29,7 +29,7 @@ export class DbPostgres extends DbBase {
     super(options);
 
     this.pool = null;
-    const { dbOptions, dbConfig } = options;
+    const { dbOptions, dbConfig } = options.streamConfig.src;
     const postgresDbOptions = { ...postgresDefaults, ...(dbOptions || {}) };
     this.cfg = { ...postgresDbOptions, ...dbConfig } as IPostgresConfig;
   }

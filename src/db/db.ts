@@ -4,7 +4,7 @@ import { DbPostgres } from './DbPostgres';
 
 const getDb = async (options: IDbConstructorOptions): Promise<DbMsSql | DbPostgres> => {
   let db: DbMsSql | DbPostgres;
-  if (options.dbConfig.dialect === 'mssql') {
+  if (options.streamConfig.src.dbConfig.dialect === 'mssql') {
     db = new DbMsSql(options);
   } else {
     db = new DbPostgres(options);

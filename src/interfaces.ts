@@ -185,26 +185,50 @@ export interface IStreamConfig {
   }
   fields: TFields,
   printInfoIntervalSec?: number,
+  prepareEvent?: Function,
+  tsFieldToMillis?: Function,
+  millis2dbFn?: Function,
+  skipGaps?: boolean, // skip gaps in data when working in virtual time mode
+  streamSendIntervalMillis?: number, // The interval for sending data from the buffer // default 10 ms
+  maxRunUpFirstTsVtMillis?: number, // Не допускаем увеличение разницы между ts первого элемента и виртуальным временем боле, чем на это значение
+  timeDelayMillis?: number, // Искусственное отставание при выборке данных
 }
 
-export interface ISenderConstructorOptions {
-  streamConfig: IStreamConfig,
-  senderConfig: ISenderConfig,
-  serviceName?: string,
+export interface IStartTimeConfig {
+  redis?: {
+    host: string,
+    port?: string | number
+  },
+  useStartTimeFromRedisCache?: boolean,
+}
+
+export interface ICommonConfig {
+  serviceName: string, // Используется для идентификации хранилища времени старта в redis и как id сервиса в WSSender
+
   logger: ILoggerEx,
   echo: IEcho,
   exitOnError: Function,
   eventEmitter: EventEmitter,
+
+  testMode?: boolean,
+}
+
+export interface IVirtualTimeConfig {
+  speed?: number,
+  speedCalcIntervalSec?: number, // default 10 s
+  timeFrontUpdateIntervalMillis?: number, // default 5 ms
+  loopTimeMillis?: number,
+}
+
+export interface ISenderConstructorOptions {
+  streamId: string,
+  senderConfig: ISenderConfig,
+  commonConfig: ICommonConfig,
 }
 
 export interface IDbConstructorOptions {
   streamConfig: IStreamConfig,
-  logger: ILoggerEx,
-  eventEmitter: EventEmitter,
-  exitOnError: Function,
-  dbOptions: IMsSqlConfig | IPostgresConfig,
-  dbConfig: IDbConfig,
-  millis2dbFn: Function
+  commonConfig: ICommonConfig,
 }
 
 export type TSlot = [leftIndex: number | null, foundIndex: number | null, rightIndex: number | null]
@@ -322,4 +346,7 @@ export interface ISocket extends Socket {
   applyFn: Function
 }
 
-export interface IOFnArgs { socket: ISocket, io: Server }
+export interface IOFnArgs {
+  socket: ISocket,
+  io: Server
+}

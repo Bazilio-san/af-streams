@@ -1,30 +1,23 @@
 // noinspection JSUnusedGlobalSymbols
 
-import EventEmitter from 'events';
 import { DateTime } from 'luxon';
 import * as cron from 'cron';
 import { Promise } from 'mssql';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
-import { getStartTimeRedisByStreamConfig } from './StartTimeRedis';
-import { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
-import {
-  boolEnv, cloneDeep, floatEnv, getBool, getTimeParamMillis, intEnv, memUsage, padL, strEnv,
-} from './utils/utils';
+import { VirtualTimeObj } from './VirtualTimeObj';
+import { boolEnv, cloneDeep, floatEnv, getBool, intEnv, memUsage, padL } from './utils/utils';
 import getDb from './db/db';
 import {
-  blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, y, bg, yellow,
+  blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, bg, yellow,
 } from './utils/color';
 import {
-  IDbConstructorOptions,
-  IEcho, IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion,
+  ICommonConfig, IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion,
   IEmCurrentLastTimeRecords, IEmFindNextTs, IEmSaveLastTs,
   IEmSubtractedLastTimeRecords,
-  ILoggerEx,
   IRecordsComposite,
   ISender,
   ISenderConfig,
-  ISenderConstructorOptions,
   IStreamConfig, IStreamStat,
   TDbRecord,
   TEventRecord,
@@ -33,38 +26,14 @@ import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
 import getSender from './sender/get-sender';
 import { DEBUG_LNP, DEBUG_LTR, DEBUG_STREAM, DEFAULTS, STREAM_ID_FIELD, TS_FIELD } from './constants';
-import { millis2iso, millis2isoZ } from './utils/date-utils';
 import localEventEmitter from './ee-scoped';
 
 export interface IStreamConstructorOptions {
+  commonConfig: ICommonConfig
   streamConfig: IStreamConfig,
   senderConfig: ISenderConfig,
-  serviceName?: string,
-  redis?: {
-    host: string,
-    port?: string | number
-  },
-  logger: ILoggerEx,
-  echo: IEcho,
-  exitOnError: Function,
-  eventEmitter: EventEmitter,
 
-  useStartTimeFromRedisCache?: boolean,
-  speed?: number,
-  loopTime?: string | number,
-  prepareEvent?: Function,
-  tsFieldToMillis?: Function,
-  millis2dbFn?: Function,
-  skipGaps?: boolean, // skip gaps in data when working in virtual time mode
-  /**
-   * The interval for sending data from the buffer
-   */
-  streamSendIntervalMillis?: number, // default 10 ms
-  speedCalcIntervalSec?: number, // default 10 s
-  timeFrontUpdateIntervalMillis?: number, // default 5 ms
-  maxRunUpFirstTsVtMillis?: number, // Не допускаем увеличение разницы между ts первого элемента и виртуальным временем боле, чем на это значение
-  timeDelayMillis?: number, // Искусственное отставание при выборке данных
-  testMode?: boolean,
+  virtualTimeObj: VirtualTimeObj,
 }
 
 const getInitStat = () => ({ queryTs: 0 });
@@ -94,8 +63,6 @@ export class Stream {
 
   public locked: boolean = false;
 
-  private loopTimeMillis: number = 0;
-
   private busy: number;
 
   private _sendTimer: any;
@@ -112,8 +79,6 @@ export class Stream {
   private readonly tsFieldToMillis: Function;
 
   private readonly prepareEvent: Function;
-
-  private readonly millis2dbFn: Function;
 
   private initialized: boolean = false;
 
@@ -132,14 +97,14 @@ export class Stream {
   private isPrepareEventAsync: boolean;
 
   constructor (public options: IStreamConstructorOptions) {
-    const { streamConfig, prepareEvent, tsFieldToMillis, millis2dbFn } = options;
-    const { src } = streamConfig;
+    this.virtualTimeObj = options.virtualTimeObj;
+    const { streamConfig } = options;
+    const { src, prepareEvent, tsFieldToMillis } = streamConfig;
     src.timezoneOfTsField = src.timezoneOfTsField || 'GMT';
-    const zone = src.timezoneOfTsField;
 
     const tsFieldToMillisDefault = (tsValue: string | Date | number) => {
       if (typeof tsValue === 'string') {
-        return DateTime.fromISO(tsValue, { zone }).toMillis();
+        return DateTime.fromISO(tsValue, { zone: src.timezoneOfTsField }).toMillis();
       }
       return Number(tsValue);
     };
@@ -153,12 +118,6 @@ export class Stream {
       : (dbRecord: TDbRecord) => dbRecord;
 
     this.isPrepareEventAsync = this.prepareEvent.constructor.name === 'AsyncFunction';
-
-    this.millis2dbFn = typeof millis2dbFn === 'function'
-      ? millis2dbFn.bind(this)
-      : (millis: number) => `'${millis2iso(millis)}'`;
-
-    const { idFields } = src;
 
     this.sender = {} as ISender;
     this.db = {} as DbMsSql | DbPostgres;
@@ -185,15 +144,13 @@ export class Stream {
           WHERE [${tsField}] >= '${from}' AND [${tsField}] <= '${to}'
      To ensure that duplicates are excluded, after receiving the data, we delete from there those that are in lastTimeRecords
      */
-    this.lastTimeRecords = new LastTimeRecords(idFields);
-
-    this.virtualTimeObj = {} as VirtualTimeObj;
+    this.lastTimeRecords = new LastTimeRecords(src.idFields);
 
     this._sendTimer = null;
     this.totalRowsSent = 0;
     this.busy = 0;
 
-    options.eventEmitter?.on('virtual-time-loop-back', () => {
+    options.commonConfig.eventEmitter?.on('virtual-time-loop-back', () => {
       this.lastRecordTs = 0;
       this.nextStartTs = this.virtualTimeObj.virtualStartTs;
       this.recordsBuffer.flush();
@@ -202,11 +159,11 @@ export class Stream {
       this.isFirstLoad = true;
     });
 
-    options.eventEmitter?.on('virtual-time-is-synchronized-with-current', () => {
+    options.commonConfig.eventEmitter?.on('virtual-time-is-synchronized-with-current', () => {
       this.resetSendIntervalVirtualMillis();
     });
 
-    this.prefix = `${lCyan}STREAM: ${lBlue}${options.streamConfig.streamId}${rs}`;
+    this.prefix = `${lCyan}STREAM: ${lBlue}${streamConfig.streamId}${rs}`;
   }
 
   // ####################################  SET  ################################
@@ -215,13 +172,6 @@ export class Stream {
     this.options.streamConfig.fetchIntervalSec = (value && Number(value))
       || Number(this.options.streamConfig.fetchIntervalSec)
       || intEnv('STREAM_FETCH_INTERVAL_SEC', DEFAULTS.FETCH_INTERVAL_SEC); // 10 sec
-  }
-
-  setSpeed (value?: number) {
-    this.options.speed = (value && Number(value))
-      || Number(this.options.speed)
-      || intEnv('STREAM_SPEED', 1);
-    this.resetSendIntervalVirtualMillis();
   }
 
   setBufferMultiplier (value?: number) {
@@ -238,33 +188,29 @@ export class Stream {
   }
 
   setStreamSendIntervalMillis (value?: number) {
-    this.options.streamSendIntervalMillis = (value && Number(value))
-      || Number(this.options.streamSendIntervalMillis)
+    this.options.streamConfig.streamSendIntervalMillis = (value && Number(value))
+      || Number(this.options.streamConfig.streamSendIntervalMillis)
       || intEnv('STREAM_SEND_INTERVAL_MILLIS', DEFAULTS.STREAM_SEND_INTERVAL_MILLIS); // 10 ms ;
     this.resetSendIntervalVirtualMillis();
   }
 
   setMaxRunUpFirstTsVtMillis (value?: number) {
-    this.options.maxRunUpFirstTsVtMillis = (value && Number(value))
-      || Number(this.options.maxRunUpFirstTsVtMillis)
+    this.options.streamConfig.maxRunUpFirstTsVtMillis = (value && Number(value))
+      || Number(this.options.streamConfig.maxRunUpFirstTsVtMillis)
       || intEnv('STREAM_MAX_RUNUP_FIRST_TS_VT_MILLIS', DEFAULTS.MAX_RUNUP_FIRST_TS_VT_MILLIS); // 2_000 ms
   }
 
   setTimeDelay (value?: number) {
-    value = (value && Number(value)) || Number(this.options.timeDelayMillis) || 0;
-    this.options.timeDelayMillis = Math.max(0, value);
+    value = (value && Number(value)) || Number(this.options.streamConfig.timeDelayMillis) || 0;
+    this.options.streamConfig.timeDelayMillis = Math.max(0, value);
   }
 
   setSkipGaps (value?: number) {
     if (value != null) {
-      this.options.skipGaps = getBool(value, DEFAULTS.SKIP_GAPS);
+      this.options.streamConfig.skipGaps = getBool(value, DEFAULTS.SKIP_GAPS);
       return;
     }
-    this.options.skipGaps = boolEnv('STREAM_SKIP_GAPS', DEFAULTS.SKIP_GAPS);
-  }
-
-  setLoopTime (value?: number) {
-    this.loopTimeMillis = getTimeParamMillis(value != null ? value : strEnv('STREAM_LOOP_TIME', ''));
+    this.options.streamConfig.skipGaps = boolEnv('STREAM_SKIP_GAPS', DEFAULTS.SKIP_GAPS);
   }
 
   setPrintInfoIntervalSec (value?: number) {
@@ -279,9 +225,8 @@ export class Stream {
   }
 
   resetSendIntervalVirtualMillis () {
-    const streamSendIntervalMillis = this.options.streamSendIntervalMillis || DEFAULTS.STREAM_SEND_INTERVAL_MILLIS;
-    const speed = this.virtualTimeObj.isCurrentTime ? 1 : (this.options.speed || 1);
-    this.sendIntervalVirtualMillis = streamSendIntervalMillis * speed;
+    const streamSendIntervalMillis = this.options.streamConfig.streamSendIntervalMillis || DEFAULTS.STREAM_SEND_INTERVAL_MILLIS; // VVQ as number
+    this.sendIntervalVirtualMillis = streamSendIntervalMillis * (this.virtualTimeObj.isCurrentTime ? 1 : this.virtualTimeObj.speed);
   }
 
   // ###############################  INIT & START  ############################
@@ -298,91 +243,32 @@ export class Stream {
    */
   async init (): Promise<Stream | undefined> {
     this.setFetchIntervalSec();
-    this.setSpeed();
     this.setBufferMultiplier();
     this.setMaxBufferSize();
     this.setStreamSendIntervalMillis();
     this.setMaxRunUpFirstTsVtMillis();
     this.setTimeDelay();
     this.setSkipGaps();
-    this.setLoopTime();
 
-    const { options: streamConstructorOptions, loopTimeMillis, millis2dbFn } = this;
-    const {
-      senderConfig,
-      eventEmitter,
-      echo,
-      logger,
-      serviceName,
-      streamConfig,
-      useStartTimeFromRedisCache,
-      exitOnError,
-      testMode,
-      speedCalcIntervalSec,
-      timeFrontUpdateIntervalMillis,
-      speed,
-    } = streamConstructorOptions;
+    const { commonConfig, streamConfig, senderConfig } = this.options;
+    const { streamId } = streamConfig;
 
-    const senderConstructorOptions: ISenderConstructorOptions = {
-      streamConfig,
-      senderConfig,
-      serviceName,
-      echo,
-      logger,
-      exitOnError,
-      eventEmitter,
-    };
-    this.sender = await getSender(senderConstructorOptions);
+    // SENDER
+    this.sender = await getSender({ streamId, senderConfig, commonConfig });
 
-    const isConnectedToTarget = await this.sender.connect();
-    if (!isConnectedToTarget) {
-      exitOnError('No connection to sender');
-      return;
-    }
-
-    const startTimeRedis = getStartTimeRedisByStreamConfig(streamConstructorOptions);
-
-    const { isUsedSavedStartTime, startTime } = await startTimeRedis.getStartTime();
-
-    const virtualTimeObjOptions: IVirtualTimeObjOptions = {
-      startTime,
-      eventEmitter,
-      speed,
-      loopTimeMillis,
-      echo,
-      exitOnError,
-      speedCalcIntervalSec,
-      timeFrontUpdateIntervalMillis,
-    };
-
-    const { src: { dbOptions, dbConfig, timezoneOfTsField }, streamId } = streamConfig;
-
-    this.virtualTimeObj = getVirtualTimeObj(virtualTimeObjOptions);
     this.virtualTimeObj.registerStream(this);
     this.nextStartTs = this.virtualTimeObj.virtualStartTs;
+
     const msg = ` [af-streams: ${streamId}] `;
     const eq = '='.repeat(Math.max(1, Math.ceil((64 - msg.length) / 2)));
     const info = `${g}${eq}${msg}${eq}
-${g}Time field TZ:         ${m}${timezoneOfTsField}
-${g}Start from beginning:  ${m}${useStartTimeFromRedisCache ? 'NOT' : 'YES'}
-${g}Start time:            ${m}${millis2isoZ(startTime)}${isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
-${g}Speed:                 ${m}${this.virtualTimeObj.options.speed} X
-${g}Cyclicity:             ${m}${loopTimeMillis ? `${loopTimeMillis / 1000} sec` : '-'}
+${g}Time field TZ:         ${m}${streamConfig.src.timezoneOfTsField}
 ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec
-${g}================================================================`;
-    echo(info);
+${g}${'='.repeat(64)}`;
+    commonConfig.echo(info);
 
-    if (!testMode) {
-      const dbConstructorOptions: IDbConstructorOptions = {
-        streamConfig,
-        logger,
-        eventEmitter,
-        exitOnError,
-        dbOptions,
-        dbConfig,
-        millis2dbFn,
-      };
-      this.db = await getDb(dbConstructorOptions);
+    if (!commonConfig.testMode) {
+      this.db = await getDb({ commonConfig, streamConfig });
     }
     this.initialized = true;
     return this;
@@ -471,8 +357,8 @@ ${g}================================================================`;
   }
 
   async _addPortionToBuffer (recordset: TDbRecord[]): Promise<void> {
-    const { recordsBuffer, loopTimeMillis, options } = this;
-    const { streamConfig: { streamId } } = options;
+    const { recordsBuffer, options, virtualTimeObj: { loopTimeMillis, loopNumber } } = this;
+    const { streamId } = options.streamConfig;
     const { length: loadedCount = 0 } = recordset;
     let skipped = 0;
     let toUseCount = loadedCount;
@@ -482,7 +368,6 @@ ${g}================================================================`;
       recordset.splice(0, recordset.length);
 
       if (loopTimeMillis) {
-        const { loopNumber } = this.virtualTimeObj;
         const bias = loopNumber * loopTimeMillis;
         forBuffer.forEach((row) => {
           row._ts = row[TS_FIELD] + bias;
@@ -496,7 +381,7 @@ ${g}================================================================`;
       const subtractedLastTimeRecords = this.lastTimeRecords.subtractLastTimeRecords(forBuffer);
       if (DEBUG_LTR) {
         const payload: IEmSubtractedLastTimeRecords = { streamId, subtractedLastTimeRecords };
-        options.eventEmitter?.emit('subtracted-last-time-records', payload);
+        options.commonConfig.eventEmitter?.emit('subtracted-last-time-records', payload);
       }
       // Since the previous step may have removed previously received records,
       // the length of forBuffer may be less
@@ -509,12 +394,12 @@ ${g}================================================================`;
         const currentLastTimeRecords = this.lastTimeRecords.fillLastTimeRecords(this.recordsBuffer.buffer);
         if (DEBUG_LTR) {
           const payload: IEmCurrentLastTimeRecords = { streamId, currentLastTimeRecords };
-          options.eventEmitter?.emit('current-last-time-records', payload);
+          options.commonConfig.eventEmitter?.emit('current-last-time-records', payload);
         }
       }
     }
     if (DEBUG_STREAM) {
-      options.echo(`${this.prefix} vt: ${this.virtualTimeObj.virtualTimeString
+      options.commonConfig.echo(`${this.prefix} vt: ${this.virtualTimeObj.virtualTimeString
       } loaded/skipped/used: ${lm}${loadedCount}${blue}/${lc}${skipped}${blue}/${g}${toUseCount}${rs}`);
     }
   }
@@ -522,16 +407,17 @@ ${g}================================================================`;
   // #################################  LOAD  ##################################
   getBufferLookAhead () {
     const { fetchIntervalSec, bufferMultiplier } = this.options.streamConfig;
+    const { isCurrentTime, speed } = this.virtualTimeObj;
     // Запрос данных со сдвигом виртуального времени на bufferMultiplier интервалов опроса
-    return (fetchIntervalSec || DEFAULTS.FETCH_INTERVAL_SEC) * 1000
-      * Math.max(bufferMultiplier || DEFAULTS.BUFFER_MULTIPLIER, 1)
-      * (this.virtualTimeObj.isCurrentTime ? 1 : this.options.speed || 1);
+    return (fetchIntervalSec || DEFAULTS.FETCH_INTERVAL_SEC) * 1000 // VVQ as number
+      * Math.max(bufferMultiplier || DEFAULTS.BUFFER_MULTIPLIER, 1) // VVQ as number
+      * (isCurrentTime ? 1 : speed || 1);
   }
 
   private async _loadNextPortion () {
     const { options, recordsBuffer, virtualTimeObj, stat } = this;
     let { nextStartTs } = this;
-    const { streamConfig: { streamId, maxBufferSize }, timeDelayMillis = 0 } = options;
+    const { streamId, maxBufferSize, timeDelayMillis = 0 } = options.streamConfig;
 
     const bufferLookAheadMs = this.getBufferLookAhead();
 
@@ -552,9 +438,8 @@ ${g}================================================================`;
       // чем на расстояние bufferLookAheadMs, новых записей подгружать не нужно
       return;
     }
-
     let startTs = nextStartTs;
-    let endTs = virtualTimeObj.virtualTs + bufferLookAheadMs + (stat.queryTs * (isCurrentTime ? 1 : (options.speed || 1)));
+    let endTs = virtualTimeObj.virtualTs + bufferLookAheadMs + (stat.queryTs * (isCurrentTime ? 1 : virtualTimeObj.speed));
     // С учетом предыдущих условий, тут расстояние между startTs и endTs не должно превышать
 
     if (this.isFirstLoad) {
@@ -579,7 +464,7 @@ ${g}================================================================`;
       const payloadBefore: IEmBeforeLoadNextPortion = { streamId, startTs, endTs, vt: virtualTimeObj.virtualTs, timeDelayMillis };
       localEventEmitter.emit('before-lnp', payloadBefore);
       if (DEBUG_LNP) {
-        options.eventEmitter?.emit('before-load-next-portion', payloadBefore);
+        options.commonConfig.eventEmitter?.emit('before-load-next-portion', payloadBefore);
       }
       const st = Date.now();
       // ================= get Portion Of Data =================
@@ -627,16 +512,16 @@ ${g}================================================================`;
       };
       localEventEmitter.emit('after-lnp', payloadAfter);
       if (DEBUG_LNP) {
-        options.eventEmitter?.emit('after-load-next-portion', payloadAfter);
+        options.commonConfig.eventEmitter?.emit('after-load-next-portion', payloadAfter);
       }
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
-      options.exitOnError(err);
+      options.commonConfig.exitOnError(err);
     }
   }
 
   private async skipGap () {
-    if (!this.options.skipGaps || this.virtualTimeObj.isCurrentTime) {
+    if (!this.options.streamConfig.skipGaps || this.virtualTimeObj.isCurrentTime) {
       return;
     }
     const { lastRecordTs, nextStartTs } = this;
@@ -662,12 +547,12 @@ ${g}================================================================`;
         o: nextStartTs,
         n: this.nextStartTs,
       };
-      this.options.eventEmitter?.emit('find-next-ts', payload);
+      this.options.commonConfig.eventEmitter?.emit('find-next-ts', payload);
     }
   }
 
   private _fetchLoop () {
-    const { options: { echo, streamConfig } } = this;
+    const { options: { commonConfig: { echo }, streamConfig } } = this;
     cron.job(`0/${streamConfig.fetchIntervalSec} * * * * *`, async () => {
       if (this.locked) {
         if (DEBUG_STREAM) {
@@ -681,7 +566,7 @@ ${g}================================================================`;
         try {
           await this._loadNextPortion();
         } catch (err: Error | any) {
-          this.options.exitOnError(err);
+          this.options.commonConfig.exitOnError(err);
           return;
         }
         this.busy = 0;
@@ -697,7 +582,7 @@ ${g}================================================================`;
 
     const rowsSent = `rows sent: ${bold}${padL(this.totalRowsSent || 0, 6)}${boldOff}${rs}`;
     const locked = this.locked ? `  ${bg.red}${yellow}STREAM LOCKED${rs}` : '';
-    this.options.logger?.info(`${this.prefix} ${rowsSent} / ${this.virtualTimeObj.virtualTimeString}${locked} / ${memUsage()}`);
+    this.options.commonConfig.logger?.info(`${this.prefix} ${rowsSent} / ${this.virtualTimeObj.virtualTimeString}${locked} / ${memUsage()}`);
 
     const self = this;
     this._printTimer = setTimeout(() => {
@@ -708,7 +593,7 @@ ${g}================================================================`;
   // #################################  SEND  ##################################
 
   private async _sendPacket (eventsPacket: TEventRecord[]): Promise<{ debugMessage: string, isError?: boolean }> {
-    const { sender, sessionId, options: { eventEmitter, logger, streamConfig: { streamId } } } = this;
+    const { sender, sessionId, options: { commonConfig: { eventEmitter, logger }, streamConfig: { streamId } } } = this;
     return new Promise((resolve: Function) => {
       let debugMessage = '';
 
@@ -773,7 +658,7 @@ ${g}================================================================`;
     if (DEBUG_STREAM) {
       let bufferInfo = Stream.packetInfo(rb.length, rb.first, rb.last);
       bufferInfo = bufferInfo.trim() ? `BUFFER: ${bufferInfo}` : `BUFFER empty`;
-      this.options.echo(`${debugMessage}\t${m}${bufferInfo}`);
+      this.options.commonConfig.echo(`${debugMessage}\t${m}${bufferInfo}`);
     }
   }
 
@@ -783,11 +668,11 @@ ${g}================================================================`;
     try {
       await this._send();
     } catch (err: Error | any) {
-      return self.options.exitOnError(err);
+      return self.options.commonConfig.exitOnError(err);
     }
     this._sendTimer = setTimeout(() => {
       self._sendLoop();
-    }, this.options.streamSendIntervalMillis);
+    }, this.options.streamConfig.streamSendIntervalMillis);
   }
 
   // #################################  LOCK  ##################################
@@ -813,7 +698,7 @@ ${g}================================================================`;
     if (firstTs) {
       // Если буфер не пуст:
       // Не допускаем увеличение разницы между ts первого элемента и виртуальным временем боле, чем на maximumRunUp...
-      return firstTs + (this.options.maxRunUpFirstTsVtMillis || DEFAULTS.MAX_RUNUP_FIRST_TS_VT_MILLIS);
+      return firstTs + (this.options.streamConfig.maxRunUpFirstTsVtMillis || DEFAULTS.MAX_RUNUP_FIRST_TS_VT_MILLIS);
     }
     if (this.nextStartTs) {
       // Если буфер пуст
@@ -822,12 +707,24 @@ ${g}================================================================`;
     return timeFront + timeShift;
   }
 
-  getActualConfig (asString?: boolean): string | IStreamConstructorOptions {
-    const optionsCopy = cloneDeep<IStreamConstructorOptions>(this.options);
-    ['logger', 'echo', 'exitOnError', 'eventEmitter', 'prepareEvent', 'tsFieldToMillis', 'millis2dbFn'].forEach((p) => {
-      delete optionsCopy[p];
+  getActualConfig (asString?: boolean): string | { streamConfig: IStreamConfig, senderConfig: ISenderConfig } {
+    const streamConfig = cloneDeep<IStreamConfig>(this.options.streamConfig);
+    const senderConfig = cloneDeep<ISenderConfig>(this.options.senderConfig);
+    /**
+     type: 'console' | 'tcp' | 'ws' | 'callback' | 'emitter',
+     host?: string,
+     port?: number
+     accessPoint?: TAccessPoint
+     eventCallback?: Function,
+     emitSingleEvent?: boolean,
+     emitId?: string,
+     */
+
+    ['prepareEvent', 'tsFieldToMillis', 'millis2dbFn'].forEach((p) => {
+      delete streamConfig[p];
     });
-    delete optionsCopy.senderConfig.eventCallback;
+    delete senderConfig.eventCallback;
+    const optionsCopy = { streamConfig, senderConfig };
     if (asString) {
       return JSON.stringify(optionsCopy, undefined, 2);
     }
@@ -836,7 +733,7 @@ ${g}================================================================`;
 
   stop () {
     this.lock(true);
-    this.virtualTimeObj.init();
+    this.virtualTimeObj.reset();
 
     this.lastRecordTs = 0;
     this.nextStartTs = this.virtualTimeObj.virtualStartTs;

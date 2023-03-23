@@ -35,7 +35,7 @@ export class DbMsSql extends DbBase {
     super(options);
 
     this.pool = null;
-    const { dbOptions, dbConfig } = options;
+    const { dbOptions, dbConfig } = options.streamConfig.src;
     const mssqlDbOptions = { ...mssqlDefaults, ...(dbOptions || {}) };
     ['options', 'pool'].forEach((propName) => {
       if (typeof dbOptions?.[propName] === 'object') {
@@ -54,7 +54,7 @@ export class DbMsSql extends DbBase {
       await this.pool.close();
     }
     this.pool = null;
-    const { logger } = this.options;
+    const { logger } = this.options.commonConfig;
     try {
       this.pool = new sql.ConnectionPool(this.cfg as sql.config);
       if (typeof this.pool !== 'object') {
@@ -80,7 +80,7 @@ export class DbMsSql extends DbBase {
   async close (): Promise<boolean> {
     if (this.pool?.close) {
       await this.pool.close();
-      this.options.logger.info(`Mssql connection pool for "${this.dbInfo}" closed`);
+      this.options.commonConfig.logger.info(`Mssql connection pool for "${this.dbInfo}" closed`);
       return true;
     }
     return false;

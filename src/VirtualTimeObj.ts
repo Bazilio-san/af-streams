@@ -1,24 +1,20 @@
 // noinspection JSUnusedGlobalSymbols
 
-import EventEmitter from 'events';
 import { clearInterval } from 'timers';
-import { IEcho, IEmVirtualDateChanged, IEmVirtualHourChanged, IStreamLike } from './interfaces';
-import { c, rs } from './utils/color';
+import { ICommonConfig, IEmVirtualDateChanged, IEmVirtualHourChanged, IStartTimeConfig, IStreamLike, IVirtualTimeConfig } from './interfaces';
+import { bold, boldOff, c, g, m, rs, y } from './utils/color';
 import { DEFAULTS, MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
-import { millis2iso } from './utils/date-utils';
-import { getTimeParamMillis, intEnv, strEnv } from './utils/utils';
-import { IStreamConstructorOptions } from './Stream';
-import { getStartTimeRedisByStreamConfig } from './StartTimeRedis';
+import { millis2iso, millis2isoZ } from './utils/date-utils';
+import { intEnv } from './utils/utils';
+import { getStartTime } from './StartTimeRedis';
 
 export interface IVirtualTimeObjOptions {
-  startTime: number, // timestamp millis
-  eventEmitter: EventEmitter,
-  speed?: number,
-  loopTimeMillis?: number,
-  echo?: IEcho,
-  exitOnError: Function,
-  speedCalcIntervalSec?: number,
-  timeFrontUpdateIntervalMillis?: number,
+  startTimeMillis: number,
+  isUsedSavedStartTime: boolean,
+  useStartTimeFromRedisCache: boolean,
+
+  commonConfig: ICommonConfig,
+  virtualTimeConfig: IVirtualTimeConfig,
 }
 
 export interface IVirtualTimeStat {
@@ -40,15 +36,11 @@ export class VirtualTimeObj {
 
   private streams: IStreamLike[] = [];
 
-  public readonly loopTimeMillis: number;
+  public loopTimeMillis: number = 0;
 
-  private readonly loopTimeMillsEnd: 0 | number;
+  private loopTimeMillsEnd: number = 0;
 
   private timeFront: number = 0;
-
-  private eventEmitter: EventEmitter;
-
-  private readonly debug: Function;
 
   private prevVirtualDateNumber: number = 0;
 
@@ -60,30 +52,31 @@ export class VirtualTimeObj {
 
   private timeFrontUpdateInterval: any;
 
+  private timeFrontUpdateIntervalMillis: number = 0;
+
+  public speed: number = 1;
+
   constructor (public options: IVirtualTimeObjOptions) {
-    const { startTime, loopTimeMillis = 0, eventEmitter, echo } = options;
+    this.virtualStartTs = options.startTimeMillis; // timestamp millis from which to start uploading data
 
-    this.options = options;
+    this.reset();
+    this.setLoopTimeMillis();
     this.setSpeed();
-    this.loopTimeMillis = loopTimeMillis;
-    this.virtualStartTs = +startTime; // timestamp millis from which to start uploading data
-
-    this.init();
-
-    /// this.timeFront = this.virtualStartTs;
-    this.loopTimeMillsEnd = loopTimeMillis && (this.virtualStartTs + loopTimeMillis);
-    this.eventEmitter = eventEmitter;
-    this.debug = echo ? echo.debug.bind(echo) : (m: string) => {
-      // eslint-disable-next-line no-console
-      console.log(m);
-    };
-
     this.setTimeFrontUpdateIntervalMillis();
-
     this.setSpeedCalcIntervalSec();
+
+    const msg = ` [af-streams:VirtualTimeObj::Service:${options.commonConfig.serviceName}] `;
+    const eq = '='.repeat(Math.max(1, Math.ceil((64 - msg.length) / 2)));
+    const info = `${g}${eq}${msg}${eq}
+${g}Start from beginning:  ${m}${options.useStartTimeFromRedisCache ? 'NOT' : 'YES'}
+${g}Speed:                 ${m}${this.speed} X
+${g}Cyclicity:             ${m}${this.loopTimeMillis ? `${this.loopTimeMillis / 1000} sec` : '-'}
+${g}Start time:            ${m}${millis2isoZ(options.startTimeMillis)}${options.isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
+${g}${'='.repeat(64)}`;
+    options.commonConfig.echo(info);
   }
 
-  init () {
+  reset () {
     const now = Date.now();
     this.timeFront = this.virtualStartTs;
     this.realStartTs = now; // Переустанавливать при запуске
@@ -96,17 +89,29 @@ export class VirtualTimeObj {
     };
   }
 
+  setLoopTimeMillis (value?: number) {
+    value = (value && Number(value))
+      || Number(this.options.virtualTimeConfig.loopTimeMillis)
+      || intEnv('STREAM_LOOP_TIME_MILLIS', 0);
+    this.loopTimeMillis = value;
+    this.loopTimeMillsEnd = value && (this.virtualStartTs + value);
+  }
+
   setSpeed (value?: number) {
-    this.options.speed = (value && Number(value))
-      || Number(this.options.speed)
+    value = (value && Number(value))
+      || Number(this.options.virtualTimeConfig.speed)
       || intEnv('STREAM_SPEED', 1);
+    this.options.virtualTimeConfig.speed = value;
+    this.speed = Math.max(1, value);
   }
 
   setTimeFrontUpdateIntervalMillis (value?: number) {
     value = (value && Number(value))
-      || Number(this.options.timeFrontUpdateIntervalMillis)
+      || Number(this.options.virtualTimeConfig.timeFrontUpdateIntervalMillis)
       || intEnv('STREAM_TIME_FRONT_UPDATE_INTERVAL_MILLIS', DEFAULTS.TIME_FRONT_UPDATE_INTERVAL_MILLIS); // 5 ms
-    this.options.timeFrontUpdateIntervalMillis = value;
+    this.options.virtualTimeConfig.timeFrontUpdateIntervalMillis = value;
+    this.timeFrontUpdateIntervalMillis = value;
+
     clearInterval(this.frontUpdateInterval);
     this.frontUpdateInterval = setInterval(() => {
       if (this.locked) {
@@ -116,14 +121,15 @@ export class VirtualTimeObj {
       this.loopIfNeed();
       this.detectDayChange();
       this.detectHourChange();
-    }, this.options.timeFrontUpdateIntervalMillis);
+    }, this.timeFrontUpdateIntervalMillis);
   }
 
   setSpeedCalcIntervalSec (value?: number) {
     value = (value && Number(value))
-      || Number(this.options.speedCalcIntervalSec)
+      || Number(this.options.virtualTimeConfig.speedCalcIntervalSec)
       || intEnv('STREAM_SPEED_CALC_INTERVAL_SEC', DEFAULTS.SPEED_CALC_INTERVAL_SEC); // 10 s
-    this.options.speedCalcIntervalSec = value;
+    this.options.virtualTimeConfig.speedCalcIntervalSec = value;
+
     clearInterval(this.timeFrontUpdateInterval);
     this.timeFrontUpdateInterval = setInterval(() => {
       const dReal = Date.now() - this.stat.lastRealTs;
@@ -132,7 +138,7 @@ export class VirtualTimeObj {
 
       this.stat.lastRealTs = Date.now();
       this.stat.lastFrontTs = this.timeFront;
-    }, this.options.speedCalcIntervalSec * 1000);
+    }, this.options.virtualTimeConfig.speedCalcIntervalSec * 1000);
   }
 
   setNextTimeFront (): [boolean, number] {
@@ -141,8 +147,7 @@ export class VirtualTimeObj {
       this.timeFront = now;
       return [true, now];
     }
-
-    const timeShift: number = (this.options.timeFrontUpdateIntervalMillis || DEFAULTS.TIME_FRONT_UPDATE_INTERVAL_MILLIS) * (this.options.speed || 1);
+    const timeShift: number = this.timeFrontUpdateIntervalMillis * this.speed;
     if (this.streams.length) {
       this.timeFront = Math.min(...this.streams.map((stream) => stream.getDesiredTimeFront(this.timeFront, timeShift)));
     } else {
@@ -151,7 +156,7 @@ export class VirtualTimeObj {
     if (this.timeFront >= now) {
       this.timeFront = now;
       this.isCurrentTime = true;
-      this.eventEmitter.emit('virtual-time-is-synchronized-with-current');
+      this.options.commonConfig.eventEmitter.emit('virtual-time-is-synchronized-with-current');
     }
     return [this.isCurrentTime, this.timeFront];
   }
@@ -160,8 +165,8 @@ export class VirtualTimeObj {
     if (this.loopTimeMillis && this.timeFront >= this.loopTimeMillsEnd) {
       this.timeFront = this.virtualStartTs;
       this.loopNumber++;
-      this.debug(`[af-streams]: New cycle from ${this.virtualTimeString}`);
-      this.eventEmitter.emit('virtual-time-loop-back');
+      this.options.commonConfig.echo(`[af-streams]: New cycle from ${this.virtualTimeString}`);
+      this.options.commonConfig.eventEmitter.emit('virtual-time-loop-back');
     }
   }
 
@@ -175,7 +180,7 @@ export class VirtualTimeObj {
         prevTs: pvd * MILLIS_IN_DAY,
         currTs: this.prevVirtualDateNumber * MILLIS_IN_DAY,
       };
-      this.eventEmitter.emit('virtual-date-changed', payload);
+      this.options.commonConfig.eventEmitter.emit('virtual-date-changed', payload);
     }
   }
 
@@ -191,7 +196,7 @@ export class VirtualTimeObj {
         prevTs: pvh * MILLIS_IN_HOUR,
         currTs: this.prevVirtualHourNumber * MILLIS_IN_HOUR,
       };
-      this.eventEmitter.emit('virtual-hour-changed', payload);
+      this.options.commonConfig.eventEmitter.emit('virtual-hour-changed', payload);
     }
   }
 
@@ -271,31 +276,23 @@ export class VirtualTimeObj {
 
 let virtualTimeObj: VirtualTimeObj;
 
-export const getVirtualTimeObj = (options: IVirtualTimeObjOptions): VirtualTimeObj => {
-  if (!virtualTimeObj) {
-    virtualTimeObj = new VirtualTimeObj(options);
-  }
-  return virtualTimeObj;
-};
-
-export const getVirtualTimeObjByStreamConfig = async (streamConstructorOptions: IStreamConstructorOptions): Promise<VirtualTimeObj> => {
+export const getVirtualTimeObj = async (
+  args: {
+    commonConfig: ICommonConfig,
+    virtualTimeConfig: IVirtualTimeConfig,
+    startTimeConfig: IStartTimeConfig,
+  },
+): Promise<VirtualTimeObj> => {
   if (virtualTimeObj) {
     return virtualTimeObj;
   }
-
-  const { eventEmitter, echo, exitOnError, speedCalcIntervalSec, timeFrontUpdateIntervalMillis, speed } = streamConstructorOptions;
-  const startTimeRedis = getStartTimeRedisByStreamConfig(streamConstructorOptions);
-  const { startTime } = await startTimeRedis.getStartTime();
-  const virtualTimeObjOptions: IVirtualTimeObjOptions = {
-    startTime,
-    eventEmitter,
-    speed,
-    loopTimeMillis: getTimeParamMillis(strEnv('STREAM_LOOP_TIME', '')),
-    echo,
-    exitOnError,
-    speedCalcIntervalSec,
-    timeFrontUpdateIntervalMillis,
-  };
-  virtualTimeObj = new VirtualTimeObj(virtualTimeObjOptions);
-  return virtualTimeObj;
+  const { commonConfig, virtualTimeConfig, startTimeConfig } = args;
+  const { startTimeMillis, isUsedSavedStartTime } = await getStartTime({ commonConfig, startTimeConfig });
+  return new VirtualTimeObj({
+    commonConfig,
+    virtualTimeConfig,
+    startTimeMillis,
+    isUsedSavedStartTime,
+    useStartTimeFromRedisCache: !!startTimeConfig.useStartTimeFromRedisCache,
+  });
 };

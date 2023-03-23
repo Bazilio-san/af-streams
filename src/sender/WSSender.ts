@@ -26,7 +26,7 @@ class WSSender extends AbstractSender {
   constructor (options: ISenderConstructorOptions) {
     super(options);
     this.lastConfigServiceAddress = '';
-    const { senderConfig, eventEmitter } = options;
+    const { senderConfig } = options;
     const { host, port } = senderConfig;
     const ap = senderConfig.accessPoint as TAccessPoint;
     this.address = `http://${host}:${port}`;
@@ -36,7 +36,7 @@ class WSSender extends AbstractSender {
     this.token = ap.token as string;
     this.socketRequestId = ap.socketRequestId as string;
 
-    eventEmitter.on('access-point-updated', ({ accessPoint }: { accessPoint: TAccessPoint }) => {
+    options.commonConfig.eventEmitter.on('access-point-updated', ({ accessPoint }: { accessPoint: TAccessPoint }) => {
       if (accessPoint.id === this.accessPointId) {
         this.reconnect().then(() => 0);
       }
@@ -51,7 +51,7 @@ class WSSender extends AbstractSender {
 
   async connect (): Promise<boolean> {
     const { address, mConsulServiceName, token, options } = this;
-    const { echo, logger, serviceName } = options;
+    const { commonConfig: { echo, logger, serviceName } } = options;
     if (!serviceName) {
       throw new Error(`No host serviceName specified in senders.${this.options.senderConfig.type} configuration`);
     }
@@ -113,13 +113,12 @@ Connection established with WEBSOCKET ${mConsulServiceName} on ${mAddress}
     if (this.isConnected()) {
       return true;
     }
-    const { logger } = this.options;
     const start = Date.now();
     while (!this.isConnected() && (Date.now() - start < AWAIT_SOCKET_TIMEOUT)) {
       if (Date.now() - start < LOOP_SLEEP_MILLIS) {
-        logger.silly('Try to connect to the socket...');
+        this.options.commonConfig.logger.silly('Try to connect to the socket...');
       } else {
-        logger.warn('Socket is not still connected...');
+        this.options.commonConfig.logger.warn('Socket is not still connected...');
       }
       await this.reconnect(true);
       await sleep(LOOP_SLEEP_MILLIS);
@@ -129,12 +128,11 @@ Connection established with WEBSOCKET ${mConsulServiceName} on ${mAddress}
 
   async remoteSocket (rqId: string, ...args: any[]): Promise<{ error?: any, result?: any }> {
     const self = this;
-    const { logger } = this.options;
     const error = `NOT connected to the socket. Request id: ${rqId}`;
     if (await this.awaitSocket()) {
       return new Promise((resolve) => {
         if (!self.isConnected()) {
-          logger.error(error);
+          this.options.commonConfig.logger.error(error);
           resolve({ error });
           return;
         }
@@ -154,7 +152,6 @@ Connection established with WEBSOCKET ${mConsulServiceName} on ${mAddress}
     if (!eventsPacket.length) {
       return false;
     }
-    const { logger } = this.options;
 
     let stop = false;
 
@@ -175,7 +172,7 @@ Connection established with WEBSOCKET ${mConsulServiceName} on ${mAddress}
         stop = !result;
         if (stop) {
           if (error) {
-            logger.error(error);
+            this.options.commonConfig.logger.error(error);
           }
           eventsPacket.splice(0, 0, ...packet);
         } else {
