@@ -136,13 +136,13 @@ export class StreamsManager {
 
   public virtualTimeObj: VirtualTimeObj = null as unknown as VirtualTimeObj;
 
+  public alertsBuffer: AlertsBuffer = null as unknown as AlertsBuffer;
+
   private _statLoopTimerId: any;
 
   private _locked: boolean = true;
 
   private _connectedSockets: Set<string> = new Set();
-
-  private alertsBuffer: AlertsBuffer = null as unknown as AlertsBuffer;
 
   constructor (public commonConfig: ICommonConfig) {
     this.checkCommonConfig(true);
