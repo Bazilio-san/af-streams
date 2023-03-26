@@ -2,7 +2,7 @@
 // noinspection JSUnusedGlobalSymbols
 
 import EventEmitter from 'events';
-import { IStreamConstructorOptions, Stream } from '../Stream';
+import { Stream } from '../Stream';
 import { echoSimple } from '../utils/echo-simple';
 import { VirtualTimeObj, getVirtualTimeObj, IVirtualTimeObjOptions } from '../VirtualTimeObj';
 import {
@@ -85,6 +85,11 @@ export interface IPrepareAlertsBufferOptions {
   setFlagToProcForOperators?: number[],
 }
 
+export interface IPrepareStreamOptions {
+  streamConfig: IStreamConfig,
+  senderConfig: ISenderConfig,
+}
+
 const changeStreamParams = (stream: Stream, params: any) => {
   Object.entries(params).forEach(([key, value]: [string, any]) => {
     let isSetEnv = true;
@@ -140,24 +145,31 @@ export class StreamsManager {
   private alertsBuffer: AlertsBuffer = null as unknown as AlertsBuffer;
 
   constructor (public commonConfig: ICommonConfig) {
-    this.checkCommonConfig();
+    this.checkCommonConfig(true);
   }
 
-  checkCommonConfig () {
+  checkCommonConfig (isInit: boolean = false) {
+    const t = `${isInit ? 'passed to' : 'found in'} stream manager`;
     const { exitOnError, logger, echo, eventEmitter } = this.commonConfig || {};
     if (!exitOnError) {
       // eslint-disable-next-line no-console
-      console.error(`No 'exitOnError' function passed to stream manager`);
+      console.error(`No 'exitOnError' function ${t}`);
       process.exit(1);
     }
     if (!echo) {
-      exitOnError(`No 'echo' object passed to stream manager`);
+      exitOnError(`No 'echo' object ${t}`);
     }
     if (!logger) {
-      exitOnError(`No 'logger' object passed to stream manager`);
+      exitOnError(`No 'logger' object ${t}`);
     }
     if (!eventEmitter) {
-      exitOnError(`No 'eventEmitter' object passed to stream manager`);
+      exitOnError(`No 'eventEmitter' object ${t}`);
+    }
+  }
+
+  checkVirtualTimeObject () {
+    if (!this.virtualTimeObj) {
+      this.commonConfig.exitOnError(`No 'echo' object found in stream manager`);
     }
   }
 
@@ -173,15 +185,17 @@ export class StreamsManager {
     return this.virtualTimeObj;
   }
 
-  async newStreams (
-    optionsArray: IStreamConstructorOptions | IStreamConstructorOptions[],
+  async prepareStreams (
+    optionsArray: IPrepareStreamOptions | IPrepareStreamOptions[],
     prepareRectifierOptions?: IPrepareRectifierOptions,
   ): Promise<Stream[]> {
+    this.checkCommonConfig();
+    this.checkVirtualTimeObject();
+    const { commonConfig, virtualTimeObj } = this;
     if (!Array.isArray(optionsArray)) {
       optionsArray = [optionsArray];
     }
     if (prepareRectifierOptions) {
-      const { virtualTimeObj } = this;
       const { sendIntervalMillis, fieldNameToSort, accumulationTimeMillis, sendFunction } = prepareRectifierOptions;
       const rectifierOptions: IRectifierOptions = {
         virtualTimeObj,
@@ -193,7 +207,7 @@ export class StreamsManager {
       // Подготавливаем "Выпрямитель". Он будет получать все события потоков
       this.rectifier = new Rectifier(rectifierOptions);
     }
-    return optionsArray.map((options: IStreamConstructorOptions) => {
+    return optionsArray.map((options: IPrepareStreamOptions) => {
       if (prepareRectifierOptions) {
         options.senderConfig.type = 'callback';
         // Заглушка. Поскольку инициализируется Выпрямитель, сюда будет
@@ -205,7 +219,7 @@ export class StreamsManager {
         echoSimple(`Stream '${streamId}' already exists`);
         return this.map[streamId];
       }
-      const stream = new Stream(options);
+      const stream = new Stream({ ...options, commonConfig, virtualTimeObj });
       this.map[streamId] = stream;
       return stream;
     });

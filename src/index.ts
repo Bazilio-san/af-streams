@@ -96,7 +96,7 @@ export {
   ISimpleEventEmitterQueueConstructorOptions,
 } from './classes/applied/SimpleEventEmitterAsyncQueue';
 
-export { StreamsManager, IPrepareRectifierOptions, IPrepareAlertsBufferOptions } from './manager/streams-manager';
+export { StreamsManager, IPrepareRectifierOptions, IPrepareAlertsBufferOptions, IPrepareStreamOptions } from './manager/streams-manager';
 
 // AlertsBuffer
 
