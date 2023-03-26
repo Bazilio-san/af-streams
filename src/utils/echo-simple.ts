@@ -1,7 +1,7 @@
 /* eslint-disable no-console,no-constructor-return */
 import { cyan, green, magenta, red, reset, underlineOff, yellow } from './color';
 
-class Echo extends Function {
+class EchoSimple extends Function {
   public prefix: string;
 
   constructor (prefix?: string) {
@@ -44,4 +44,4 @@ class Echo extends Function {
   }
 }
 
-export const echo = new Echo('');
+export const echoSimple = new EchoSimple('');

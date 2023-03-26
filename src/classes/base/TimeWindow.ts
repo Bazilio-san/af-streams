@@ -3,7 +3,7 @@
 
 import { MIN_WINDOW_MILLIS } from '../../constants';
 import { Debug } from '../../utils/debug';
-import { echo } from '../../utils/echo-simple';
+import { echoSimple } from '../../utils/echo-simple';
 import { lBlue, m } from '../../utils/color';
 import { EWinInsertType } from '../../interfaces';
 import { findIndexOfNearestSmaller } from '../../utils/find-index-of-nearest-smaller';
@@ -148,7 +148,7 @@ export class TimeWindow<T> {
         const st = Date.now();
         const removedCount = self.removeExpired((virtualTimeObj as VirtualTimeObj).virtualTs).length;
         if (debug.enabled && removedCount) {
-          echo(`${m}Удалено ${lBlue}${removedCount}${m} устаревших событий из окна [TimeWindow] winName: ${this.options.winName} 🕒 ${Date.now() - st} ms`);
+          echoSimple(`${m}Удалено ${lBlue}${removedCount}${m} устаревших событий из окна [TimeWindow] winName: ${this.options.winName} 🕒 ${Date.now() - st} ms`);
         }
       }, removeExpiredIntervalMillis);
     }

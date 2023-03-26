@@ -2,7 +2,7 @@
 // noinspection JSUnusedGlobalSymbols
 
 import EventEmitter from 'events';
-import { echo } from '../../utils/echo-simple';
+import { echoSimple } from '../../utils/echo-simple';
 import { Stream } from '../../Stream';
 
 const interval = require('interval-promise');
@@ -57,7 +57,7 @@ export class SimpleEventEmitterAsyncQueue<T> {
     if (options.logger?.info) {
       options.logger.info(msg);
     } else {
-      echo(msg);
+      echoSimple(msg);
     }
   }
 
@@ -92,7 +92,7 @@ export class SimpleEventEmitterAsyncQueue<T> {
         if (this.options.logger?.error) {
           this.options.logger.error(err);
         } else {
-          echo(String(err.message || err));
+          echoSimple(String(err.message || err));
         }
       }
     }

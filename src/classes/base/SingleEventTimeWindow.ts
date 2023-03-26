@@ -5,7 +5,7 @@ import { Debug } from '../../utils/debug';
 import { m } from '../../utils/color';
 import { VirtualTimeObj } from '../../VirtualTimeObj';
 import { toUTC } from '../../utils/date-utils';
-import { echo } from '../../utils/echo-simple';
+import { echoSimple } from '../../utils/echo-simple';
 
 const debug = Debug('SingleEventTimeWindow');
 
@@ -173,7 +173,7 @@ export class SingleEventTimeWindow<T> {
     if (item && item.ts < expireTs) {
       this.item = undefined;
       if (debug.enabled && this.options.removeExpiredIntervalMillis !== undefined) {
-        echo(`${m}Удалено устаревшее событие из окна [SingleEventTimeWindow] winName: ${this.winName} / -> ${toUTC(this.inputTs)} - ${toUTC(this.lastTs)} ->`);
+        echoSimple(`${m}Удалено устаревшее событие из окна [SingleEventTimeWindow] winName: ${this.winName} / -> ${toUTC(this.inputTs)} - ${toUTC(this.lastTs)} ->`);
       }
       return item;
     }

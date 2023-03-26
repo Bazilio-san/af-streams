@@ -1,12 +1,12 @@
 import { DateTime } from 'luxon';
 import { c } from './color';
-import { echo } from './echo-simple';
+import { echoSimple } from './echo-simple';
 
 export const DEBUG = (String(process.env.DEBUG || '')).trim();
 export const IS_TOTAL_DEBUG = DEBUG === '*';
 
 export const dbg = (str: string) => {
-  echo(`${DateTime.now().setZone('UTC').toFormat('HH:mm:ss')} ${c}${str}`);
+  echoSimple(`${DateTime.now().setZone('UTC').toFormat('HH:mm:ss')} ${c}${str}`);
 };
 
 export const getDbgRe = (debugPattern: string) => new RegExp(`\\b${debugPattern}\\b`, 'i');
@@ -14,7 +14,7 @@ export const getDbgRe = (debugPattern: string) => new RegExp(`\\b${debugPattern}
 export function Debug (debugPattern: string) {
   function debug (msg: string) {
     if (debug.enabled) {
-      echo(`${DateTime.now().setZone('UTC').toFormat('HH:mm:ss')} ${c}${msg}`);
+      echoSimple(`${DateTime.now().setZone('UTC').toFormat('HH:mm:ss')} ${c}${msg}`);
     }
   }
 

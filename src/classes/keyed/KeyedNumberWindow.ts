@@ -3,7 +3,7 @@
 import { INumberWindowItem, INumberWindowSetStatOptions, NumberWindow } from '../base/NumberWindow';
 import { toUTC } from '../../utils/date-utils';
 import { Debug } from '../../utils/debug';
-import { echo } from '../../utils/echo-simple';
+import { echoSimple } from '../../utils/echo-simple';
 import { lBlue, m } from '../../utils/color';
 import { VirtualTimeObj } from '../../VirtualTimeObj';
 import { getTimeParamFromMillis } from '../../utils/utils';
@@ -136,11 +136,11 @@ export class KeyedNumberWindow<T> {
     });
 
     if (debug.enabled && removedWindowsCount) {
-      echo(`${m}Удалено ${lBlue}${removedWindowsCount}${m} опустевших окон [KeyedNumberWindow] winName: ${lBlue
+      echoSimple(`${m}Удалено ${lBlue}${removedWindowsCount}${m} опустевших окон [KeyedNumberWindow] winName: ${lBlue
       }${this.options.winName}`);
       if (maxTs) {
         const minInterval = getTimeParamFromMillis(virtualTs - maxTs, 'biggest');
-        echo(`${m}\t max ts: ${lBlue}${toUTC(maxTs)}${m} /  vt: ${lBlue}${toUTC(virtualTs)}${m} / period: ${lBlue}${minInterval}${m}`);
+        echoSimple(`${m}\t max ts: ${lBlue}${toUTC(maxTs)}${m} /  vt: ${lBlue}${toUTC(virtualTs)}${m} / period: ${lBlue}${minInterval}${m}`);
       }
     }
 

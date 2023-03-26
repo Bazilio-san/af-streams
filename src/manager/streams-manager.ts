@@ -3,7 +3,7 @@
 
 import EventEmitter from 'events';
 import { IStreamConstructorOptions, Stream } from '../Stream';
-import { echo } from '../utils/echo-simple';
+import { echoSimple } from '../utils/echo-simple';
 import { VirtualTimeObj, getVirtualTimeObj, IVirtualTimeObjOptions } from '../VirtualTimeObj';
 import {
   ICommonConfig, IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion, IOFnArgs, ISenderConfig, IStartTimeConfig, IStreamConfig, IVirtualTimeConfig, TEventRecord,
@@ -140,13 +140,17 @@ export class StreamsManager {
   private alertsBuffer: AlertsBuffer = null as unknown as AlertsBuffer;
 
   constructor (public commonConfig: ICommonConfig) {
-    const { exitOnError, logger, eventEmitter } = commonConfig;
+    this.checkCommonConfig();
+  }
+
+  checkCommonConfig () {
+    const { exitOnError, logger, echo, eventEmitter } = this.commonConfig || {};
     if (!exitOnError) {
       // eslint-disable-next-line no-console
       console.error(`No 'exitOnError' function passed to stream manager`);
       process.exit(1);
     }
-    if (!commonConfig.echo) {
+    if (!echo) {
       exitOnError(`No 'echo' object passed to stream manager`);
     }
     if (!logger) {
@@ -159,13 +163,13 @@ export class StreamsManager {
 
   async getVirtualTimeObj (
     args: {
-      commonConfig: ICommonConfig,
       virtualTimeConfig: IVirtualTimeConfig,
       startTimeConfig: IStartTimeConfig,
     },
   ): Promise<VirtualTimeObj> {
-    this.commonConfig = args.commonConfig;
-    this.virtualTimeObj = await getVirtualTimeObj(args);
+    this.checkCommonConfig();
+    const { commonConfig } = this;
+    this.virtualTimeObj = await getVirtualTimeObj({ commonConfig, ...args });
     return this.virtualTimeObj;
   }
 
@@ -198,7 +202,7 @@ export class StreamsManager {
       }
       const { streamId } = options.streamConfig;
       if (this.map[streamId]) {
-        echo(`Stream '${streamId}' already exists`);
+        echoSimple(`Stream '${streamId}' already exists`);
         return this.map[streamId];
       }
       const stream = new Stream(options);
@@ -208,13 +212,9 @@ export class StreamsManager {
   }
 
   prepareAlertsBuffer (prepareAlertsBufferOptions: IPrepareAlertsBufferOptions): AlertsBuffer {
-    this.alertsBuffer = new AlertsBuffer({
-      logger: this.commonConfig.logger,
-      echo: this.commonConfig.echo,
-      eventEmitter: this.commonConfig.eventEmitter,
-      virtualTimeObj: this.virtualTimeObj,
-      ...prepareAlertsBufferOptions,
-    });
+    this.checkCommonConfig();
+    const { commonConfig: { logger, echo, eventEmitter }, virtualTimeObj } = this;
+    this.alertsBuffer = new AlertsBuffer({ logger, echo, eventEmitter, virtualTimeObj, ...prepareAlertsBufferOptions });
     return this.alertsBuffer;
   }
 

@@ -6,7 +6,7 @@ import { MIN_WINDOW_MILLIS, PRINT_EVERY_REMOVED_ITEM_FROM_KEYED_SINGLE_EVENT_TIM
 import { lBlue, g, m, rs } from '../../utils/color';
 import { toUTC } from '../../utils/date-utils';
 import { Debug } from '../../utils/debug';
-import { echo } from '../../utils/echo-simple';
+import { echoSimple } from '../../utils/echo-simple';
 import { getTimeParamFromMillis, padR } from '../../utils/utils';
 
 const debug = Debug('KeyedSingleEventTimeWindow');
@@ -144,21 +144,21 @@ export class KeyedSingleEventTimeWindow<T> {
   removeExpired (virtualTs: number): number {
     const removed = Object.entries(this.hash).filter(([, hashItem]) => hashItem.removeExpired(virtualTs));
     if (debug.enabled && removed.length) {
-      echo(`${m}Удалено ${lBlue}${removed.length}${m} устаревших событий из окон [KeyedSingleEventTimeWindow] winName: ${lBlue
+      echoSimple(`${m}Удалено ${lBlue}${removed.length}${m} устаревших событий из окон [KeyedSingleEventTimeWindow] winName: ${lBlue
       }${this.options.winName}`);
       const padLen = Math.max(...removed.map(([key]) => key.length)) + 2;
       if (PRINT_EVERY_REMOVED_ITEM_FROM_KEYED_SINGLE_EVENT_TIME_WINDOW) {
         removed.forEach(([key, hashItem]) => {
           const { inputTs: inp, lastTs: lst } = hashItem;
           const distance = getTimeParamFromMillis(lst - inp, 'biggest');
-          echo(`${m}\t - key: ${lBlue}${padR(key, padLen)}${rs} / in ${m}${toUTC(inp)}${rs} out ${m}${toUTC(lst)}${rs} / ${g}${distance}`);
+          echoSimple(`${m}\t - key: ${lBlue}${padR(key, padLen)}${rs} / in ${m}${toUTC(inp)}${rs} out ${m}${toUTC(lst)}${rs} / ${g}${distance}`);
         });
       } else {
         const inputTimes = removed.map(([, hashItem]) => hashItem.inputTs);
         const minInputTs = Math.min(...inputTimes);
         const maxInputTs = Math.max(...inputTimes);
         const minInterval = getTimeParamFromMillis(virtualTs - minInputTs, 'biggest');
-        echo(`${m}\t min ts: ${lBlue}${toUTC(minInputTs)}${m} / max ts: ${lBlue}${toUTC(maxInputTs)}${m
+        echoSimple(`${m}\t min ts: ${lBlue}${toUTC(minInputTs)}${m} / max ts: ${lBlue}${toUTC(maxInputTs)}${m
         } /  vt: ${lBlue}${toUTC(virtualTs)}${m} / period: ${lBlue}${minInterval}${m}`);
       }
     }
