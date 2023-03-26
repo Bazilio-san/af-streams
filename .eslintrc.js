@@ -20,6 +20,7 @@ module.exports = {
     '**/dist/**/*.*',
   ],
   rules: {
+    'no-unused-vars': 'off',
     'object-curly-newline': [
       'error',
       {

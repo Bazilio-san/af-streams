@@ -12,6 +12,7 @@ export {
   EWinInsertType, ISocket, IOFnArgs, ICommonConfig, IVirtualTimeConfig,
   ISenderConfig, IStreamConfig, IStartTimeConfig,
 } from './interfaces';
+
 export {
   getTimeParamMillis,
   getTimeParamFromMillis,
@@ -96,3 +97,23 @@ export {
 } from './classes/applied/SimpleEventEmitterAsyncQueue';
 
 export { streamsManager, StreamsManager, IPrepareRectifierOptions } from './manager/streams-manager';
+
+// AlertsBuffer
+
+export {
+  TAlert,
+  IAlertEmailSettings,
+  TAlertEmailDetails,
+  TAlertsBufferRequired,
+  TAlertSentFlags,
+  TAlertTableRecord,
+  TMergeResult,
+} from './alerts-buffer/i-alert';
+
+export { EMailSendRule, DEPRECATED_SEND_ALERTS_BY_EMAIL, EMAIL_SEND_RULE } from './alerts-buffer/constants';
+
+export { AlertsStat, IStatTT, IStatTTtiu, TIU, getAlertsStat } from './alerts-buffer/AlertsStat';
+
+export { AlertsBuffer } from './alerts-buffer/AlertsBuffer';
+
+export { traverse, ITraverseNode, flattenObjectPrimitiveLeafs, fillSubjectTemplate, removeHTML } from './alerts-buffer/utils/utils';
