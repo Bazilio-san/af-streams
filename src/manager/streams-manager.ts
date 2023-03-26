@@ -12,6 +12,8 @@ import { cloneDeep, intEnv } from '../utils/utils';
 import { DEFAULTS, STREAM_ID_FIELD } from '../constants';
 import { IRectifierOptions, Rectifier } from '../classes/applied/Rectifier';
 import localEventEmitter from '../ee-scoped';
+import { AlertsBuffer } from '../alerts-buffer/AlertsBuffer';
+import { IAlertEmailSettings, TAlert, TMergeResult } from '../alerts-buffer/i-alert';
 
 const findLast = require('array.prototype.findlast');
 
@@ -39,6 +41,48 @@ export interface IPrepareRectifierOptions {
    * значения поля fieldNameToSort (или ts)
    */
   sendFunction: (_rectifierItemsArray: TEventRecord[]) => number,
+}
+
+export interface IPrepareAlertsBufferOptions {
+  /**
+   * Настройки для отправки E-Mail
+   */
+  emailSettings: IAlertEmailSettings,
+
+  /**
+   * Функция сохранения/обновления сигналов
+   */
+  mergeAlerts: (alerts: TAlert[]) => Promise<TMergeResult>;
+
+  /**
+   * Функция проверки наличия сохраненного сигнала в БД
+   */
+  checkAlertExists: (guid: string) => Promise<boolean>,
+
+  /**
+   * Функция сохранения признаков "обработан"
+   */
+  mergeAlertsActions: (guids: string[], operationIds: number[]) => Promise<void>
+
+  /**
+   * Время, в течение которого храним состояние отправки/сохранения сигнала
+   */
+  trackAlertsStateMillis?: number, // Default = MILLIS_IN_HOUR
+
+  /**
+   * Периодичность очистки кеша состояний сигналов
+   */
+  removeExpiredItemsFromAlertsStatesCacheIntervalMillis?: number, // Default = 60_000
+
+  /**
+   * Период вывода сигналов из буфера на отправку по Email и сохранение в БД
+   */
+  flushBufferIntervalMillis?: number, // Default = 3_000
+
+  /**
+   * Массив идентификаторов операторов, для которых нужно устанавливать флажки - признаки новых сигналов
+   */
+  setFlagToProcForOperators?: number[],
 }
 
 const changeStreamParams = (stream: Stream, params: any) => {
@@ -87,13 +131,29 @@ export class StreamsManager {
 
   public virtualTimeObj: VirtualTimeObj = null as unknown as VirtualTimeObj;
 
-  public commonConfig: ICommonConfig = null as unknown as ICommonConfig;
-
   private _statLoopTimerId: any;
 
   private _locked: boolean = true;
 
   private _connectedSockets: Set<string> = new Set();
+
+  constructor (public commonConfig: ICommonConfig) {
+    const { exitOnError, logger, eventEmitter } = commonConfig;
+    if (!exitOnError) {
+      // eslint-disable-next-line no-console
+      console.error(`No 'exitOnError' function passed to stream manager`);
+      process.exit(1);
+    }
+    if (!commonConfig.echo) {
+      exitOnError(`No 'echo' object passed to stream manager`);
+    }
+    if (!logger) {
+      exitOnError(`No 'logger' object passed to stream manager`);
+    }
+    if (!eventEmitter) {
+      exitOnError(`No 'eventEmitter' object passed to stream manager`);
+    }
+  }
 
   async getVirtualTimeObj (
     args: {
@@ -142,6 +202,16 @@ export class StreamsManager {
       const stream = new Stream(options);
       this.map[streamId] = stream;
       return stream;
+    });
+  }
+
+  prepareAlertsBuffer (prepareAlertsBufferOptions: IPrepareAlertsBufferOptions): AlertsBuffer {
+    return new AlertsBuffer({
+      logger: this.commonConfig.logger,
+      echo: this.commonConfig.echo,
+      eventEmitter: this.commonConfig.eventEmitter,
+      virtualTimeObj: this.virtualTimeObj,
+      ...prepareAlertsBufferOptions,
     });
   }
 
@@ -391,5 +461,3 @@ export class StreamsManager {
     clearTimeout(this._statLoopTimerId);
   }
 }
-
-export const streamsManager = new StreamsManager();

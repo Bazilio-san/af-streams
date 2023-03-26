@@ -12,6 +12,7 @@ import { intEnv } from '../utils/utils';
 import { IKeyedSingleEventTimeWindowConstructorOptions, KeyedSingleEventTimeWindow } from '../classes/keyed/KeyedSingleEventTimeWindow';
 import { VirtualTimeObj } from '../VirtualTimeObj';
 import { DEBUG_ALERTS_BUFFER } from '../constants';
+import { IEcho, ILoggerEx } from '../interfaces';
 
 const MILLIS_IN_HOUR = 3_600_000;
 
@@ -19,8 +20,8 @@ const MILLIS_IN_HOUR = 3_600_000;
 const ONE_TIME_EMAIL_SEND_LIMIT = intEnv('ONE_TIME_EMAIL_SEND_LIMIT', 20);
 
 interface IAlertsBufferConstructorOptions {
-  logger: { error: Function, info: Function },
-  echo: Function & { debug: Function },
+  logger: ILoggerEx,
+  echo: IEcho,
   eventEmitter: EventEmitter
   virtualTimeObj: VirtualTimeObj,
   /**
