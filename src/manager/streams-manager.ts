@@ -137,6 +137,8 @@ export class StreamsManager {
 
   private _connectedSockets: Set<string> = new Set();
 
+  private alertsBuffer: AlertsBuffer = null as unknown as AlertsBuffer;
+
   constructor (public commonConfig: ICommonConfig) {
     const { exitOnError, logger, eventEmitter } = commonConfig;
     if (!exitOnError) {
@@ -206,13 +208,14 @@ export class StreamsManager {
   }
 
   prepareAlertsBuffer (prepareAlertsBufferOptions: IPrepareAlertsBufferOptions): AlertsBuffer {
-    return new AlertsBuffer({
+    this.alertsBuffer = new AlertsBuffer({
       logger: this.commonConfig.logger,
       echo: this.commonConfig.echo,
       eventEmitter: this.commonConfig.eventEmitter,
       virtualTimeObj: this.virtualTimeObj,
       ...prepareAlertsBufferOptions,
     });
+    return this.alertsBuffer;
   }
 
   async initStreams (): Promise<Stream[]> {
