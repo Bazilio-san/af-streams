@@ -7,7 +7,7 @@
     <jest-options value="--forceExit" />
     <envs />
     <scope-kind value="SUITE" />
-    <test-file value="$PROJECT_DIR$/__tests__/02.Stream-class-functions/cdc.spec.ts" />
+    <test-file value="$PROJECT_DIR$/__tests__/02.Stream/cdc.spec.ts" />
     <test-names>
       <test-name value="Test CDC" />
     </test-names>

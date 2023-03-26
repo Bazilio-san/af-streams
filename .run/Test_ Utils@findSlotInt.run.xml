@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Test: Utils@findSlotInt" type="JavaScriptTestRunnerJest" folderName="TEST_UTILS">
+  <configuration default="false" name="Test: Utils@findSlotInt" type="JavaScriptTestRunnerJest" folderName="TEST UTILS">
     <node-interpreter value="project" />
     <node-options value="" />
     <jest-package value="$PROJECT_DIR$/node_modules/jest" />
