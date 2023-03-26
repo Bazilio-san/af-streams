@@ -173,7 +173,7 @@ export class StreamsManager {
     }
   }
 
-  async getVirtualTimeObj (
+  async prepareVirtualTimeObj (
     args: {
       virtualTimeConfig: IVirtualTimeConfig,
       startTimeConfig: IStartTimeConfig,

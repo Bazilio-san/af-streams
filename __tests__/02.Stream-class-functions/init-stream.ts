@@ -1,29 +1,47 @@
-import * as dotenv from 'dotenv';
-import * as EventEmitter from 'events';
+/* eslint-disable import/newline-after-import */
 import { DateTime } from 'luxon';
-import {
-  DEFAULTS, getVirtualTimeObj, ICommonConfig, ISenderConfig, IStreamConfig, IStreamConstructorOptions, IVirtualTimeConfig, Stream, TDbRecord, TEventRecord,
-} from '../../src';
-import { echo, exitOnError, logger } from '../lib/logger';
-import { IStartTimeConfig } from '../../src/interfaces';
-
-const eventEmitter = new EventEmitter();
+import * as dotenv from 'dotenv';
 
 dotenv.config();
 
+import { echo, exitOnError, logger } from '../lib/logger';
+import eventEmitter from '../lib/ee';
+import {
+  DEFAULTS,
+  ICommonConfig, ISenderConfig, IStreamConfig, IStartTimeConfig, IVirtualTimeConfig,
+  TDbRecord, TEventRecord,
+  StreamsManager, Stream,
+} from '../../src';
+
+const commonConfig: ICommonConfig = {
+  serviceName: 'test',
+  logger,
+  echo,
+  exitOnError,
+  eventEmitter,
+  testMode: true,
+};
+export const streamsManager = new StreamsManager(commonConfig);
+
 async function initStream (): Promise<Stream> {
-  const commonConfig: ICommonConfig = {
-    serviceName: 'test',
-    logger,
-    echo,
-    exitOnError,
-    eventEmitter,
-    testMode: true,
+  // Параметры для подготовки объекта VirtualTimeObj
+  const virtualTimeConfig: IVirtualTimeConfig = {
+    speed: 1,
+    timeFrontUpdateIntervalMillis: DEFAULTS.TIME_FRONT_UPDATE_INTERVAL_MILLIS,
   };
+  const startTimeConfig: IStartTimeConfig = {
+    redis: {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: 6379,
+    },
+    useStartTimeFromRedisCache: false,
+  };
+  // Инициализация объекта VirtualTimeObj
+  const virtualTimeObj = await streamsManager.prepareVirtualTimeObj({ virtualTimeConfig, startTimeConfig });
+
+  // Параметры для подготовки потока
   const streamConfig: IStreamConfig = {
     streamId: 'test-stream',
-    // fetchIntervalSec: 10,
-    // bufferMultiplier: 30,
     src: {
       schema: 'dbo',
       table: 'test',
@@ -40,6 +58,7 @@ async function initStream (): Promise<Stream> {
         database: 'myDb',
       },
     },
+
     fields: {
       tradeno: 'long',
       tradetime: 'long',
@@ -72,31 +91,16 @@ async function initStream (): Promise<Stream> {
     emitSingleEvent: true,
     // emitId: 'test-emit',
   };
-  const startTimeConfig: IStartTimeConfig = {
-    redis: {
-      host: process.env.REDIS_HOST || 'localhost',
-      port: 6379,
-    },
-    useStartTimeFromRedisCache: false,
-  };
-  const virtualTimeConfig: IVirtualTimeConfig = {
-    speed: 1,
-    timeFrontUpdateIntervalMillis: DEFAULTS.TIME_FRONT_UPDATE_INTERVAL_MILLIS,
-  };
-  const virtualTimeObj = await getVirtualTimeObj({ commonConfig, virtualTimeConfig, startTimeConfig });
-  const streamConstructorOptions: IStreamConstructorOptions = {
-    commonConfig,
-    streamConfig,
-    senderConfig,
-    virtualTimeObj,
-  };
-  const stream = new Stream(streamConstructorOptions);
+  // Инициализация потока
+  const streams = await streamsManager.prepareStreams({ streamConfig, senderConfig });
+  const stream = streams[0];
   try {
     await stream.init();
   } catch (err) {
     exitOnError(err);
   }
-  stream.virtualTimeObj.unLock();
+  virtualTimeObj.unLock();
+  // await streamsManager.start();
   return stream;
 }
 

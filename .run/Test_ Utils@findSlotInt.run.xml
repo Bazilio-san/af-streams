@@ -1,16 +1,13 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Test: Utils" type="JavaScriptTestRunnerJest">
+  <configuration default="false" name="Test: Utils@findSlotInt" type="JavaScriptTestRunnerJest" folderName="TEST_UTILS">
     <node-interpreter value="project" />
     <node-options value="" />
     <jest-package value="$PROJECT_DIR$/node_modules/jest" />
     <working-dir value="$PROJECT_DIR$" />
     <jest-options value="--forceExit" />
     <envs />
-    <scope-kind value="SUITE" />
-    <test-file value="$PROJECT_DIR$/__tests__/01.utils/@utils.spec.ts" />
-    <test-names>
-      <test-name value="Utils. findIndexOfNearestSmaller[Binary]()" />
-    </test-names>
+    <scope-kind value="TEST_FILE" />
+    <test-file value="$PROJECT_DIR$/__tests__/01.utils/@findSlotInt.spec.ts" />
     <method v="2" />
   </configuration>
 </component>

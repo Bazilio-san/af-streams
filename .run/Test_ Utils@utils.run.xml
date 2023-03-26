@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Test: Utils@utils" type="JavaScriptTestRunnerJest" folderName="TEST_UTILS">
+    <node-interpreter value="project" />
+    <node-options value="" />
+    <jest-package value="$PROJECT_DIR$/node_modules/jest" />
+    <working-dir value="$PROJECT_DIR$" />
+    <jest-options value="--forceExit" />
+    <envs />
+    <scope-kind value="TEST_FILE" />
+    <test-file value="$PROJECT_DIR$/__tests__/01.utils/@utils.spec.ts" />
+    <method v="2" />
+  </configuration>
+</component>
