@@ -211,7 +211,7 @@ export interface ICommonConfig {
   exitOnError: Function,
   eventEmitter: EventEmitter,
 
-  testMode?: boolean,
+  skipInitDbConnection?: boolean,
 }
 
 export interface IVirtualTimeConfig {

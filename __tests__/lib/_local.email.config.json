@@ -1,0 +1,15 @@
+{
+  "from": "\"ME\" <me@site.com>",
+  "smtp": {
+    "host": "smtp.site.com",
+    "port": "123",
+    "auth": {
+      "user": "me",
+      "pass": "***"
+    },
+    "secure": true,
+    "tls": {"rejectUnauthorized": false}
+  },
+  "throttleAlertsIntervalSeconds": 5,
+  "subjectPrefix": ""
+}

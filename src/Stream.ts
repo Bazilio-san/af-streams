@@ -269,7 +269,7 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
 
     commonConfig.echo(`${g}${'='.repeat(64)}`);
 
-    if (!commonConfig.testMode) {
+    if (!commonConfig.skipInitDbConnection) {
       this.db = await getDb({ commonConfig, streamConfig });
     }
     this.initialized = true;

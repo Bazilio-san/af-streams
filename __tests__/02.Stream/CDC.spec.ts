@@ -1,4 +1,4 @@
-import initStream from './init-stream';
+import { initStream } from './init-stream';
 import { Stream, STREAM_ID_FIELD, TS_FIELD } from '../../src';
 import { Nullable, TEventRecord } from '../../src/interfaces';
 

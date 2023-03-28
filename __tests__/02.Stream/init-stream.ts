@@ -17,11 +17,11 @@ const commonConfig: ICommonConfig = {
   echo,
   exitOnError,
   eventEmitter,
-  testMode: true,
+  skipInitDbConnection: true,
 };
 export const streamsManager = new StreamsManager(commonConfig);
 
-async function initStream (): Promise<Stream> {
+export const initStream = async (): Promise<Stream> => {
   const startTimeConfig: IStartTimeConfig = { redis: { host: process.env.REDIS_HOST || 'localhost' } };
   // Инициализация объекта VirtualTimeObj
   const virtualTimeObj = await streamsManager.prepareVirtualTimeObj({ virtualTimeConfig: {}, startTimeConfig });
@@ -35,6 +35,4 @@ async function initStream (): Promise<Stream> {
     exitOnError(err);
   }
   return streams[0];
-}
-
-export default initStream;
+};
