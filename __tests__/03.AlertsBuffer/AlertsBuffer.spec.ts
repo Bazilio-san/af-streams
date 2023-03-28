@@ -1,21 +1,12 @@
 import { initStreams, streamsManager } from './src/init-stream';
-import { Stream } from '../../src';
 import { initTestDbEnvironment } from './src/init-test-db';
 
-let stream: Stream;
-let streams: Stream[];
-let startStreamTs: number;
-let procTs: number;
-
 const runTestStream = async (): Promise<void> => {
-  streams = await streamsManager.start();
-  startStreamTs = Date.now();
-  stream = streams[0];
+  await streamsManager.start();
   return new Promise((resolve: Function) => {
     const timer = setInterval(() => {
-      if (streamsManager.virtualTimeObj.virtualTimeISO >= '2023-01-02T00:01:00') {
+      if (streamsManager.virtualTimeObj.virtualTimeISO >= '2023-01-02T00:00:10') {
         clearInterval(timer);
-        procTs = Date.now() - startStreamTs;
         resolve();
       }
     }, 5);
@@ -29,7 +20,9 @@ describe('Test AlertsBuffer', () => {
     await runTestStream();
   });
   test('test 2', async () => {
-    expect(streamsManager.alertsBuffer).toBeTruthy();
-    expect(procTs).toBeGreaterThan(10_000);
+    const { alertsStat } = streamsManager.alertsBuffer;
+    expect(alertsStat.sentByEmail.total).toBe(3);
+    expect(alertsStat.addedToBuffer.total).toBe(62);
+    expect(alertsStat.savedToDb.all.total.t).toBe(2);
   });
 });

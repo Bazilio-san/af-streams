@@ -210,16 +210,16 @@ export class AlertsBuffer {
   }
 
   /**
-   * Отправка пакета сигналов по EMail
-   * Ограничение на количество отправляемых писем за 1 раз
+   * Фильтрация сигналов, по признаку возможности отправки по Email
    */
-  async sendAlertsToEmail (alerts: TAlert[]) {
+  async filterAlertsAllowedSendByEmail (alerts: TAlert[]): Promise<TAlert[]> {
     if (DEPRECATED_SEND_ALERTS_BY_EMAIL) {
-      return;
+      return [];
     }
+
     const { echo } = this.options;
     // Отфильтровываем сигналы, которые не надо отправлять по Email
-    let alertsToSend: TAlert[] = [];
+    const alertsToSend: TAlert[] = [];
     for (let i = 0; i < alerts.length; i++) {
       const alert = alerts[i];
       const { guid, eventName } = alert;
@@ -242,6 +242,24 @@ export class AlertsBuffer {
       }
     }
 
+    const allowMap = await Promise.all(alerts.map((alert) => {
+      if (!alert.canSendByEmail) {
+        return true;
+      }
+      return alert.canSendByEmail();
+    }));
+    return alertsToSend.filter((_, index) => allowMap[index]);
+  }
+
+  /**
+   * Отправка пакета сигналов по EMail
+   * Ограничение на количество отправляемых писем за 1 раз
+   */
+  async sendAlertsToEmail (alerts: TAlert[]) {
+    let alertsToSend = await this.filterAlertsAllowedSendByEmail(alerts);
+    if (!alertsToSend) {
+      return;
+    }
     if (alertsToSend.length > ONE_TIME_EMAIL_SEND_LIMIT) {
       this.options.logger.error(`Превышен лимит ${ONE_TIME_EMAIL_SEND_LIMIT} на одновременную отправку сигналов по E-Mali (${alertsToSend.length})`);
       alertsToSend = alertsToSend.splice(0, ONE_TIME_EMAIL_SEND_LIMIT);
@@ -255,9 +273,14 @@ export class AlertsBuffer {
   /**
    * Фильтрация сигналов, по признаку возможности сохранения в БД
    */
-  async filterAllowedAlerts (alerts: TAlert[]): Promise<TAlert[]> {
+  async filterAlertsAllowedSaveToDb (alerts: TAlert[]): Promise<TAlert[]> {
     alerts = alerts.filter((alert) => !this.isAlertSavedToDb(alert));
-    const allowMap = await Promise.all(alerts.map((alert) => alert.canSaveToDb()));
+    const allowMap = await Promise.all(alerts.map((alert) => {
+      if (!alert.canSaveToDb) {
+        return true;
+      }
+      return alert.canSaveToDb();
+    }));
     return alerts.filter((_, index) => allowMap[index]);
   }
 
@@ -307,7 +330,7 @@ export class AlertsBuffer {
 
   private async saveAlertsToDb (alerts: TAlert[]) {
     // Отфильтровываем сигналы, для которых отключено сохранение в БД
-    const alertsFiltered = await this.filterAllowedAlerts(alerts);
+    const alertsFiltered = await this.filterAlertsAllowedSaveToDb(alerts);
     if (!alertsFiltered.length) {
       return;
     }

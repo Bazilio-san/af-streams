@@ -37,12 +37,12 @@ export class TestAlgo {
       async getEmail () {
         const recipients = ['vvmakarov@corp.finam.ru'];
         const subjectTemplate = 'SUBJ';
-        const textHTML = JSON.stringify(event);
+        const textHTML = `guid: ${event.guid.substring(33, 36)} val: ${event.value}`;
         return { recipients, subjectTemplate, textHTML };
       },
       // Подготавливает ключевые сведения о сигнале для вывода в консоль в режиме отладки
       getDebugMessage () {
-        return `debugMessage: ${JSON.stringify(event)}`;
+        return `debugMessage: guid: ${event.guid.substring(33, 36)} val: ${event.value}`;
       },
       // Проверяет возможность сохранения этого сигнала в БД (в частности, проверяет настройку isSaveToDB)
       async canSaveToDb () {
