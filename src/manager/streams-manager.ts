@@ -77,7 +77,7 @@ export interface IPrepareAlertsBufferOptions {
   /**
    * Период вывода сигналов из буфера на отправку по Email и сохранение в БД
    */
-  flushBufferIntervalMillis?: number, // Default = 3_000
+  flushBufferIntervalSeconds?: number, // Default = 3
 
   /**
    * Массив идентификаторов операторов, для которых нужно устанавливать флажки - признаки новых сигналов

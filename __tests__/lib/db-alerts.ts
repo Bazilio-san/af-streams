@@ -11,7 +11,7 @@ const AA = `${TEST_SCHEMA}.${ACTIONS_TABLE}`;
 export const mergeAlerts = async (alerts: TAlert[]): Promise<TMergeResult> => {
   const now = Date.now();
   const values = alerts.map((a: TAlert) => `('${a.guid}', ${a.alertTypeId}, ${millisToPgUtc(a.ts)}, '${JSON.stringify(a.info_json)}', ${millisToPgUtc(now)}  )`).join(', \n');
-  const mergeSQL = `${'INSERT'}INTO ${AT}  (guid, "alertTypeId", ts, info_json, "updatedAt")
+  const mergeSQL = `${'INSERT'} INTO ${AT}  (guid, "alertTypeId", ts, info_json, "updatedAt")
     VALUES ${values}
     ON CONFLICT (guid) DO UPDATE SET
         "alertTypeId" = EXCLUDED."alertTypeId",
@@ -20,7 +20,10 @@ export const mergeAlerts = async (alerts: TAlert[]): Promise<TMergeResult> => {
         "updatedAt" = EXCLUDED."updatedAt"
     RETURNING *`;
   const res = await query(mergeSQL);
-  return res?.rows[0];
+  const total = res?.rows?.length || 0;
+  const inserted = res?.rows?.length || 0;
+  const updated = 0;
+  return { total, inserted, updated };
 };
 
 /**

@@ -23,12 +23,13 @@ export const streamConfig: IStreamConfig = {
     },
   },
   fields: ['ts', 'guid', 'threshold', 'can_save_to_db', 'value', 'saved_to_db', 'sent_to_email'],
-  fetchIntervalSec: 0.5,
+  fetchIntervalSec: 1,
   bufferMultiplier: 2,
   maxBufferSize: 65000,
   prepareEvent: function prepareEvent (dbRecord: TDbRecord): TEventRecord {
     const eventRecord = { ...dbRecord };
-    eventRecord.tsISO = millisToISO(+eventRecord.ts);
+    eventRecord.ts = +eventRecord.ts;
+    eventRecord.tsISO = millisToISO(eventRecord.ts);
     return eventRecord;
   },
   skipGaps: false,

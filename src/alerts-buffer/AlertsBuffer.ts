@@ -36,7 +36,7 @@ interface IAlertsBufferConstructorOptions {
   /**
    * Период вывода сигналов из буфера на отправку по Email и сохранение в БД
    */
-  flushBufferIntervalMillis?: number, // Default = 3_000
+  flushBufferIntervalSeconds?: number, // Default = 3
 
   setFlagToProcForOperators?: number[],
 
@@ -97,7 +97,7 @@ export class AlertsBuffer {
 
     this.sendMail = getSendMail(options.emailSettings, options.logger);
 
-    this.options.flushBufferIntervalMillis = this.options.flushBufferIntervalMillis || 3_000;
+    this.options.flushBufferIntervalSeconds = this.options.flushBufferIntervalSeconds || 3;
     // Запуск сохранения сигналов из буфера каждые 3 секунды
     this.initCron();
   }
@@ -338,7 +338,7 @@ export class AlertsBuffer {
     const maxBusy = 5;
     let busy = 0;
     cron.job({
-      cronTime: `1/${this.options.flushBufferIntervalMillis} * * * * *`,
+      cronTime: `0/${this.options.flushBufferIntervalSeconds} * * * * *`,
       onTick: async () => {
         if (busy && busy <= maxBusy) {
           busy++;

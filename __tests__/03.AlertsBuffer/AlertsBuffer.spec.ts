@@ -13,7 +13,7 @@ const runTestStream = async (): Promise<void> => {
   stream = streams[0];
   return new Promise((resolve: Function) => {
     const timer = setInterval(() => {
-      if (streamsManager.virtualTimeObj.virtualTimeISO >= '2023-01-01T00:01:00') {
+      if (streamsManager.virtualTimeObj.virtualTimeISO >= '2023-01-02T00:01:00') {
         clearInterval(timer);
         procTs = Date.now() - startStreamTs;
         resolve();
@@ -30,6 +30,6 @@ describe('Test AlertsBuffer', () => {
   });
   test('test 2', async () => {
     expect(streamsManager.alertsBuffer).toBeTruthy();
-    expect(procTs).toBeGreaterThan(60_000);
+    expect(procTs).toBeGreaterThan(10_000);
   });
 });

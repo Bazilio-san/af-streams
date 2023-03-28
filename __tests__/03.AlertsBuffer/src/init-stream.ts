@@ -21,16 +21,19 @@ const commonConfig: ICommonConfig = {
   echo,
   exitOnError,
   eventEmitter,
-  skipInitDbConnection: true,
+  skipInitDbConnection: false,
 };
 
 export const streamsManager = new StreamsManager(commonConfig);
 
 export const initStreams = async (): Promise<Stream[]> => {
-  process.env.STREAM_START_TIME = '2023-01-01TT23:59:55';
+  process.env.STREAM_START_TIME = '2023-01-01T23:59:55';
   process.env.STREAM_SPEED = '1';
 
-  const startTimeConfig: IStartTimeConfig = { redis: { host: process.env.REDIS_HOST || 'localhost' } };
+  const startTimeConfig: IStartTimeConfig = {
+    redis: { host: process.env.REDIS_HOST || 'localhost' },
+    useStartTimeFromRedisCache: false,
+  };
   // Инициализация объекта VirtualTimeObj
   const virtualTimeObj = await streamsManager.prepareVirtualTimeObj({ virtualTimeConfig: {}, startTimeConfig });
   const alertsBuffer = streamsManager.prepareAlertsBuffer({
@@ -41,6 +44,7 @@ export const initStreams = async (): Promise<Stream[]> => {
     mergeAlertsActions,
     // Время слежения за признаками отправки и сохранения сигнала
     trackAlertsStateMillis: 4_000,
+    flushBufferIntervalSeconds: 1,
   });
   const testAlgo = new TestAlgo({ alertsBuffer, eventName: 'TEST_ALERT_EVENT_NAME' });
   const senderConfig: ISenderConfig = {

@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import path from 'path';
+import * as path from 'path';
 import { ACTIONS_TABLE, ALERT_TABLE, getPool, query, TEST_DB, TEST_SCHEMA, TEST_TABLE } from '../../lib/db';
 import { echo } from '../../lib/logger';
 
@@ -49,7 +49,7 @@ export const initTestDbEnvironment = async () => {
   echo(`OK!`);
 
   echo(`Добавляю данные в тестовую таблицу`);
-  const sqlFilePath = path.join(__dirname, 'test.sql');
+  const sqlFilePath = path.normalize(path.join(__dirname, '../data/test.sql'));
   sql = fs.readFileSync(sqlFilePath, 'utf-8');
   await query(sql);
   echo(`OK!`);

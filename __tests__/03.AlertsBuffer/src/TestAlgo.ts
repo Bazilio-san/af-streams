@@ -59,8 +59,9 @@ export class TestAlgo {
 
   onEvent (event: ITestEvent) {
     if (!event.threshold) {
-      return;
+      return 0;
     }
     this.prepareAlertAndSend(event).then(() => 0);
+    return 1;
   }
 }
