@@ -35,7 +35,7 @@ export interface TAlertsBufferRequired {
   getDebugMessage: () => string,
   // Проверяет возможность сохранения этого сигнала в БД (в частности, проверяет настройку isSaveToDB)
   canSaveToDb?: () => Promise<boolean>,
-  // Проверяет возможность сохранения этого сигнала в БД (в частности, проверяет настройку isSaveToDB)
+  // Проверяет возможность отправки сигнала по Email (в частности, проверяет настройку isSendByEmail)
   canSendByEmail?: () => Promise<boolean>,
   // Функция наложения данных сигнала на уже существующий или отправленный
   // eslint-disable-next-line no-use-before-define
