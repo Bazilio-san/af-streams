@@ -1216,6 +1216,23 @@ af-logger@^2.0.28:
     winston "^3.4.0"
     winston-daily-rotate-file "^4.5.5"
 
+af-streams@^3.0.19:
+  version "3.0.19"
+  resolved "https://registry.yarnpkg.com/af-streams/-/af-streams-3.0.19.tgz#fcda2fe7d877c19603a259328d92198e76da795f"
+  integrity sha512-pNTZgZPgG4u/xw6/dY5ihV6BXK4MigQCMWcewJWEqY6+SDiIydjM5iRD4foLy0y7cP5DzjVsLk8kLEL8ZWWRHA==
+  dependencies:
+    array.prototype.findlast "^1.2.2"
+    cron "^2.3.0"
+    dotenv "^16.0.3"
+    interval-promise "^1.4.0"
+    luxon "^3.3.0"
+    mssql "^9.1.1"
+    nodemailer "^6.9.1"
+    pg "^8.10.0"
+    redis "^4.6.5"
+    socket.io "^4.6.1"
+    socket.io-client "^4.6.1"
+
 agent-base@6:
   version "6.0.2"
   resolved "https://registry.yarnpkg.com/agent-base/-/agent-base-6.0.2.tgz#49fff58577cfee3f37176feab4c22e00f86d7f77"
