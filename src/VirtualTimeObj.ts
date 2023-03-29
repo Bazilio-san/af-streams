@@ -40,7 +40,7 @@ export class VirtualTimeObj {
 
   public loopTimeMillsEnd: number = 0;
 
-  private timeFront: number = 0;
+  public timeFront: number = 0;
 
   private prevVirtualDateNumber: number = 0;
 
