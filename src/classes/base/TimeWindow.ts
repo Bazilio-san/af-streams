@@ -43,6 +43,10 @@ export interface ITimeWindowConstructorOptions<T> {
    */
   removeExpiredIntervalMillis?: number,
   /**
+   * Кастомная функция для инициализации статистики.
+   */
+  initStat?: (_timeWindow: TimeWindow<T>) => void,
+  /**
    * Опциональная функция для записи статистики при добавлении(удалении) событий в окно.
    * Если передана, то подменит собой метод this.setStat()
    */
@@ -52,10 +56,6 @@ export interface ITimeWindowConstructorOptions<T> {
    * Если не передана, то метод this.getStat() будет возвращать свойство окна stat
    */
   getStat?: (_timeWindow: TimeWindow<T>) => any,
-  /**
-   * Кастомная функция для инициализации статистики.
-   */
-  initStat?: (_timeWindow: TimeWindow<T>) => void,
   /**
    * Первое событие, которое можно передать в момент создания экземпляра класса.
    * Это может быть удобно, когда окна создаются по мере поступления событий определенного класса.
@@ -130,13 +130,13 @@ export class TimeWindow<T> {
   private removeExpiredTimer: any;
 
   constructor (public options: ITimeWindowConstructorOptions<T>) {
-    const { widthMillis, virtualTimeObj, getStat, setStat, initStat, item, removeExpiredIntervalMillis = 0 } = options;
+    const { widthMillis, virtualTimeObj, getStat, setStat, item, removeExpiredIntervalMillis = 0 } = options;
     this.widthMillis = widthMillis;
     this.removeExpiredOnEveryEvents = !(virtualTimeObj && removeExpiredIntervalMillis);
     this.setStat = setStat || (() => null);
     this.getStat = getStat ? () => getStat(this) : () => this.stat;
-    if (typeof initStat === 'function') {
-      initStat(this);
+    if (typeof options.initStat === 'function') {
+      options.initStat(this);
     }
     if (item) {
       this.add(item);

@@ -36,6 +36,10 @@ export interface ISingleEventTimeWindowConstructorOptions<T> {
    */
   removeExpiredIntervalMillis?: number,
   /**
+   * Опциональная функция для инициализации статистики.
+   */
+  initStat?: (_arg: SingleEventTimeWindow<T>) => void,
+  /**
    * Опциональная функция для записи статистики добавления/удаления событий в окно.
    * Если передана, то подменит собой метод this.setStat()
    */
@@ -135,6 +139,9 @@ export class SingleEventTimeWindow<T> {
     this.winName = options.winName || '';
     this.widthMillis = options.widthMillis;
     this.setStat = options.setStat || (() => null);
+    if (typeof options.initStat === 'function') {
+      options.initStat(this);
+    }
     this.getStat = getStat ? () => getStat(this) : () => this.stat;
     if (virtualTimeObj && options.removeExpiredIntervalMillis) {
       clearInterval(this.removeExpiredTimer);
