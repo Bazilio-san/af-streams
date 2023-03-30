@@ -9,13 +9,13 @@ import { echoSimple } from '../../utils/echo-simple';
 
 const debug = Debug('SingleEventTimeWindow');
 
-export interface ISingleEventTimeWindowSetStatOptions<T> {
-  singleEventTimeWindow: SingleEventTimeWindow<T>,
+export interface ISingleEventTimeWindowSetStatOptions<T, S> {
+  singleEventTimeWindow: SingleEventTimeWindow<T, S>,
   added?: ITimeWindowItem<T>,
   removed?: ITimeWindowItem<T>,
 }
 
-export interface ISingleEventTimeWindowConstructorOptions<T> {
+export interface ISingleEventTimeWindowConstructorOptions<T, S = any> {
   /**
    * Отличительное имя окна для логирования
    */
@@ -38,17 +38,17 @@ export interface ISingleEventTimeWindowConstructorOptions<T> {
   /**
    * Опциональная функция для инициализации статистики.
    */
-  initStat?: (_arg: SingleEventTimeWindow<T>) => void,
+  initStat?: (_arg: SingleEventTimeWindow<T, S>) => void,
   /**
    * Опциональная функция для записи статистики добавления/удаления событий в окно.
    * Если передана, то подменит собой метод this.setStat()
    */
-  setStat?: (_arg: ISingleEventTimeWindowSetStatOptions<T>) => void,
+  setStat?: (_arg: ISingleEventTimeWindowSetStatOptions<T, S>) => void,
   /**
    * Кастомная функция для получения статистики. Она подменит метод окна this.getStat()
    * Если не передана, то метод this.getStat() будет возвращать свойство окна stat
    */
-  getStat?: (_arg: SingleEventTimeWindow<T>) => any,
+  getStat?: (_arg: SingleEventTimeWindow<T, S>) => any,
   /**
    * Опциональная кастомная функция добавления сведений из поступившего события в свойство this.event.
    * Если не передана, то новое событие просто заменяет свойство this.event.
@@ -56,7 +56,7 @@ export interface ISingleEventTimeWindowConstructorOptions<T> {
    * Эта функция полезна, когда мы хотим хранить состояние в свойстве this.event.data и не просто заменять на новое,
    * а внедрять данные из нового в уже имеющийся объект
    */
-  assignData?: (_instance: SingleEventTimeWindow<T>, _event: ITimeWindowItem<T>) => any,
+  assignData?: (_instance: SingleEventTimeWindow<T, S>, _event: ITimeWindowItem<T>) => any,
 }
 
 /**
@@ -70,7 +70,7 @@ export interface ISingleEventTimeWindowConstructorOptions<T> {
  * - либо при каждом новом событии (если this.removeExpiredIntervalMillis = 0)
  * - либо контролируется вышестоящим объектом (если this.removeExpiredIntervalMillis = undefined)
  */
-export class SingleEventTimeWindow<T> {
+export class SingleEventTimeWindow<T, S = any> {
   /**
    * Отличительное имя окна для логирования
    */
@@ -110,21 +110,21 @@ export class SingleEventTimeWindow<T> {
    * Место хранения статистики. Заполнение этого свойства должно быть описано самостоятельно, в функции setStat,
    * передаваемой в опциях при создании экземпляра класса
    */
-  public stat: any;
+  public stat: S;
 
   /**
    * Метод класса, заполняющий статистику. По умолчанию не делает ничего. Но если при создании экземпляра класса
    * в опциях передано свойство setStat (функция), оно замещает метод класса и управление заполнением статистики
    * передается этой кастомной функции.
    */
-  public setStat: (_arg: ISingleEventTimeWindowSetStatOptions<T>) => void;
+  public setStat: (_arg: ISingleEventTimeWindowSetStatOptions<T, S>) => void;
 
   /**
    * Метод класса, возвращающий статистику. По умолчанию возвращает свойство класса this.stat.
    * Но если при создании экземпляра класса в опциях передано свойство getStat (функция),
    * оно замещает метод класса this.getStat и управление передается этой кастомной функции.
    */
-  public getStat: (_arg?: SingleEventTimeWindow<T>) => any;
+  public getStat: (_arg?: SingleEventTimeWindow<T, S>) => any;
 
   /**
    * Время поступления первого события в окно. Устанавливается единожды.
@@ -138,6 +138,7 @@ export class SingleEventTimeWindow<T> {
     const self = this;
     this.winName = options.winName || '';
     this.widthMillis = options.widthMillis;
+    this.stat = undefined as unknown as S;
     this.setStat = options.setStat || (() => null);
     if (typeof options.initStat === 'function') {
       options.initStat(this);
@@ -251,9 +252,8 @@ export class SingleEventTimeWindow<T> {
   destroy () {
     clearInterval(this.removeExpiredTimer);
     this.removeExpiredTimer = undefined;
-    // @ts-ignore
     this.item = undefined;
-    this.stat = undefined;
+    this.stat = undefined as unknown as S;
     // @ts-ignore
     this.setStat = undefined;
     // @ts-ignore
