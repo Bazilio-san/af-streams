@@ -13,7 +13,7 @@ const debug = Debug('KeyedSingleEventTimeWindow');
 
 const REMOVE_EMPTY_INTERVAL_DEFAULT = 60_000;
 
-export interface IKeyedSingleEventTimeWindowConstructorOptions<T> extends Omit<ISingleEventTimeWindowConstructorOptions<T>, 'item'> {
+export interface IKeyedSingleEventTimeWindowConstructorOptions<T, S = any> extends Omit<ISingleEventTimeWindowConstructorOptions<T, S>, 'item'> {
   // Отличительное имя (ID) экземпляра класса. Для логирования.
   // Вместе с ключом, дает уникальные идентификаторы для окон, хранящихся в хеше.
   winName: string,
@@ -23,33 +23,36 @@ export interface IKeyedSingleEventTimeWindowConstructorOptions<T> extends Omit<I
   // removeExpiredIntervalMillis?: number,
   // setStat?: (arg: ITimeWindowSetStatOptions<T>) => void,
   // getStat?: (arg: TimeWindow<T>) => any,
-  assignData?: (_instance: SingleEventTimeWindow<T>, _event: ITimeWindowItem<T>) => void,
+  assignData?: (_instance: SingleEventTimeWindow<T, S>, _event: ITimeWindowItem<T>) => void,
 }
 
-export class KeyedSingleEventTimeWindow<T> {
+export class KeyedSingleEventTimeWindow<T, S = any> {
   // Хеш, где под ключами хранятся окна с единичными, самыми последними событиями одного типа.
   // По мере устаревания событий в своих окнах (и освобождения окон), записи так же удаляются и из хеша.
-  public hash: { [key: string]: SingleEventTimeWindow<T> } = {};
+  public hash: { [key: string]: SingleEventTimeWindow<T, S> } = {};
 
   // Место для хранения дополнительных сведений.
   public data: any = {};
 
   // Шаблон опций, передаваемых в конструктор временного окна (Изменчив только параметр winName)
-  private windowOptionsTemplate: ISingleEventTimeWindowConstructorOptions<T>;
+  private windowOptionsTemplate: ISingleEventTimeWindowConstructorOptions<T, S>;
 
   private removeExpiredTimer: any;
 
   private collectGarbageTimer: any;
 
-  constructor (public options: IKeyedSingleEventTimeWindowConstructorOptions<T>) {
+  constructor (public options: IKeyedSingleEventTimeWindowConstructorOptions<T, S>) {
     const { removeEmptyIntervalMillis = REMOVE_EMPTY_INTERVAL_DEFAULT } = options;
-    const { winName, virtualTimeObj, widthMillis, setStat, getStat, removeExpiredIntervalMillis, assignData } = this.options;
+    const {
+      winName, virtualTimeObj, widthMillis, setStat, getStat, initStat, removeExpiredIntervalMillis, assignData,
+    } = this.options;
     const isUseRemoveExpiredHere = virtualTimeObj && (removeExpiredIntervalMillis || 0) > 0;
 
     this.windowOptionsTemplate = {
       winName: `${winName}/template`,
       widthMillis,
       virtualTimeObj,
+      initStat,
       setStat,
       getStat,
       // Если options.removeExpiredIntervalMillis больше 0, то отключаем механизм удаления устаревших событий у объектов
@@ -103,7 +106,7 @@ export class KeyedSingleEventTimeWindow<T> {
   /**
    * Возвращает временное окно по ключу.
    */
-  getWindowByKey (key: string): SingleEventTimeWindow<T> | undefined {
+  getWindowByKey (key: string): SingleEventTimeWindow<T, S> | undefined {
     return this.hash[key];
   }
 

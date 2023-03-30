@@ -133,7 +133,7 @@ export class SingleEventTimeWindow<T, S = any> {
 
   private removeExpiredTimer: any;
 
-  constructor (public options: ISingleEventTimeWindowConstructorOptions<T>) {
+  constructor (public options: ISingleEventTimeWindowConstructorOptions<T, S>) {
     const { virtualTimeObj, getStat } = options;
     const self = this;
     this.winName = options.winName || '';
