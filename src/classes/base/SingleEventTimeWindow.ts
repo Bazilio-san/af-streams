@@ -175,6 +175,7 @@ export class SingleEventTimeWindow<T> {
       if (debug.enabled && this.options.removeExpiredIntervalMillis !== undefined) {
         echoSimple(`${m}Удалено устаревшее событие из окна [SingleEventTimeWindow] winName: ${this.winName} / -> ${toUTC(this.inputTs)} - ${toUTC(this.lastTs)} ->`);
       }
+      this.setStat({ singleEventTimeWindow: this, removed: item });
       return item;
     }
   }
@@ -198,11 +199,9 @@ export class SingleEventTimeWindow<T> {
       return undefined;
     }
     const { ts } = item;
-    let removed: ITimeWindowItem<T> | undefined;
-    let added: ITimeWindowItem<T> | undefined;
 
     if (ts < this.expireTs) {
-      removed = item;
+      this.setStat({ singleEventTimeWindow: this, removed: item });
     } else {
       if (!noChangeTs) {
         this.lastTs = Math.max(ts, this.item?.ts || 0);
@@ -215,15 +214,14 @@ export class SingleEventTimeWindow<T> {
       } else {
         this.item = item;
       }
-      added = item;
+      this.setStat({ singleEventTimeWindow: this, added: item });
     }
     this.setExpireTs('item');
     // Здесь может быть случай, когда новое событие сразу же устарело.
     // Тога оно будет штатно удалено при следующей очистке.
     if (this.removeExpiredOnEveryEvents) {
-      removed = this.removeExpired() || removed;
+      this.removeExpired();
     }
-    this.setStat({ singleEventTimeWindow: this, added, removed });
     return this.item;
   }
 

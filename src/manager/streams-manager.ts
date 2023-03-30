@@ -185,6 +185,13 @@ export class StreamsManager {
     return this.virtualTimeObj;
   }
 
+  prepareAlertsBuffer (prepareAlertsBufferOptions: IPrepareAlertsBufferOptions): AlertsBuffer {
+    this.checkCommonConfig();
+    const { commonConfig: { logger, echo, eventEmitter }, virtualTimeObj } = this;
+    this.alertsBuffer = new AlertsBuffer({ logger, echo, eventEmitter, virtualTimeObj, ...prepareAlertsBufferOptions });
+    return this.alertsBuffer;
+  }
+
   async prepareStreams (
     optionsArray: IPrepareStreamOptions | IPrepareStreamOptions[],
     prepareRectifierOptions?: IPrepareRectifierOptions,
@@ -223,13 +230,6 @@ export class StreamsManager {
       this.map[streamId] = stream;
       return stream;
     });
-  }
-
-  prepareAlertsBuffer (prepareAlertsBufferOptions: IPrepareAlertsBufferOptions): AlertsBuffer {
-    this.checkCommonConfig();
-    const { commonConfig: { logger, echo, eventEmitter }, virtualTimeObj } = this;
-    this.alertsBuffer = new AlertsBuffer({ logger, echo, eventEmitter, virtualTimeObj, ...prepareAlertsBufferOptions });
-    return this.alertsBuffer;
   }
 
   async initStreams (): Promise<Stream[]> {
