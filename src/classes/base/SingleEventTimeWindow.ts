@@ -138,12 +138,16 @@ export class SingleEventTimeWindow<T, S = any> {
     const self = this;
     this.winName = options.winName || '';
     this.widthMillis = options.widthMillis;
+
+    // ----------------- stat ------------------
     this.stat = undefined as unknown as S;
-    this.setStat = options.setStat || (() => null);
     if (typeof options.initStat === 'function') {
       options.initStat(this);
     }
+    this.setStat = options.setStat || (() => null);
     this.getStat = getStat ? () => getStat(this) : () => this.stat;
+    // ------------------------------------------
+
     if (virtualTimeObj && options.removeExpiredIntervalMillis) {
       clearInterval(this.removeExpiredTimer);
       this.removeExpiredTimer = setInterval(() => {
