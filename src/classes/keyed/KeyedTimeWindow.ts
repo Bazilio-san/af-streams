@@ -195,7 +195,7 @@ export class KeyedTimeWindow<T> {
    * для того, чтобы из окна были удалены "протухшие" сущности
    */
   getInfo (key: string | number, customDataCallback?: Function): IKeyedTimeWindowInfo {
-    const timeWindow = this.hash[key] || {};
+    const timeWindow = this.hash[key] || { win: [], lastTs: 0 };
     const win = timeWindow.win || [];
     const numberOfItemsInWindow = win.length;
     const result = {
