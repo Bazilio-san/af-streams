@@ -24,37 +24,37 @@ export interface IVirtualTimeStat {
 }
 
 export class VirtualTimeObj {
-  public realStartTs: number = 0;
+  realStartTs: number = 0;
 
-  public readonly virtualStartTs: number;
+  readonly virtualStartTs: number;
 
-  public loopNumber: number = 0;
+  loopNumber: number = 0;
 
-  public isCurrentTime: boolean = false;
+  isCurrentTime: boolean = false;
 
-  public locked: boolean = true;
+  locked: boolean = true;
 
-  public streams: IStreamLike[] = [];
+  streams: IStreamLike[] = [];
 
-  public loopTimeMillis: number = 0;
+  loopTimeMillis: number = 0;
 
-  public loopTimeMillsEnd: number = 0;
+  loopTimeMillsEnd: number = 0;
 
-  public timeFront: number = 0;
+  timeFront: number = 0;
 
-  private prevVirtualDateNumber: number = 0;
+  prevVirtualDateNumber: number = 0;
 
-  private prevVirtualHourNumber: number = 0;
+  prevVirtualHourNumber: number = 0;
 
-  private stat: IVirtualTimeStat = { lastRealTs: 0, lastFrontTs: 0, speed: 0 };
+  stat: IVirtualTimeStat = { lastRealTs: 0, lastFrontTs: 0, speed: 0 };
 
-  private frontUpdateInterval: any;
+  frontUpdateInterval: any;
 
-  private timeFrontUpdateInterval: any;
+  timeFrontUpdateInterval: any;
 
-  private timeFrontUpdateIntervalMillis: number = 0;
+  timeFrontUpdateIntervalMillis: number = 0;
 
-  public speed: number = 1;
+  speed: number = 1;
 
   constructor (public options: IVirtualTimeObjOptions) {
     this.virtualStartTs = options.startTimeMillis; // timestamp millis from which to start uploading data
@@ -118,9 +118,9 @@ ${g}${'='.repeat(64)}`;
         return;
       }
       this.setNextTimeFront();
-      this.loopIfNeed();
-      this.detectDayChange();
-      this.detectHourChange();
+      this._loopIfNeed();
+      this._detectDayChange();
+      this._detectHourChange();
     }, this.timeFrontUpdateIntervalMillis);
   }
 
@@ -161,7 +161,7 @@ ${g}${'='.repeat(64)}`;
     return [this.isCurrentTime, this.timeFront];
   }
 
-  private loopIfNeed () {
+  _loopIfNeed () {
     if (this.loopTimeMillis && this.timeFront >= this.loopTimeMillsEnd) {
       this.timeFront = this.virtualStartTs;
       this.loopNumber++;
@@ -170,7 +170,7 @@ ${g}${'='.repeat(64)}`;
     }
   }
 
-  private detectDayChange () {
+  _detectDayChange () {
     const pvd = this.prevVirtualDateNumber;
     this.prevVirtualDateNumber = Math.floor(this.timeFront / MILLIS_IN_DAY);
     if (pvd && pvd < this.prevVirtualDateNumber) {
@@ -184,7 +184,7 @@ ${g}${'='.repeat(64)}`;
     }
   }
 
-  private detectHourChange () {
+  _detectHourChange () {
     const pvh = this.prevVirtualHourNumber;
     this.prevVirtualHourNumber = Math.floor(this.timeFront / MILLIS_IN_HOUR);
     if (pvh && pvh !== this.prevVirtualHourNumber) {
