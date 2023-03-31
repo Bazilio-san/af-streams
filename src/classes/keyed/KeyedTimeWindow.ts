@@ -77,9 +77,9 @@ export class KeyedTimeWindow<T> {
 
   public widthMillis: number;
 
-  private removeExpiredTimer: any;
+  _removeExpiredTimer: any;
 
-  private collectGarbageTimer: any;
+  _collectGarbageTimer: any;
 
   constructor (public options: IKeyedTimeWindowOptions<T>) {
     this.widthMillis = options.widthMillis;
@@ -97,8 +97,8 @@ export class KeyedTimeWindow<T> {
     const isUseRemoveExpiredHere = virtualTimeObj && (removeExpiredIntervalMillis || 0) > 0;
 
     if (isUseRemoveExpiredHere) {
-      clearInterval(this.removeExpiredTimer);
-      this.removeExpiredTimer = setInterval(() => {
+      clearInterval(this._removeExpiredTimer);
+      this._removeExpiredTimer = setInterval(() => {
         const st = Date.now();
         const removedCount = self.removeExpired(virtualTimeObj.virtualTs);
         if (debug.enabled && removedCount) {
@@ -107,8 +107,8 @@ export class KeyedTimeWindow<T> {
         }
       }, removeExpiredIntervalMillis || 10_000);
     } else {
-      clearInterval(this.collectGarbageTimer);
-      this.collectGarbageTimer = setInterval(() => {
+      clearInterval(this._collectGarbageTimer);
+      this._collectGarbageTimer = setInterval(() => {
         this.collectGarbage();
       }, removeEmptyIntervalMillis || 30_000);
     }
@@ -221,10 +221,10 @@ export class KeyedTimeWindow<T> {
   }
 
   destroy () {
-    clearInterval(this.removeExpiredTimer);
-    this.removeExpiredTimer = undefined;
-    clearInterval(this.collectGarbageTimer);
-    this.collectGarbageTimer = undefined;
+    clearInterval(this._removeExpiredTimer);
+    this._removeExpiredTimer = undefined;
+    clearInterval(this._collectGarbageTimer);
+    this._collectGarbageTimer = undefined;
     // @ts-ignore
     this.hash = undefined;
   }

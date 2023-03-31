@@ -59,13 +59,13 @@ export class Rectifier {
    */
   public lastTs: number = 0;
 
-  private virtualTimeObj: VirtualTimeObj;
+  readonly virtualTimeObj: VirtualTimeObj;
 
-  private readonly sendFunction: (_eventRecordsArray: TEventRecord[]) => number;
+  readonly sendFunction: (_eventRecordsArray: TEventRecord[]) => number;
 
-  private readonly fieldNameToSort: string;
+  readonly fieldNameToSort: string;
 
-  private sendTimer: any;
+  _sendTimer: any;
 
   constructor (public options: IRectifierOptions) {
     this.virtualTimeObj = options.virtualTimeObj;
@@ -86,8 +86,8 @@ export class Rectifier {
       || Number(this.options.sendIntervalMillis)
       || intEnv('RECTIFIER_SEND_INTERVAL_MILLIS', DEFAULTS.RECTIFIER_SEND_INTERVAL_MILLIS); // 10 ms
     this.options.sendIntervalMillis = value;
-    clearInterval(this.sendTimer);
-    this.sendTimer = setInterval(() => {
+    clearInterval(this._sendTimer);
+    this._sendTimer = setInterval(() => {
       this.sendItemsFromLeft();
     }, this.options.sendIntervalMillis);
   }
@@ -135,8 +135,8 @@ export class Rectifier {
   }
 
   destroy () {
-    clearInterval(this.sendTimer);
-    this.sendTimer = undefined;
+    clearInterval(this._sendTimer);
+    this._sendTimer = undefined;
     // @ts-ignore
     this.accumulator = undefined;
   }

@@ -131,7 +131,7 @@ export class SingleEventTimeWindow<T, S = any> {
    */
   public inputTs: number = 0;
 
-  private removeExpiredTimer: any;
+  _removeExpiredTimer: any;
 
   constructor (public options: ISingleEventTimeWindowConstructorOptions<T, S>) {
     const { virtualTimeObj, getStat } = options;
@@ -149,8 +149,8 @@ export class SingleEventTimeWindow<T, S = any> {
     // ------------------------------------------
 
     if (virtualTimeObj && options.removeExpiredIntervalMillis) {
-      clearInterval(this.removeExpiredTimer);
-      this.removeExpiredTimer = setInterval(() => {
+      clearInterval(this._removeExpiredTimer);
+      this._removeExpiredTimer = setInterval(() => {
         self.removeExpired(virtualTimeObj.virtualTs);
       }, options.removeExpiredIntervalMillis);
     } else {
@@ -254,8 +254,8 @@ export class SingleEventTimeWindow<T, S = any> {
   }
 
   destroy () {
-    clearInterval(this.removeExpiredTimer);
-    this.removeExpiredTimer = undefined;
+    clearInterval(this._removeExpiredTimer);
+    this._removeExpiredTimer = undefined;
     this.item = undefined;
     this.stat = undefined as unknown as S;
     // @ts-ignore

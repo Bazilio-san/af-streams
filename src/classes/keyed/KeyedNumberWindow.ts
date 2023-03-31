@@ -74,7 +74,7 @@ export class KeyedNumberWindow<T> {
    */
   public width: number;
 
-  private collectGarbageTimer: any;
+  _collectGarbageTimer: any;
 
   constructor (public options: IKeyedNumberWindowOptions<T>) {
     const { width, garbageCollection } = options;
@@ -85,8 +85,8 @@ export class KeyedNumberWindow<T> {
   }
 
   setCollectGarbageTimer (collectGarbageIntervalMillis: number) {
-    clearInterval(this.collectGarbageTimer);
-    this.collectGarbageTimer = setInterval(() => {
+    clearInterval(this._collectGarbageTimer);
+    this._collectGarbageTimer = setInterval(() => {
       this.collectGarbage();
     }, collectGarbageIntervalMillis);
   }
@@ -170,8 +170,8 @@ export class KeyedNumberWindow<T> {
   }
 
   destroy () {
-    clearInterval(this.collectGarbageTimer);
-    this.collectGarbageTimer = undefined;
+    clearInterval(this._collectGarbageTimer);
+    this._collectGarbageTimer = undefined;
     // @ts-ignore
     this.hash = undefined;
   }

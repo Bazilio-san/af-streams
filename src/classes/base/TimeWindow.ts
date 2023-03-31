@@ -127,7 +127,7 @@ export class TimeWindow<T> {
    */
   public getStat: (_arg?: TimeWindow<T>) => any;
 
-  private removeExpiredTimer: any;
+  _removeExpiredTimer: any;
 
   constructor (public options: ITimeWindowConstructorOptions<T>) {
     const { widthMillis, virtualTimeObj, getStat, setStat, item, removeExpiredIntervalMillis = 0 } = options;
@@ -143,8 +143,8 @@ export class TimeWindow<T> {
     }
     const self = this;
     if (!this.removeExpiredOnEveryEvents) {
-      clearInterval(this.removeExpiredTimer);
-      this.removeExpiredTimer = setInterval(() => {
+      clearInterval(this._removeExpiredTimer);
+      this._removeExpiredTimer = setInterval(() => {
         const st = Date.now();
         const removedCount = self.removeExpired((virtualTimeObj as VirtualTimeObj).virtualTs).length;
         if (debug.enabled && removedCount) {
@@ -262,8 +262,8 @@ export class TimeWindow<T> {
   }
 
   destroy () {
-    clearInterval(this.removeExpiredTimer);
-    this.removeExpiredTimer = undefined;
+    clearInterval(this._removeExpiredTimer);
+    this._removeExpiredTimer = undefined;
     // @ts-ignore
     this.win = undefined;
     this.stat = undefined;

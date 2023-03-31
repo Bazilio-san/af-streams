@@ -35,11 +35,11 @@ export class KeyedSingleEventTimeWindow<T, S = any> {
   public data: any = {};
 
   // Шаблон опций, передаваемых в конструктор временного окна (Изменчив только параметр winName)
-  private windowOptionsTemplate: ISingleEventTimeWindowConstructorOptions<T, S>;
+  _windowOptionsTemplate: ISingleEventTimeWindowConstructorOptions<T, S>;
 
-  private removeExpiredTimer: any;
+  _removeExpiredTimer: any;
 
-  private collectGarbageTimer: any;
+  _collectGarbageTimer: any;
 
   constructor (public options: IKeyedSingleEventTimeWindowConstructorOptions<T, S>) {
     const { removeEmptyIntervalMillis = REMOVE_EMPTY_INTERVAL_DEFAULT } = options;
@@ -48,7 +48,7 @@ export class KeyedSingleEventTimeWindow<T, S = any> {
     } = this.options;
     const isUseRemoveExpiredHere = virtualTimeObj && (removeExpiredIntervalMillis || 0) > 0;
 
-    this.windowOptionsTemplate = {
+    this._windowOptionsTemplate = {
       winName: `${winName}/template`,
       widthMillis,
       virtualTimeObj,
@@ -62,11 +62,11 @@ export class KeyedSingleEventTimeWindow<T, S = any> {
     };
     if (isUseRemoveExpiredHere) {
       const self = this;
-      this.removeExpiredTimer = setInterval(() => {
+      this._removeExpiredTimer = setInterval(() => {
         self.removeExpired(virtualTimeObj.virtualTs);
       }, removeExpiredIntervalMillis);
     } else {
-      this.collectGarbageTimer = setInterval(() => {
+      this._collectGarbageTimer = setInterval(() => {
         this.collectGarbage();
       }, removeEmptyIntervalMillis);
     }
@@ -81,7 +81,7 @@ export class KeyedSingleEventTimeWindow<T, S = any> {
     let timeWindow = hash[key];
     if (!timeWindow) {
       hash[key] = new SingleEventTimeWindow({
-        ...this.windowOptionsTemplate,
+        ...this._windowOptionsTemplate,
         winName: `SETW/${this.options.winName}/${key}`,
       });
       timeWindow = hash[key];
@@ -193,14 +193,14 @@ export class KeyedSingleEventTimeWindow<T, S = any> {
   }
 
   destroy () {
-    clearInterval(this.removeExpiredTimer);
-    this.removeExpiredTimer = undefined;
-    clearInterval(this.collectGarbageTimer);
-    this.collectGarbageTimer = undefined;
+    clearInterval(this._removeExpiredTimer);
+    this._removeExpiredTimer = undefined;
+    clearInterval(this._collectGarbageTimer);
+    this._collectGarbageTimer = undefined;
     // @ts-ignore
     this.hash = undefined;
     this.data = undefined;
     // @ts-ignore
-    this.windowOptionsTemplate = undefined;
+    this._windowOptionsTemplate = undefined;
   }
 }

@@ -41,7 +41,7 @@ export interface ISimpleEventEmitterQueueConstructorOptions<T> {
 export class SimpleEventEmitterAsyncQueue<T> {
   public queue: T[] = [];
 
-  private locked: number = 0;
+  locked: number = 0;
 
   constructor (public options: ISimpleEventEmitterQueueConstructorOptions<T>) {
     const { name, eventId, queryQueuePeriodMillis } = options;
