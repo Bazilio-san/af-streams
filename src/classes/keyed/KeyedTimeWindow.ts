@@ -180,6 +180,11 @@ export class KeyedTimeWindow<T> {
     return this.hash[key];
   }
 
+  getStatByKey (key: string | number): any {
+    const timeWindow = this.getWindowByKey(key);
+    return timeWindow?.getStat(timeWindow);
+  }
+
   getCount (key: string | number): number {
     return this.hash[key]?.win.length || 0;
   }
