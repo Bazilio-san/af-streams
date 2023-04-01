@@ -457,6 +457,10 @@ export class StreamsManager {
     });
   }
 
+  isLocked (): boolean {
+    return this._locked;
+  }
+
   startIoStatistics () {
     if (this._locked || !this._connectedSockets.size) {
       return;
