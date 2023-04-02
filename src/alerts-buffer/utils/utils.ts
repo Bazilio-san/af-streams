@@ -91,9 +91,8 @@ export const htmlTemplate = `
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%title%></title>
 <style  type="text/css">
-.json-container, .email-details {
+.json-container {
   font-family: monospace, consolas, menlo;
-  font-weight: 400;
   font-size: 13px;
 }
 ol.json-lines {
@@ -128,12 +127,19 @@ ol.json-lines >li::marker {
 .json-number {
   color: #00f;
 }
-.email-details {
-}
-.email-footer {
+.email-pre-header {
+  margin-bottom: 20px;
 }
 .email-header {
-  font-weight: 700;
+  font-family: monospace, consolas, menlo;
+  font-size: 15px;
+  font-weight: bold;
+  background-color: #e5e5e5;
+  padding: 5px;
+}
+.email-footer {
+  font-family: monospace, consolas, menlo;
+  font-size: 13px;
 }
 </style>
 </head>
@@ -190,8 +196,9 @@ export const alertEmailHeader = (args: { alert: TAlert, wrapPre?: boolean, inden
   const { alert, wrapPre = false, indent = '', prefix = '# ' } = args;
   const { eventName } = alert;
   const detailsArray: TAlertEmailDetails = [[millisTo.human.utc.z(alert.ts), `Event: [${eventName}]`]];
-  const header = alertEmailDetails({ detailsArray, indent, prefix });
-  return wrapPre ? `<pre class="email-details email-header">${header}</pre>` : header;
+  let header = alertEmailDetails({ detailsArray, indent, prefix });
+  header = `<span class="email-header">${header}</span>`;
+  return wrapPre ? `<pre class="email-pre-header">${header}</pre>` : header;
 };
 
 const THIS_HOST_NAME = os.hostname();
@@ -218,6 +225,7 @@ export const alertEmailFooter = (args: {
     detailsArray.push([`Alerts of type`, getTypedAlertsLink(linkBase, alertTypeId)]);
   }
 
-  const footer = alertEmailDetails({ detailsArray, indent, prefix });
-  return wrapPre ? `<pre class="email-details email-footer">${footer}</pre>` : footer;
+  let footer = alertEmailDetails({ detailsArray, indent, prefix });
+  footer = `<span class="email-footer">${footer}</span>`;
+  return wrapPre ? `<pre>${footer}</pre>` : footer;
 };
