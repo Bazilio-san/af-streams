@@ -228,13 +228,6 @@ export const strEnv = (name: string, def: string) => process.env[name] || def;
 export const boolEnv = (name: string, def = false) => getBool(process.env[name], def);
 
 /*
-export const getBool = (v: any): boolean => {
-  if (typeof v === 'string') {
-    return /^(true|1|yes)$/i.test(v);
-  }
-  return !!v;
-};
-
 export const copyRecord = (record: TDbRecord): TDbRecord => {
   const recordCopy = { ...record };
   Object.entries(recordCopy).forEach(([key, value]) => {

@@ -165,7 +165,7 @@ Connection established with ${msg}
     const MAX_PACKET_SIZE = 32000;
 
     const { streamId, isSingleRecordAsObject, first } = recordsComposite;
-    let { eventsPacket } = recordsComposite;
+    let eventsPacket = recordsComposite.eventsPacket as TEventRecord[];
     if (!Array.isArray(eventsPacket)) {
       eventsPacket = [eventsPacket];
     }

@@ -148,7 +148,8 @@ export class TimeWindow<T> {
         const st = Date.now();
         const removedCount = self.removeExpired((virtualTimeObj as VirtualTimeObj).virtualTs).length;
         if (debug.enabled && removedCount) {
-          echoSimple(`${m}Удалено ${lBlue}${removedCount}${m} устаревших событий из окна [TimeWindow] winName: ${this.options.winName} 🕒 ${Date.now() - st} ms`);
+          echoSimple(`${m}Удалено ${lBlue}${removedCount}${m
+          } устаревших событий из окна [TimeWindow] winName: ${this.options.winName} 🕒 ${Date.now() - st} ms`);
         }
       }, removeExpiredIntervalMillis);
     }

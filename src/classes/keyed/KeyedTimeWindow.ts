@@ -103,7 +103,7 @@ export class KeyedTimeWindow<T> {
         const removedCount = self.removeExpired(virtualTimeObj.virtualTs);
         if (debug.enabled && removedCount) {
           echoSimple(`${m}Удалено ${lBlue}${removedCount}${m} устаревших событий из окон [KeyedTimeWindow] winName: ${lBlue
-          }${this.options.winName}${m} за ${Date.now() - st} ms 🕒`);
+          }${this.options.winName}${m} 🕒 ${Date.now() - st} ms`);
         }
       }, removeExpiredIntervalMillis || 10_000);
     } else {

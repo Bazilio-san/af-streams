@@ -91,12 +91,10 @@ export const htmlTemplate = `
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%title%></title>
 <style  type="text/css">
-.json-container {
-  font-family: menlo, consolas, monospace;
-  font-style: normal;
+.json-container, .email-details {
+  font-family: monospace, consolas, menlo;
   font-weight: 400;
-  line-height: 1.4em;
-  font-size: 0.85rem;
+  font-size: 13px;
 }
 ol.json-lines {
   white-space: normal;
@@ -130,7 +128,13 @@ ol.json-lines >li::marker {
 .json-number {
   color: #00f;
 }
-@media only screen and (min-width: 250px) and (max-width: 1024px) {}
+.email-details {
+}
+.email-footer {
+}
+.email-header {
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -154,7 +158,7 @@ export const fillHtmlTemplate = (args: TFillHtmlTemplateArgs): string => {
 
 export const jsonToHtml = (json: any): string => {
   const prettyPrintJsonOptions: FormatOptions = { linkUrls: true, indent: 2 };
-  return `<pre>${prettyPrintJson.toHtml(json, prettyPrintJsonOptions)}\n</pre>`;
+  return `<pre class="json-container">${prettyPrintJson.toHtml(json, prettyPrintJsonOptions)}\n</pre>`;
 };
 
 const rSpace = (str: string, strLength: number) => {
@@ -187,7 +191,7 @@ export const alertEmailHeader = (args: { alert: TAlert, wrapPre?: boolean, inden
   const { eventName } = alert;
   const detailsArray: TAlertEmailDetails = [[millisTo.human.utc.z(alert.ts), `Event: [${eventName}]`]];
   const header = alertEmailDetails({ detailsArray, indent, prefix });
-  return wrapPre ? `<pre>${header}</pre>` : header;
+  return wrapPre ? `<pre class="email-details email-header">${header}</pre>` : header;
 };
 
 const THIS_HOST_NAME = os.hostname();
@@ -215,5 +219,5 @@ export const alertEmailFooter = (args: {
   }
 
   const footer = alertEmailDetails({ detailsArray, indent, prefix });
-  return wrapPre ? `<pre>${footer}</pre>` : footer;
+  return wrapPre ? `<pre class="email-details email-footer">${footer}</pre>` : footer;
 };

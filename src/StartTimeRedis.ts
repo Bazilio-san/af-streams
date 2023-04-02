@@ -87,7 +87,8 @@ export class StartTimeRedis {
       logger.error(`Cache stored data is not a unix timestamp: ${startTimeMillis}`);
       return 0;
     }
-    logger.info(`${prefix}Get time of last sent entry: ${millis2iso(startTimeMillis, { includeOffset: true })} from the Redis cache using key ${this.streamKey}`);
+    logger.info(`${prefix}Get time of last sent entry: ${millis2iso(startTimeMillis, { includeOffset: true })
+    } from the Redis cache using key ${this.streamKey}`);
     return startTimeMillis;
   }
 
