@@ -1,4 +1,4 @@
-import { AlertsBuffer, TAlert } from '../../../src';
+import { AlertsBuffer, TAlert, jsonToHtml } from '../../../src';
 
 export interface ITestAlgoConstructorOptions {
   eventName: string,
@@ -37,8 +37,8 @@ export class TestAlgo {
       async getEmail () {
         const recipients = ['vvmakarov@corp.finam.ru'];
         const subjectTemplate = 'SUBJ';
-        const textHTML = `guid: ${event.guid.substring(33, 36)} val: ${event.value}`;
-        return { recipients, subjectTemplate, textHTML };
+        const htmlBody = jsonToHtml(event);
+        return { recipients, subjectTemplate, htmlBody };
       },
       // Подготавливает ключевые сведения о сигнале для вывода в консоль в режиме отладки
       getDebugMessage () {

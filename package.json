@@ -1,6 +1,6 @@
 {
   "name": "af-streams",
-  "version": "3.0.34",
+  "version": "3.0.35",
   "description": "Data stream from database table",
   "main": "./dist/cjs/src/index.js",
   "module": "./dist/esm/index.js",
@@ -33,6 +33,7 @@
     "mssql": "^9.1.1",
     "nodemailer": "^6.9.1",
     "pg": "^8.10.0",
+    "pretty-print-json": "^1.4.1",
     "redis": "^4.6.5",
     "socket.io": "^4.6.1",
     "socket.io-client": "^4.6.1"

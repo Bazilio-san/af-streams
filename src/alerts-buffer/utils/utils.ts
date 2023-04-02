@@ -1,3 +1,5 @@
+import { FormatOptions, prettyPrintJson } from 'pretty-print-json';
+
 export interface ITraverseNode {
   key: string | undefined,
   val: any,
@@ -77,3 +79,74 @@ export const fillSubjectTemplate = (template: string, obj: any): string => {
 };
 
 export const removeHTML = (s: string) => String(s).replace(/<\/?[^>]+>/ig, '');
+
+export const htmlTemplate = `
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+  <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%title%></title>
+<style  type="text/css">
+.json-container {
+  font-family: menlo, consolas, monospace;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.4em;
+  font-size: 0.85rem;
+}
+ol.json-lines {
+  white-space: normal;
+  padding-inline-start: 0.5em;
+  margin: 0;
+}
+ol.json-lines >li {
+  white-space: pre;
+  text-indent: 0.7em;
+  line-height: 1.32em;
+  padding: 0;
+}
+ol.json-lines >li::marker {
+  font-family: system-ui, sans-serif;
+  font-weight: normal;
+}
+.json-pretty {
+  padding-left: 30px;
+  padding-right: 30px;
+}
+.json-string {
+  color: #000;
+}
+.json-key {
+  color: #000080;
+  font-weight: 600;
+}
+.json-boolean {
+  color: #007300;
+}
+.json-number {
+  color: #00f;
+}
+@media only screen and (min-width: 250px) and (max-width: 1024px) {}
+</style>
+</head>
+<body>
+  <%body%>
+</body>
+</html>
+`;
+
+export interface TFillHtmlTemplateArgs { title?: string, body?: string }
+
+export const fillHtmlTemplate = (args: TFillHtmlTemplateArgs): string => {
+  let text = htmlTemplate;
+  ['title', 'body'].forEach((n) => {
+    text = text.replace(`<%${n}%>`, args[n as keyof TFillHtmlTemplateArgs] || '');
+  });
+  return text;
+};
+
+export const jsonToHtml = (json: any): string => {
+  const prettyPrintJsonOptions: FormatOptions = { linkUrls: true, indent: 2 };
+  return `<pre>${prettyPrintJson.toHtml(json, prettyPrintJsonOptions)}\n</pre>`;
+};

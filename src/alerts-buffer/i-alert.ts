@@ -30,7 +30,7 @@ export interface TAlertsBufferRequired {
   // Теги в теле письма
   hashTags?: string[],
   // Подготавливает список получателей, шаблон заголовка и тело письма (HTML) для отправки уведомления по email
-  getEmail: () => Promise<{ recipients: string[], subjectTemplate: string, textHTML: string }>,
+  getEmail: () => Promise<{ recipients: string[], subjectTemplate: string, htmlBody: string }>,
   // Подготавливает ключевые сведения о сигнале для вывода в консоль в режиме отладки
   getDebugMessage: () => string,
   // Проверяет возможность сохранения этого сигнала в БД (в частности, проверяет настройку isSaveToDB)

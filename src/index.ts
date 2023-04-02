@@ -116,4 +116,16 @@ export { AlertsStat, IStatTT, IStatTTtiu, TIU, getAlertsStat } from './alerts-bu
 
 export { AlertsBuffer } from './alerts-buffer/AlertsBuffer';
 
-export { traverse, ITraverseNode, flattenObjectPrimitiveLeafs, fillSubjectTemplate, removeHTML } from './alerts-buffer/utils/utils';
+export {
+  traverse,
+  ITraverseNode,
+  flattenObjectPrimitiveLeafs,
+  fillSubjectTemplate,
+  removeHTML,
+  jsonToHtml,
+  fillHtmlTemplate,
+  htmlTemplate,
+  TFillHtmlTemplateArgs,
+} from './alerts-buffer/utils/utils';
+
+export { ISendAlertArgs, getSendMail } from './alerts-buffer/utils/email-service';

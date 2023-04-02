@@ -3,7 +3,7 @@ import * as cron from 'cron';
 import EventEmitter from 'events';
 import { IAlertEmailSettings, TAlert, TAlertSentFlags, TMergeResult } from './i-alert';
 import { AlertsStat, getAlertsStat } from './AlertsStat';
-import { fillSubjectTemplate, removeHTML } from './utils/utils';
+import { fillHtmlTemplate, fillSubjectTemplate, removeHTML } from './utils/utils';
 import { DEPRECATED_SEND_ALERTS_BY_EMAIL, EMAIL_SEND_RULE, EMailSendRule } from './constants';
 import { IThrottleExOptions, throttleEx } from '../utils/throttle-ex';
 import { getSendMail, ISendAlertArgs } from './utils/email-service';
@@ -163,28 +163,15 @@ export class AlertsBuffer {
   async sendOneAlertToEmail (alert: TAlert): Promise<{ to: string, info?: any, error?: any }[] | null> {
     const { logger } = this.options;
     const { guid, eventName } = alert;
-    const { recipients, subjectTemplate, textHTML } = await alert.getEmail();
+    const { recipients, subjectTemplate, htmlBody } = await alert.getEmail();
     const { subjectPrefix = '' } = this.options.emailSettings;
-    const text = removeHTML(textHTML);
+    const text = removeHTML(htmlBody);
     try {
       let subject = fillSubjectTemplate(subjectPrefix + subjectTemplate, alert);
       if (process.env.NODE_ENV === 'test') {
         subject = `TEST EMAIL :: ${subject}`;
       }
-
-      const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="x-ua-compatible" content="ie=edge">
-  <title>${subject}</title>
-</head>
-<body>
-  <pre>${textHTML}</pre>
-</body>
-</html>
-  `;
+      const html = fillHtmlTemplate({ body: htmlBody, title: subject });
       const fn = async (to: string): Promise<{ to: string, info?: any, error?: any }> => new Promise((resolve) => {
         const callback = (error: Error | any, info: any) => {
           const txt = `[${eventName}]:[${guid}] to <${to}>`;
