@@ -126,6 +126,9 @@ export {
   fillHtmlTemplate,
   htmlTemplate,
   TFillHtmlTemplateArgs,
+  alertEmailDetails,
+  alertEmailHeader,
+  alertEmailFooter,
 } from './alerts-buffer/utils/utils';
 
 export { ISendAlertArgs, getSendMail } from './alerts-buffer/utils/email-service';

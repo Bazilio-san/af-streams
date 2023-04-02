@@ -1,4 +1,7 @@
 import { FormatOptions, prettyPrintJson } from 'pretty-print-json';
+import os from 'os';
+import { DateTime } from 'luxon';
+import { TAlert, TAlertEmailDetails } from '../i-alert';
 
 export interface ITraverseNode {
   key: string | undefined,
@@ -136,7 +139,10 @@ ol.json-lines >li::marker {
 </html>
 `;
 
-export interface TFillHtmlTemplateArgs { title?: string, body?: string }
+export interface TFillHtmlTemplateArgs {
+  title?: string,
+  body?: string
+}
 
 export const fillHtmlTemplate = (args: TFillHtmlTemplateArgs): string => {
   let text = htmlTemplate;
@@ -149,4 +155,65 @@ export const fillHtmlTemplate = (args: TFillHtmlTemplateArgs): string => {
 export const jsonToHtml = (json: any): string => {
   const prettyPrintJsonOptions: FormatOptions = { linkUrls: true, indent: 2 };
   return `<pre>${prettyPrintJson.toHtml(json, prettyPrintJsonOptions)}\n</pre>`;
+};
+
+const rSpace = (str: string, strLength: number) => {
+  str = removeHTML(String(str || ''));
+  if (str.length < strLength) {
+    return ' '.repeat(Math.min(Math.max(0, strLength - str.length), 10000));
+  }
+  return '';
+};
+
+export const alertEmailDetails = (options: { detailsArray: TAlertEmailDetails, indent?: string, prefix?: string }): string => {
+  const { detailsArray, indent = '', prefix = '' } = options;
+  const padLen = Math.max(...detailsArray.map(([label]) => removeHTML(label).length)) + 2;
+  return detailsArray.map(([label, text]) => indent + prefix + label + rSpace(label, padLen) + text).join('\n');
+};
+
+const utc$ = (millis?: number): DateTime => DateTime.fromMillis(millis == null ? Date.now() : millis).setZone('UTC');
+
+const millisTo = {
+  human: {
+    utc: {
+      // 2022-05-15 16:56:42 UTC
+      z: (millis?: number): string => utc$(millis).toFormat('yyyy-MM-dd HH:mm:ss z'),
+    },
+  },
+};
+
+export const alertEmailHeader = (args: { alert: TAlert, wrapPre?: boolean, indent?: string, prefix?: string }): string => {
+  const { alert, wrapPre = false, indent = '', prefix = '# ' } = args;
+  const { eventName } = alert;
+  const detailsArray: TAlertEmailDetails = [[millisTo.human.utc.z(alert.ts), `Event: [${eventName}]`]];
+  const header = alertEmailDetails({ detailsArray, indent, prefix });
+  return wrapPre ? `<pre>${header}</pre>` : header;
+};
+
+const THIS_HOST_NAME = os.hostname();
+const COMMON_LINK_PART = `/alerts?clue=1,100,ts,1$f:ts=null;createdAt=null;tsFrom=null;tsTo=null`;
+const getTypedAlertsLink = (linkBase: string, alertTypeId: number) => `${linkBase}${COMMON_LINK_PART};alertTypeId=${alertTypeId}`;
+const getCertainAlertsLink = (linkBase: string, alertGUID: string) => `${linkBase}${COMMON_LINK_PART};guid=${alertGUID}`;
+
+export const alertEmailFooter = (args: {
+  alert: TAlert,
+  wrapPre?: boolean,
+  indent?: string,
+  prefix?: string,
+  linkBase?: string,
+}): string => {
+  const { alert, wrapPre = false, indent = '', prefix = '# ', linkBase } = args;
+  const { hashTags = [], guid, alertTypeId = 0 } = alert;
+
+  const detailsArray: TAlertEmailDetails = [];
+  if (linkBase) {
+    detailsArray.push(['Signal URL', getCertainAlertsLink(linkBase, guid)]);
+  }
+  detailsArray.push(['Service host', THIS_HOST_NAME], ...hashTags.map((tag) => [tag, '']) as TAlertEmailDetails);
+  if (linkBase) {
+    detailsArray.push([`Alerts of type`, getTypedAlertsLink(linkBase, alertTypeId)]);
+  }
+
+  const footer = alertEmailDetails({ detailsArray, indent, prefix });
+  return wrapPre ? `<pre>${footer}</pre>` : footer;
 };

@@ -3,7 +3,7 @@ import * as cron from 'cron';
 import EventEmitter from 'events';
 import { IAlertEmailSettings, TAlert, TAlertSentFlags, TMergeResult } from './i-alert';
 import { AlertsStat, getAlertsStat } from './AlertsStat';
-import { fillHtmlTemplate, fillSubjectTemplate, removeHTML } from './utils/utils';
+import { alertEmailFooter, alertEmailHeader, fillHtmlTemplate, fillSubjectTemplate, jsonToHtml, removeHTML } from './utils/utils';
 import { DEPRECATED_SEND_ALERTS_BY_EMAIL, EMAIL_SEND_RULE, EMailSendRule } from './constants';
 import { IThrottleExOptions, throttleEx } from '../utils/throttle-ex';
 import { getSendMail, ISendAlertArgs } from './utils/email-service';
@@ -50,6 +50,9 @@ interface IAlertsBufferConstructorOptions {
   mergeAlertsActions: (guids: string[], operationIds: number[]) => Promise<void>
 
   emailSettings: IAlertEmailSettings,
+
+  // Базовая часть ссылок на сигналы в стандартных письмах
+  linkBase?: string,
 }
 
 /**
@@ -161,9 +164,23 @@ export class AlertsBuffer {
   }
 
   async sendOneAlertToEmail (alert: TAlert): Promise<{ to: string, info?: any, error?: any }[] | null> {
-    const { logger } = this.options;
+    const { logger, linkBase } = this.options;
     const { guid, eventName } = alert;
-    const { recipients, subjectTemplate, htmlBody } = await alert.getEmail();
+    const getEmailResult = await alert.getEmail();
+    const { recipients } = getEmailResult;
+    let { subjectTemplate, htmlBody } = getEmailResult;
+    if (!subjectTemplate) {
+      // заголовок письма по умолчанию
+      subjectTemplate = `Alert [{eventName}]`;
+    }
+
+    if (!htmlBody) {
+      // Тело письма по умолчанию - весь сигнал в виде форматированного json
+      htmlBody = alertEmailHeader({ alert, wrapPre: true })
+        + jsonToHtml(alert)
+        + alertEmailFooter({ alert, wrapPre: true, linkBase });
+    }
+
     const { subjectPrefix = '' } = this.options.emailSettings;
     const text = removeHTML(htmlBody);
     try {
@@ -370,7 +387,8 @@ export class AlertsBuffer {
       const { guid } = alert;
       const prefix = this.sentAlertsFlags.has(guid) ? `${yellow}UPDATE ` : `${red}${bg.yellow}`;
       const text = `${prefix}ALERT${rs}: ${lBlue}${alert.eventName}${rs} ${magenta}[${guid}]${rs}`;
-      this.options.echo(`${text}: ${alert.getDebugMessage()}`);
+      const msg = typeof alert.getDebugMessage === 'function' ? alert.getDebugMessage() : '';
+      this.options.echo(`${text}${msg ? `: ${msg}` : ''}`);
     }
   }
 
