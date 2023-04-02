@@ -1,5 +1,5 @@
 import { FormatOptions, prettyPrintJson } from 'pretty-print-json';
-import os from 'os';
+import * as os from 'os';
 import { DateTime } from 'luxon';
 import { TAlert, TAlertEmailDetails } from '../i-alert';
 
