@@ -155,11 +155,11 @@ export class AlertsBuffer {
       }
       this.buffer[guid].updatesCount++;
     }
+    // Для срабатывания необходимо включить режим отладки fa:alert. Печать диагностики необходимо вызвать до установки флагов отправки.
+    this.printDebugMessage(alert);
+
     // Сбрасываем флаг сохранения в БД, чтобы сигнал смог обновить собой существующий в БД сигнал
     this.markAlertAsSavedToDb(alert, false);
-
-    // Для срабатывания необходимо включить режим отладки fa:alert
-    this.printDebugMessage(alert);
     return alert;
   }
 
