@@ -11,7 +11,7 @@ import { getTimeParamFromMillis } from '../../utils/utils';
 
 const debug = Debug('KeyedTimeWindow');
 
-export interface IKeyedTimeWindowOptions<T> {
+export interface IKeyedTimeWindowOptions<T, S = any> {
   /**
    * Отличительное имя окна для логирования
    */
@@ -36,23 +36,23 @@ export interface IKeyedTimeWindowOptions<T> {
    */
   removeEmptyIntervalMillis?: number,
   /**
+   * Кастомная функция для инициализации статистики ключеванных окон.
+   */
+  initStat?: (_timeWindow: TimeWindow<T, S>) => void,
+  /**
    * Опциональная функция для записи статистики при добавлении(удалении) событий в ключеванное окно.
    * Если передана, то подменит собой метод NumberWindow.setStat()
    */
-  setStat?: (_setStatOptions: ITimeWindowSetStatOptions<T>) => void,
+  setStat?: (_setStatOptions: ITimeWindowSetStatOptions<T, S>) => void,
   /**
    * Кастомная функция для получения статистики. Она подменит метод окна NumberWindow.getStat()
    * Если не передана, то метод this.getStatByKey() будет возвращать свойство окна NumberWindow.stat
    */
-  getStat?: (_timeWindow: TimeWindow<T>) => any,
-  /**
-   * Кастомная функция для инициализации статистики ключеванных окон.
-   */
-  initStat?: (_timeWindow: TimeWindow<T>) => void,
+  getStat?: (_timeWindow: TimeWindow<T, S>) => any,
 }
 
-export interface IKeyedTimeWindowHash<T> {
-  [key: string]: TimeWindow<T>
+export interface IKeyedTimeWindowHash<T, S = any> {
+  [key: string]: TimeWindow<T, S>
 }
 
 export interface IKeyedTimeWindowInfo {
@@ -72,8 +72,8 @@ export interface IKeyedTimeWindowInfo {
  * Пример использования: для создания множества временных окон в разрезе пользователей (ключ - guid пользователя)
  * для отслеживания его сделок (и сбора статистики по ним) в пределах заданного интервала времени.
  */
-export class KeyedTimeWindow<T> {
-  public hash: IKeyedTimeWindowHash<T> = {};
+export class KeyedTimeWindow<T, S = any> {
+  public hash: IKeyedTimeWindowHash<T, S> = {};
 
   public widthMillis: number;
 
@@ -81,7 +81,7 @@ export class KeyedTimeWindow<T> {
 
   _collectGarbageTimer: any;
 
-  constructor (public options: IKeyedTimeWindowOptions<T>) {
+  constructor (public options: IKeyedTimeWindowOptions<T, S>) {
     this.widthMillis = options.widthMillis;
     this.setRemoveExpiredEventsTimer(options.removeExpiredIntervalMillis);
   }
@@ -119,7 +119,7 @@ export class KeyedTimeWindow<T> {
     const item: ITimeWindowItem<T> = { ts, data };
     let timeWindow = hash[key];
     if (!timeWindow) {
-      hash[key] = new TimeWindow<T>({
+      hash[key] = new TimeWindow<T, S>({
         winName: `TW/${this.options.winName}/${key}`,
         widthMillis,
         getStat: this.options.getStat,
@@ -176,7 +176,7 @@ export class KeyedTimeWindow<T> {
   /**
    * Возвращает временное окно по ключу.
    */
-  getWindowByKey (key: string | number): TimeWindow<T> | undefined {
+  getWindowByKey (key: string | number): TimeWindow<T, S> | undefined {
     return this.hash[key];
   }
 

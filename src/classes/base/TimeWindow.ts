@@ -16,14 +16,14 @@ export interface ITimeWindowItem<T> {
   data?: T,
 }
 
-export interface ITimeWindowSetStatOptions<T> {
-  timeWindow: TimeWindow<T>,
+export interface ITimeWindowSetStatOptions<T, S> {
+  timeWindow: TimeWindow<T, S>,
   winInsertType: EWinInsertType,
   added?: ITimeWindowItem<T>,
   removed?: ITimeWindowItem<T>[],
 }
 
-export interface ITimeWindowConstructorOptions<T> {
+export interface ITimeWindowConstructorOptions<T, S = any> {
   /**
    * Отличительное имя окна для логирования
    */
@@ -45,17 +45,17 @@ export interface ITimeWindowConstructorOptions<T> {
   /**
    * Кастомная функция для инициализации статистики.
    */
-  initStat?: (_timeWindow: TimeWindow<T>) => void,
+  initStat?: (_timeWindow: TimeWindow<T, S>) => void,
   /**
    * Опциональная функция для записи статистики при добавлении(удалении) событий в окно.
    * Если передана, то подменит собой метод this.setStat()
    */
-  setStat?: (_setStatOptions: ITimeWindowSetStatOptions<T>) => void,
+  setStat?: (_setStatOptions: ITimeWindowSetStatOptions<T, S>) => void,
   /**
    * Кастомная функция для получения статистики. Она подменит метод окна this.getStat()
    * Если не передана, то метод this.getStat() будет возвращать свойство окна stat
    */
-  getStat?: (_timeWindow: TimeWindow<T>) => any,
+  getStat?: (_timeWindow: TimeWindow<T, S>) => any,
   /**
    * Первое событие, которое можно передать в момент создания экземпляра класса.
    * Это может быть удобно, когда окна создаются по мере поступления событий определенного класса.
@@ -73,7 +73,7 @@ export interface ITimeWindowConstructorOptions<T> {
  * вызывается либо периодически, через заданный интервал "this.removeExpiredIntervalMillis",
  * либо при каждом новом событии (если this.removeExpiredIntervalMillis не задан)
  */
-export class TimeWindow<T> {
+export class TimeWindow<T, S = any> {
   /**
    * Собственно - ОКНО - упорядоченный по времени массив событий
    */
@@ -111,33 +111,38 @@ export class TimeWindow<T> {
    * Место хранения статистики. Заполнение этого свойства должно быть описано самостоятельно, в функции setStat,
    * передаваемой в опциях при создании экземпляра класса
    */
-  public stat: any;
+  public stat: S;
 
   /**
    * Метод класса, заполняющий статистику. По умолчанию не делает ничего. Но если при создании экземпляра класса
    * в опциях передано свойство setStat (функция), оно замещает метод класса и управление заполнением статистики
    * передается этой кастомной функции.
    */
-  public setStat: (_arg: ITimeWindowSetStatOptions<T>) => void;
+  public setStat: (_arg: ITimeWindowSetStatOptions<T, S>) => void;
 
   /**
    * Метод класса, возвращающий статистику. По умолчанию возвращает свойство класса this.stat.
    * Но если при создании экземпляра класса в опциях передано свойство getStat (функция),
    * оно замещает метод класса this.getStat и управление передается этой кастомной функции.
    */
-  public getStat: (_arg?: TimeWindow<T>) => any;
+  public getStat: (_arg?: TimeWindow<T, S>) => any;
 
   _removeExpiredTimer: any;
 
-  constructor (public options: ITimeWindowConstructorOptions<T>) {
-    const { widthMillis, virtualTimeObj, getStat, setStat, item, removeExpiredIntervalMillis = 0 } = options;
+  constructor (public options: ITimeWindowConstructorOptions<T, S>) {
+    const { widthMillis, virtualTimeObj, getStat, item, removeExpiredIntervalMillis = 0 } = options;
     this.widthMillis = widthMillis;
     this.removeExpiredOnEveryEvents = !(virtualTimeObj && removeExpiredIntervalMillis);
-    this.setStat = setStat || (() => null);
-    this.getStat = getStat ? () => getStat(this) : () => this.stat;
+
+    // ----------------- stat ------------------
+    this.stat = undefined as unknown as S;
     if (typeof options.initStat === 'function') {
       options.initStat(this);
     }
+    this.setStat = options.setStat || (() => null);
+    this.getStat = getStat ? () => getStat(this) : () => this.stat;
+    // ------------------------------------------
+
     if (item) {
       this.add(item);
     }
@@ -267,7 +272,7 @@ export class TimeWindow<T> {
     this._removeExpiredTimer = undefined;
     // @ts-ignore
     this.win = undefined;
-    this.stat = undefined;
+    this.stat = undefined as unknown as S;
     // @ts-ignore
     this.setStat = undefined;
     // @ts-ignore
