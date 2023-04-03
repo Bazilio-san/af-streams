@@ -16,7 +16,7 @@ export interface ITimeWindowItem<T> {
   data?: T,
 }
 
-export interface ITimeWindowSetStatOptions<T, S> {
+export interface ITimeWindowSetStatOptions<T, S = any> {
   timeWindow: TimeWindow<T, S>,
   winInsertType: EWinInsertType,
   added?: ITimeWindowItem<T>,
