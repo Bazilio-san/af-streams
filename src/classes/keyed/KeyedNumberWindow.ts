@@ -98,7 +98,8 @@ export class KeyedNumberWindow<T> {
     if (!numberWindow) {
       const { setStat, getStat } = this.options;
       hash[key] = new NumberWindow<T>({
-        winName: `NW/${this.options.winName}/${key}`,
+        winName: `${this.options.winName}/NW`,
+        key,
         width: this.width,
         setStat,
         getStat,

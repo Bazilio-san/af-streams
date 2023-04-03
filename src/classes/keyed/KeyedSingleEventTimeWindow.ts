@@ -82,7 +82,8 @@ export class KeyedSingleEventTimeWindow<T, S = any> {
     if (!timeWindow) {
       hash[key] = new SingleEventTimeWindow({
         ...this._windowOptionsTemplate,
-        winName: `SETW/${this.options.winName}/${key}`,
+        winName: `${this.options.winName}/SETW`,
+        key,
       });
       timeWindow = hash[key];
       noChangeTs = false;

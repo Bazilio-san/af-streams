@@ -21,6 +21,10 @@ export interface INumberWindowConstructorOptions<T> {
    */
   winName: string,
   /**
+   * Ключ окна, когда оно используется в объекте KeyedTimeWindow
+   */
+  key?: string | number,
+  /**
    * Ширина окна: максимальное количество элементов в окне
    */
   width: number,
@@ -80,6 +84,8 @@ export class NumberWindow<T> {
 
   constructor (options: INumberWindowConstructorOptions<T>) {
     const { width, setStat, getStat, item } = options;
+    options.winName = options.winName || '?';
+    options.key = options.key || '?';
     this.width = width;
     this.setStat = setStat || (() => null);
     this.getStat = getStat ? () => getStat(this) : () => this.stat;

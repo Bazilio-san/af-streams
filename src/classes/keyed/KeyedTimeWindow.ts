@@ -52,7 +52,7 @@ export interface IKeyedTimeWindowOptions<T, S = any> {
 }
 
 export interface IKeyedTimeWindowHash<T, S = any> {
-  [key: string]: TimeWindow<T, S>
+  [key: string | number]: TimeWindow<T, S>
 }
 
 export interface IKeyedTimeWindowInfo {
@@ -120,7 +120,8 @@ export class KeyedTimeWindow<T, S = any> {
     let timeWindow = hash[key];
     if (!timeWindow) {
       hash[key] = new TimeWindow<T, S>({
-        winName: `TW/${this.options.winName}/${key}`,
+        winName: `${this.options.winName}/TW`,
+        key,
         widthMillis,
         getStat: this.options.getStat,
         setStat: this.options.setStat,

@@ -29,6 +29,10 @@ export interface ITimeWindowConstructorOptions<T, S = any> {
    */
   winName: string,
   /**
+   * Ключ окна, когда оно используется в объекте KeyedTimeWindow
+   */
+  key?: string | number,
+  /**
    * Ширина окна, мс
    */
   widthMillis: number,
@@ -134,6 +138,9 @@ export class TimeWindow<T, S = any> {
     this.widthMillis = widthMillis;
     this.removeExpiredOnEveryEvents = !(virtualTimeObj && removeExpiredIntervalMillis);
 
+    options.winName = options.winName || '?';
+    options.key = options.key || '?';
+
     // ----------------- stat ------------------
     this.stat = undefined as unknown as S;
     if (typeof options.initStat === 'function') {
@@ -154,7 +161,7 @@ export class TimeWindow<T, S = any> {
         const removedCount = self.removeExpired((virtualTimeObj as VirtualTimeObj).virtualTs).length;
         if (debug.enabled && removedCount) {
           echoSimple(`${m}Удалено ${lBlue}${removedCount}${m
-          } устаревших событий из окна [TimeWindow] winName: ${this.options.winName} 🕒 ${Date.now() - st} ms`);
+          } устаревших событий из окна [TimeWindow] winName: ${this.options.winName} / key: ${this.options.key}  🕒 ${Date.now() - st} ms`);
         }
       }, removeExpiredIntervalMillis);
     }

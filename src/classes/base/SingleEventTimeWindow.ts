@@ -17,9 +17,13 @@ export interface ISingleEventTimeWindowSetStatOptions<T, S> {
 
 export interface ISingleEventTimeWindowConstructorOptions<T, S = any> {
   /**
-   * Отличительное имя окна для логирования
+   * Имя окна для логирования
    */
   winName: string,
+  /**
+   * Ключ окна, когда оно используется в объекте KeyedSingleEventTimeWindow
+   */
+  key?: string | number,
   /**
    * Ширина окна, мс
    */
@@ -71,11 +75,6 @@ export interface ISingleEventTimeWindowConstructorOptions<T, S = any> {
  * - либо контролируется вышестоящим объектом (если this.removeExpiredIntervalMillis = undefined)
  */
 export class SingleEventTimeWindow<T, S = any> {
-  /**
-   * Отличительное имя окна для логирования
-   */
-  public winName: string = '';
-
   /**
    * Ширина окна, мс
    */
@@ -136,7 +135,8 @@ export class SingleEventTimeWindow<T, S = any> {
   constructor (public options: ISingleEventTimeWindowConstructorOptions<T, S>) {
     const { virtualTimeObj, getStat } = options;
     const self = this;
-    this.winName = options.winName || '';
+    options.winName = options.winName || '?';
+    options.key = options.key || '?';
     this.widthMillis = options.widthMillis;
 
     // ----------------- stat ------------------
@@ -185,7 +185,8 @@ export class SingleEventTimeWindow<T, S = any> {
     if (item && item.ts < expireTs) {
       this.item = undefined;
       if (debug.enabled && this.options.removeExpiredIntervalMillis !== undefined) {
-        echoSimple(`${m}Удалено устаревшее событие из окна [SingleEventTimeWindow] winName: ${this.winName} / -> ${toUTC(this.inputTs)} - ${toUTC(this.lastTs)} ->`);
+        echoSimple(`${m}Удалено устаревшее событие из окна [SingleEventTimeWindow] winName: ${this.options.winName
+        } / key: ${this.options.key} / -> ${toUTC(this.inputTs)} - ${toUTC(this.lastTs)} ->`);
       }
       this.setStat({ singleEventTimeWindow: this, removed: item });
       return item;
