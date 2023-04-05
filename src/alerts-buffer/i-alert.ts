@@ -6,6 +6,12 @@ export interface TAlertTableRecord {
   alertTypeId: number,
   // время возникновения сигнала
   ts: number,
+
+  state?: number,
+  operatorActions?: string,
+  checkDate?: number | Date,
+  operatorId?: number,
+
   // Сведения о событии
   info_json?: any,
   // Время последнего обновления записи
