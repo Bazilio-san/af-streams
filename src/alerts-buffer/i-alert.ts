@@ -8,9 +8,9 @@ export interface TAlertTableRecord {
   ts: number,
 
   state?: number,
-  operatorActions?: string,
-  checkDate?: number | Date,
-  operatorId?: number,
+  actionsOnSignal?: string,
+  stateChangedAt?: number | Date,
+  stateChangedBy?: number,
 
   // Сведения о событии
   info_json?: any,
