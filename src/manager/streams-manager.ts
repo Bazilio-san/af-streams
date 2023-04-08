@@ -435,27 +435,27 @@ export class StreamsManager {
       socket.emit('time-stat', data);
     });
 
-    socket.on('pause', (...args) => {
+    socket.on('sm-pause', (...args) => {
       this.pause();
       socket.applyFn(args, true);
     });
 
-    socket.on('resume', (...args) => {
+    socket.on('sm-resume', (...args) => {
       this.resume();
       socket.applyFn(args, true);
     });
 
-    socket.on('stop', (...args) => {
+    socket.on('sm-stop', (...args) => {
       this.stop();
       socket.applyFn(args, true);
     });
 
-    socket.on('start', async (...args) => {
+    socket.on('sm-start', async (...args) => {
       await this.start();
       socket.applyFn(args, true);
     });
 
-    socket.on('restart', async (...args) => {
+    socket.on('sm-restart', async (...args) => {
       await this.restart();
       socket.applyFn(args, true);
     });
