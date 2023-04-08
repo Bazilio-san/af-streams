@@ -4,7 +4,7 @@ import EventEmitter from 'events';
 import { IAlertEmailSettings, TAlert, TAlertSentFlags, TMergeResult } from './i-alert';
 import { AlertsStat, getAlertsStat } from './AlertsStat';
 import { alertEmailFooter, alertEmailHeader, fillHtmlTemplate, fillSubjectTemplate, jsonToHtml, removeHTML } from './utils/utils';
-import { DEPRECATED_SEND_ALERTS_BY_EMAIL, EMAIL_SEND_RULE, EMailSendRule } from './constants';
+import { isDeprecatedSendAlertsByEmail, getEmailSendRule, EMailSendRule } from './constants';
 import { IThrottleExOptions, throttleEx } from '../utils/throttle-ex';
 import { getSendMail, ISendAlertArgs } from './utils/email-service';
 import * as color from '../utils/color';
@@ -217,7 +217,7 @@ export class AlertsBuffer {
    * Фильтрация сигналов, по признаку возможности отправки по Email
    */
   async filterAlertsAllowedSendByEmail (alerts: TAlert[]): Promise<TAlert[]> {
-    if (DEPRECATED_SEND_ALERTS_BY_EMAIL) {
+    if (isDeprecatedSendAlertsByEmail()) {
       return [];
     }
 
@@ -236,7 +236,7 @@ export class AlertsBuffer {
         if (DEBUG_ALERTS_BUFFER) {
           echo.debug(`${skipMsg}: already sent to DB`);
         }
-      } else if (EMAIL_SEND_RULE !== EMailSendRule.FORCE && await this.options.checkAlertExists(guid)) {
+      } else if (getEmailSendRule() !== EMailSendRule.FORCE && await this.options.checkAlertExists(guid)) {
         if (DEBUG_ALERTS_BUFFER) {
           echo.debug(`${skipMsg}: already present in DB`);
         }

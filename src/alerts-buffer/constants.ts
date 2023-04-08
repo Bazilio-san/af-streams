@@ -5,13 +5,16 @@ export enum EMailSendRule {
   FORCE = 'FORCE'
 }
 
+const data = { emailSendRule: EMailSendRule.IF_ALERT_NOT_EXISTS };
+
 // Через переменную окружения EMAIL_SEND_RULE Можно управлять правилом отправки
-let emailSendRule = process.env.EMAIL_SEND_RULE;
-if (!Object.values(EMailSendRule).includes(emailSendRule as EMailSendRule)) {
-  emailSendRule = EMailSendRule.IF_ALERT_NOT_EXISTS;
-}
+export const readEmailSendRule = () => {
+  const rule = process.env.EMAIL_SEND_RULE as EMailSendRule;
+  data.emailSendRule = Object.values(EMailSendRule).includes(rule)
+    ? rule
+    : EMailSendRule.IF_ALERT_NOT_EXISTS;
+};
 
-export const EMAIL_SEND_RULE = emailSendRule;
+export const getEmailSendRule = () => data.emailSendRule;
 
-// Эта константа позволяет на ранней стадии отсечь отправку сигнала в буфер и сэкономить память
-export const DEPRECATED_SEND_ALERTS_BY_EMAIL = EMAIL_SEND_RULE === EMailSendRule.BLOCK;
+export const isDeprecatedSendAlertsByEmail = () => data.emailSendRule === EMailSendRule.BLOCK;

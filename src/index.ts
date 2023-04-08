@@ -110,7 +110,7 @@ export {
   TMergeResult,
 } from './alerts-buffer/i-alert';
 
-export { EMailSendRule, DEPRECATED_SEND_ALERTS_BY_EMAIL, EMAIL_SEND_RULE } from './alerts-buffer/constants';
+export { EMailSendRule, isDeprecatedSendAlertsByEmail, getEmailSendRule, readEmailSendRule } from './alerts-buffer/constants';
 
 export { AlertsStat, IStatTT, IStatTTtiu, TIU, getAlertsStat } from './alerts-buffer/AlertsStat';
 

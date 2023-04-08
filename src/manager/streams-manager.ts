@@ -14,6 +14,8 @@ import { IRectifierOptions, Rectifier } from '../classes/applied/Rectifier';
 import localEventEmitter from '../ee-scoped';
 import { AlertsBuffer } from '../alerts-buffer/AlertsBuffer';
 import { IAlertEmailSettings, TAlert, TMergeResult } from '../alerts-buffer/i-alert';
+import { toUTC_ } from '../utils/date-utils';
+import { getEmailSendRule } from '../alerts-buffer/constants';
 
 const findLast = require('array.prototype.findlast');
 
@@ -315,6 +317,16 @@ export class StreamsManager {
     // @ts-ignore
     delete virtualTimeConfig.commonConfig;
     return { virtualTimeConfig, streamConfigs };
+  }
+
+  getConfigsParams (): { [paramName: string]: string | number | boolean | undefined } {
+    const virtualTimeConfig = this.virtualTimeObj.options;
+    return {
+      streamStartTime: toUTC_(virtualTimeConfig.startTimeMillis),
+      useStartTimeFromRedis: virtualTimeConfig.useStartTimeFromRedisCache,
+      speed: this.virtualTimeObj.speed,
+      emailSendRule: getEmailSendRule(),
+    };
   }
 
   pause () {
