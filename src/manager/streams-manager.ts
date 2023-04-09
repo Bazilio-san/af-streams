@@ -15,7 +15,7 @@ import localEventEmitter from '../ee-scoped';
 import { AlertsBuffer } from '../alerts-buffer/AlertsBuffer';
 import { IAlertEmailSettings, TAlert, TMergeResult } from '../alerts-buffer/i-alert';
 import { toUTC_ } from '../utils/date-utils';
-import { getEmailSendRule, readEmailSendRule, readFlagSaveHistoricalAlerts } from '../alerts-buffer/constants';
+import { canSaveHistoricalAlerts, getEmailSendRule, readEmailSendRule, readFlagSaveHistoricalAlerts } from '../alerts-buffer/constants';
 
 const findLast = require('array.prototype.findlast');
 
@@ -331,6 +331,7 @@ export class StreamsManager {
       streamStartTime: toUTC_(virtualTimeConfig.startTimeMillis),
       speed: this.virtualTimeObj.speed,
       emailSendRule: getEmailSendRule(),
+      saveHistoryAlerts: canSaveHistoricalAlerts(),
     };
   }
 
