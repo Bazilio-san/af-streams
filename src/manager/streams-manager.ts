@@ -334,7 +334,7 @@ export class StreamsManager {
     };
   }
 
-  pause () {
+  suspend () {
     this._locked = true;
     this.stopIoStatistics();
     this.streams.forEach((stream) => {
@@ -342,7 +342,7 @@ export class StreamsManager {
     });
   }
 
-  resume () {
+  continue () {
     this.streams.forEach((stream) => {
       stream.unLock(true);
     });
@@ -440,13 +440,13 @@ export class StreamsManager {
       socket.emit('time-stat', data);
     });
 
-    socket.on('sm-pause', (...args) => {
-      this.pause();
+    socket.on('sm-suspend', (...args) => {
+      this.suspend();
       socket.applyFn(args, this._locked);
     });
 
-    socket.on('sm-resume', (...args) => {
-      this.resume();
+    socket.on('sm-continue', (...args) => {
+      this.continue();
       socket.applyFn(args, this._locked);
     });
 
