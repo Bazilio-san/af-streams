@@ -265,8 +265,13 @@ export class StreamsManager {
   }
 
   changeStreamsParams (data: any) {
-    const { params } = data;
-    if (!params || typeof params !== 'object') {
+    const { params, env } = data || {};
+    if (typeof env === 'object') {
+      Object.entries(env).forEach(([envName, envValue]) => {
+        process.env[envName] = String(envValue);
+      });
+    }
+    if (typeof params !== 'object') {
       return;
     }
     const { virtualTimeObj } = this;
@@ -462,9 +467,17 @@ export class StreamsManager {
 
     socket.on('change-streams-params', (data, ...args) => {
       this.changeStreamsParams(data);
-      const actualConfigs = this.getConfigs();
-      if (!socket.applyFn(args, { actualConfigs })) {
-        socket.emit('actual-streams-configs', { actualConfigs });
+      const { env } = data || {};
+      const result: any = {};
+      if (typeof env === 'object') {
+        result.env = {};
+        Object.entries(env).forEach(([envName]) => {
+          result.env[envName] = process.env[envName];
+        });
+      }
+      result.actualConfigs = this.getConfigs();
+      if (!socket.applyFn(args, result)) {
+        socket.emit('actual-streams-configs', result);
       }
     });
   }
