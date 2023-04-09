@@ -114,8 +114,7 @@ export {
   EMailSendRule,
   isDeprecatedSendAlertsByEmail,
   getEmailSendRule,
-  readEmailSendRule,
-  readFlagSaveHistoricalAlerts,
+  reloadStreamsEnv,
   canSaveHistoricalAlerts,
 } from './alerts-buffer/constants';
 
