@@ -15,7 +15,7 @@ import localEventEmitter from '../ee-scoped';
 import { AlertsBuffer } from '../alerts-buffer/AlertsBuffer';
 import { IAlertEmailSettings, TAlert, TMergeResult } from '../alerts-buffer/i-alert';
 import { toUTC_ } from '../utils/date-utils';
-import { getEmailSendRule } from '../alerts-buffer/constants';
+import { getEmailSendRule, readEmailSendRule, readFlagSaveHistoricalAlerts } from '../alerts-buffer/constants';
 
 const findLast = require('array.prototype.findlast');
 
@@ -359,6 +359,8 @@ export class StreamsManager {
   }
 
   async start (): Promise<Stream[]> {
+    readEmailSendRule();
+    readFlagSaveHistoricalAlerts();
     const streams = await Promise.all(this.streams.map((stream) => stream.start()));
     this._locked = false;
     this.startIoStatistics();

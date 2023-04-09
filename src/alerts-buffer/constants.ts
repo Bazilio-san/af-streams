@@ -5,7 +5,10 @@ export enum EMailSendRule {
   FORCE = 'FORCE'
 }
 
-const data = { emailSendRule: EMailSendRule.IF_ALERT_NOT_EXISTS };
+const data = {
+  emailSendRule: EMailSendRule.IF_ALERT_NOT_EXISTS,
+  canSaveHistoricalAlerts: true,
+};
 
 // Через переменную окружения EMAIL_SEND_RULE Можно управлять правилом отправки
 export const readEmailSendRule = () => {
@@ -14,7 +17,16 @@ export const readEmailSendRule = () => {
     ? rule
     : EMailSendRule.IF_ALERT_NOT_EXISTS;
 };
+readEmailSendRule();
 
 export const getEmailSendRule = () => data.emailSendRule;
 
 export const isDeprecatedSendAlertsByEmail = () => data.emailSendRule === EMailSendRule.BLOCK;
+
+const getBool = (v: any): boolean => /^(true|1|yes)$/i.test(String(v));
+
+export const readFlagSaveHistoricalAlerts = () => {
+  data.canSaveHistoricalAlerts = !getBool(process.env.NO_SAVE_HISTORY_ALERTS);
+};
+readFlagSaveHistoricalAlerts();
+export const canSaveHistoricalAlerts = () => data.canSaveHistoricalAlerts;

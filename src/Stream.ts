@@ -121,7 +121,7 @@ export class Stream {
     this.isPrepareEventAsync = this.prepareEvent.constructor.name === 'AsyncFunction';
 
     this.sender = {} as ISender;
-    this.db = {} as DbMsSql | DbPostgres;
+    this.db = null as unknown as DbMsSql | DbPostgres;
     this.lastRecordTs = 0;
     this.nextStartTs = 0;
 
@@ -269,7 +269,7 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
 
     commonConfig.echo(`${g}${'='.repeat(64)}`);
 
-    if (!commonConfig.skipInitDbConnection) {
+    if (!commonConfig.skipInitDbConnection && !this.db) {
       this.db = await getDb({ commonConfig, streamConfig });
     }
     this.initialized = true;
@@ -748,5 +748,6 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     clearTimeout(this._sendTimer);
     clearTimeout(this._printTimer);
     this.stat = getInitStat();
+    this.initialized = false;
   }
 }
