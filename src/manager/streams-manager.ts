@@ -9,13 +9,12 @@ import {
   ICommonConfig, IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion, IOFnArgs, ISenderConfig, IStartTimeConfig, IStreamConfig, IVirtualTimeConfig, TEventRecord,
 } from '../interfaces';
 import { cloneDeep, intEnv } from '../utils/utils';
-import { DEFAULTS, STREAM_ID_FIELD } from '../constants';
+import { DEFAULTS, STREAMS_ENV, reloadStreamsEnv, STREAM_ID_FIELD } from '../constants';
 import { IRectifierOptions, Rectifier } from '../classes/applied/Rectifier';
 import localEventEmitter from '../ee-scoped';
 import { AlertsBuffer } from '../alerts-buffer/AlertsBuffer';
 import { IAlertEmailSettings, TAlert, TMergeResult } from '../alerts-buffer/i-alert';
 import { toUTC_ } from '../utils/date-utils';
-import { canSaveHistoricalAlerts, getEmailSendRule, reloadStreamsEnv } from '../alerts-buffer/constants';
 
 const findLast = require('array.prototype.findlast');
 
@@ -330,8 +329,8 @@ export class StreamsManager {
       startFromLastStop: virtualTimeConfig.useStartTimeFromRedisCache,
       streamStartTime: toUTC_(virtualTimeConfig.startTimeMillis),
       speed: this.virtualTimeObj.speed,
-      emailSendRule: getEmailSendRule(),
-      saveHistoryAlerts: canSaveHistoricalAlerts(),
+      emailSendRule: STREAMS_ENV.EMAIL_SEND_RULE,
+      saveHistoryAlerts: !STREAMS_ENV.NO_SAVE_HISTORY_ALERTS,
     };
   }
 

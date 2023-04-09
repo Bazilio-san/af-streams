@@ -4,14 +4,13 @@ import EventEmitter from 'events';
 import { IAlertEmailSettings, TAlert, TAlertSentFlags, TMergeResult } from './i-alert';
 import { AlertsStat, getAlertsStat } from './AlertsStat';
 import { alertEmailFooter, alertEmailHeader, fillHtmlTemplate, fillSubjectTemplate, jsonToHtml, removeHTML } from './utils/utils';
-import { isDeprecatedSendAlertsByEmail, getEmailSendRule, EMailSendRule } from './constants';
 import { IThrottleExOptions, throttleEx } from '../utils/throttle-ex';
 import { getSendMail, ISendAlertArgs } from './utils/email-service';
 import * as color from '../utils/color';
 import { intEnv } from '../utils/utils';
 import { IKeyedSingleEventTimeWindowConstructorOptions, KeyedSingleEventTimeWindow } from '../classes/keyed/KeyedSingleEventTimeWindow';
 import { VirtualTimeObj } from '../VirtualTimeObj';
-import { DEBUG_ALERTS_BUFFER } from '../constants';
+import { DEBUG_ALERTS_BUFFER, EMailSendRule, STREAMS_ENV, isDeprecatedSendAlertsByEmail } from '../constants';
 import { IEcho, ILoggerEx } from '../interfaces';
 
 const MILLIS_IN_HOUR = 3_600_000;
@@ -236,7 +235,7 @@ export class AlertsBuffer {
         if (DEBUG_ALERTS_BUFFER) {
           echo.debug(`${skipMsg}: already sent to DB`);
         }
-      } else if (getEmailSendRule() !== EMailSendRule.FORCE && await this.options.checkAlertExists(guid)) {
+      } else if (STREAMS_ENV.EMAIL_SEND_RULE !== EMailSendRule.FORCE && await this.options.checkAlertExists(guid)) {
         if (DEBUG_ALERTS_BUFFER) {
           echo.debug(`${skipMsg}: already present in DB`);
         }

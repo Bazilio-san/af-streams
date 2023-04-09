@@ -31,6 +31,28 @@ export const DEBUG_ALERTS_BUFFER = isTotalStreamDebug || /\baf-streams:alerts-bu
 
 const getBool = (v: any): boolean => /^(true|1|yes)$/i.test(String(v));
 
-export const PRINT_EVERY_REMOVED_ITEM_FROM_KEYED_SINGLE_EVENT_TIME_WINDOW = getBool(
-  process.env.PRINT_EVERY_REMOVED_ITEM_FROM_KEYED_SINGLE_EVENT_TIME_WINDOW,
-);
+// eslint-disable-next-line no-shadow
+export enum EMailSendRule {
+  IF_ALERT_NOT_EXISTS = 'IF_ALERT_NOT_EXISTS',
+  BLOCK = 'BLOCK',
+  FORCE = 'FORCE'
+}
+
+export const STREAMS_ENV = {
+  EMAIL_SEND_RULE: EMailSendRule.IF_ALERT_NOT_EXISTS,
+  NO_SAVE_HISTORY_ALERTS: false,
+  PRINT_EVERY_REMOVED_ITEM_FROM_KEYED_SINGLE_EVENT_TIME_WINDOW: false,
+};
+
+// Через переменную окружения EMAIL_SEND_RULE Можно управлять правилом отправки
+export const reloadStreamsEnv = () => {
+  const rule = process.env.EMAIL_SEND_RULE as EMailSendRule;
+  STREAMS_ENV.EMAIL_SEND_RULE = Object.values(EMailSendRule).includes(rule)
+    ? rule
+    : EMailSendRule.IF_ALERT_NOT_EXISTS;
+  STREAMS_ENV.NO_SAVE_HISTORY_ALERTS = getBool(process.env.NO_SAVE_HISTORY_ALERTS);
+  STREAMS_ENV.PRINT_EVERY_REMOVED_ITEM_FROM_KEYED_SINGLE_EVENT_TIME_WINDOW = getBool(process.env.PRINT_EVERY_REMOVED_ITEM_FROM_KEYED_SINGLE_EVENT_TIME_WINDOW);
+};
+reloadStreamsEnv();
+
+export const isDeprecatedSendAlertsByEmail = () => STREAMS_ENV.EMAIL_SEND_RULE === EMailSendRule.BLOCK;

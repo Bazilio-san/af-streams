@@ -45,7 +45,16 @@ export {
   findSlotFloatBINARY,
   findSlotFloat,
 } from './utils/find-slot-float';
-export { TS_FIELD, STREAM_ID_FIELD, DEFAULTS } from './constants';
+
+export {
+  TS_FIELD,
+  STREAM_ID_FIELD,
+  DEFAULTS,
+  STREAMS_ENV,
+  EMailSendRule,
+  isDeprecatedSendAlertsByEmail,
+  reloadStreamsEnv,
+} from './constants';
 
 // =============================== CLASSES =====================================
 export {
@@ -109,14 +118,6 @@ export {
   TAlertTableRecord,
   TMergeResult,
 } from './alerts-buffer/i-alert';
-
-export {
-  EMailSendRule,
-  isDeprecatedSendAlertsByEmail,
-  getEmailSendRule,
-  reloadStreamsEnv,
-  canSaveHistoricalAlerts,
-} from './alerts-buffer/constants';
 
 export { AlertsStat, IStatTT, IStatTTtiu, TIU, getAlertsStat } from './alerts-buffer/AlertsStat';
 
