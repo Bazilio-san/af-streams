@@ -327,8 +327,8 @@ export class StreamsManager {
   getConfigsParams (): { [paramName: string]: string | number | boolean | undefined } {
     const virtualTimeConfig = this.virtualTimeObj.options;
     return {
+      startFromLastStop: virtualTimeConfig.useStartTimeFromRedisCache,
       streamStartTime: toUTC_(virtualTimeConfig.startTimeMillis),
-      useStartTimeFromRedis: virtualTimeConfig.useStartTimeFromRedisCache,
       speed: this.virtualTimeObj.speed,
       emailSendRule: getEmailSendRule(),
     };
