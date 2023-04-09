@@ -330,7 +330,7 @@ export class StreamsManager {
       streamStartTime: toUTC_(virtualTimeConfig.startTimeMillis),
       speed: this.virtualTimeObj.speed,
       emailSendRule: STREAMS_ENV.EMAIL_SEND_RULE,
-      saveHistoryAlerts: !STREAMS_ENV.NO_SAVE_HISTORY_ALERTS,
+      saveHistoricalAlerts: !STREAMS_ENV.NO_SAVE_HISTORY_ALERTS,
     };
   }
 

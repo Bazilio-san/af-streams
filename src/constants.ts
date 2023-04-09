@@ -53,6 +53,7 @@ export const reloadStreamsEnv = () => {
   STREAMS_ENV.NO_SAVE_HISTORY_ALERTS = getBool(process.env.NO_SAVE_HISTORY_ALERTS);
   STREAMS_ENV.PRINT_EVERY_REMOVED_ITEM_FROM_KEYED_SINGLE_EVENT_TIME_WINDOW = getBool(process.env.PRINT_EVERY_REMOVED_ITEM_FROM_KEYED_SINGLE_EVENT_TIME_WINDOW);
 };
+
 reloadStreamsEnv();
 
 export const isDeprecatedSendAlertsByEmail = () => STREAMS_ENV.EMAIL_SEND_RULE === EMailSendRule.BLOCK;
