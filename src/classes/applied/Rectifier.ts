@@ -6,6 +6,7 @@ import { VirtualTimeObj } from '../../VirtualTimeObj';
 import { TEventRecord } from '../../interfaces';
 import { DEFAULTS } from '../../constants';
 import { intEnv } from '../../utils/utils';
+import { echoSimple } from '../../utils/echo-simple';
 
 export interface IRectifierOptions {
   virtualTimeObj: VirtualTimeObj,
@@ -143,5 +144,6 @@ export class Rectifier {
     this.virtualTimeObj = undefined;
     // @ts-ignore
     this.sendFunction = undefined;
+    echoSimple.warn(`Rectifier destroyed`);
   }
 }

@@ -32,6 +32,7 @@ export interface IEventComposite {
 export interface IEcho extends Function {
   echo: Function,
   error: Function,
+  warn: Function,
   info: Function,
   debug: Function,
   silly: Function,

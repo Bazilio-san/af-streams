@@ -98,9 +98,9 @@ export class Stream {
 
   private isPrepareEventAsync: boolean;
 
-  private onVirtualTimeLoopBackCallBack: OmitThisParameter<() => void>;
+  private readonly onVirtualTimeLoopBackCallBack: OmitThisParameter<() => void>;
 
-  private onVirtualTimeIsSynchronizedWithCurrentCallBack: OmitThisParameter<(value?: number) => void>;
+  private readonly onVirtualTimeIsSynchronizedWithCurrentCallBack: OmitThisParameter<(value?: number) => void>;
 
   constructor (public options: IStreamConstructorOptions) {
     this.virtualTimeObj = options.virtualTimeObj;
@@ -764,10 +764,11 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
   }
 
   async destroy () {
-    const { eventEmitter: ee } = this.options.commonConfig;
-    if (ee) {
-      ee.removeListener('virtual-time-loop-back', this.onVirtualTimeLoopBackCallBack);
-      ee.removeListener('virtual-time-is-synchronized-with-current', this.onVirtualTimeIsSynchronizedWithCurrentCallBack);
+    const { commonConfig, streamConfig } = this.options;
+    const { eventEmitter, echo } = commonConfig;
+    if (eventEmitter) {
+      eventEmitter.removeListener('virtual-time-loop-back', this.onVirtualTimeLoopBackCallBack);
+      eventEmitter.removeListener('virtual-time-is-synchronized-with-current', this.onVirtualTimeIsSynchronizedWithCurrentCallBack);
     }
     this.stop({ noResetVirtualTimeObj: true });
     await this.db.destroy();
@@ -790,5 +791,6 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     this.prepareEvent = undefined;
     // @ts-ignore
     this.stat = undefined;
+    echo.warn(`Stream [${streamConfig.streamId}] destroyed`);
   }
 }

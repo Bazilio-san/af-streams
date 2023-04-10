@@ -163,6 +163,7 @@ export class StreamsManager {
     this.virtualTimeObj?.reset();
     this.alertsBuffer?.destroy();
     this.alertsBuffer = null as unknown as AlertsBuffer;
+    this.commonConfig.echo.warn(`Stream manager destroyed`);
   }
 
   checkCommonConfig (isInit: boolean = false) {
