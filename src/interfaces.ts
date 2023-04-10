@@ -70,6 +70,7 @@ export interface ISenderConfig {
 export interface ISender {
   sendEvents: Function,
   connect: Function
+  destroy: Function
   eventCallback?: Function,
 }
 

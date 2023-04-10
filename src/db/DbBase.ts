@@ -1,4 +1,6 @@
 /* eslint-disable class-methods-use-this */
+// noinspection JSConstantReassignment
+
 import { IDbConstructorOptions, IEmNextRecordTsSql, IEmPortionOfDataCount, IEmPortionOfDataSql, TDbRecord } from '../interfaces';
 import { DEBUG_SQL } from '../constants';
 import { millis2iso } from '../utils/date-utils';
@@ -173,5 +175,38 @@ export class DbBase {
       eventEmitter.emit('get-next-record-ts-sql', payload);
     }
     return nextRecordTs;
+  }
+
+  destroy () {
+    // @ts-ignore
+    this.options = undefined;
+    // @ts-ignore
+    this.dbInfo = undefined;
+    // @ts-ignore
+    this.fieldsList = undefined;
+    // @ts-ignore
+    this.schemaAndTable = undefined;
+    // @ts-ignore
+    this.tableFieldNameArray = undefined;
+    // @ts-ignore
+    this.tsField = undefined;
+    // @ts-ignore
+    this.tsFieldQuoted = undefined;
+    // @ts-ignore
+    this.idFields = undefined;
+    // @ts-ignore
+    this.sortBy = undefined;
+    // @ts-ignore
+    this.ld = undefined;
+    // @ts-ignore
+    this.rd = undefined;
+    // @ts-ignore
+    this.noLock = undefined;
+    // @ts-ignore
+    this.recordsetPropName = undefined;
+    // @ts-ignore
+    this.recordsetPropName = undefined;
+    // @ts-ignore
+    this.millis2dbFn = undefined;
   }
 }

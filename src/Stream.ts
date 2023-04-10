@@ -39,6 +39,7 @@ const getInitStat = () => ({ queryTs: 0 });
 
 const TIMEOUT_TO_PREPARE_EVENT = 5 * 60_000;
 
+// noinspection JSConstantReassignment
 export class Stream {
   /**
    * Timestamp of the last loaded record
@@ -751,5 +752,29 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     clearTimeout(this._printTimer);
     this.stat = getInitStat();
     this.initialized = false;
+  }
+
+  async destroy () {
+    this.stop({ noResetVirtualTimeObj: true });
+    await this.db.destroy();
+    // @ts-ignore
+    this.recordsBuffer = undefined;
+    // @ts-ignore
+    this.lastTimeRecords = undefined;
+    // @ts-ignore
+    this.virtualTimeObj = undefined;
+    this.sender.destroy();
+    // @ts-ignore
+    this.sender = undefined;
+    // @ts-ignore
+    this._sendTimer = undefined;
+    // @ts-ignore
+    this._printTimer = undefined;
+    // @ts-ignore
+    this.tsFieldToMillis = undefined;
+    // @ts-ignore
+    this.prepareEvent = undefined;
+    // @ts-ignore
+    this.stat = undefined;
   }
 }

@@ -50,6 +50,11 @@ class EmitterSender extends AbstractSender {
     }
     return true;
   }
+
+  destroy () {
+    // @ts-ignore
+    this.eventEmitter = undefined;
+  }
 }
 
 export default EmitterSender;

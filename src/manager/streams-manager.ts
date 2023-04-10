@@ -126,7 +126,7 @@ const changeStreamParams = (stream: Stream, params: any) => {
 };
 
 export class StreamsManager {
-  public map = {} as { [streamId: string]: Stream };
+  public map: { [streamId: string]: Stream } = {};
 
   public rectifier: Rectifier = null as unknown as Rectifier;
 
@@ -142,6 +142,10 @@ export class StreamsManager {
 
   constructor (public commonConfig: ICommonConfig) {
     this.checkCommonConfig(true);
+  }
+
+  destroy () {
+    this.map = {};
   }
 
   checkCommonConfig (isInit: boolean = false) {

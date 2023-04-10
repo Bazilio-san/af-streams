@@ -183,6 +183,11 @@ Connection established with WEBSOCKET ${mConsulServiceName} on ${mAddress}
     }
     return true;
   }
+
+  destroy () {
+    // @ts-ignore
+    this.socketClient = undefined;
+  }
 }
 
 export default WSSender;

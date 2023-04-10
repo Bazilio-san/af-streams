@@ -108,4 +108,13 @@ export class DbMsSql extends DbBase {
   limitIt (strSQL: string, limit: number): string {
     return strSQL.replace('SELECT ', `SELECT TOP(${limit}) `);
   }
+
+  async destroy () {
+    await this.close();
+    super.destroy();
+    this.pool = null;
+    this.request = null;
+    // @ts-ignore
+    this.cfg = undefined;
+  }
 }

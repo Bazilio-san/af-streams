@@ -34,6 +34,11 @@ class CallbackSender extends AbstractSender {
     await Promise.all(fns);
     return true;
   }
+
+  destroy () {
+    // @ts-ignore
+    this.eventCallback = undefined;
+  }
 }
 
 export default CallbackSender;

@@ -216,6 +216,11 @@ Connection established with ${msg}
     }
     return true;
   }
+
+  destroy () {
+    // @ts-ignore
+    this.socket = undefined;
+  }
 }
 
 export default TCPJSONSender;

@@ -45,6 +45,10 @@ class AbstractSender {
   async sendEvents (recordsComposite: IRecordsComposite): Promise<boolean> {
     return true;
   }
+
+  destroy (): void {
+
+  }
 }
 
 export default AbstractSender;

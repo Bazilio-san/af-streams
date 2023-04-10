@@ -63,4 +63,12 @@ export class DbPostgres extends DbBase {
   limitIt (strSQL: string, limit: number): string {
     return `${strSQL} LIMIT ${limit}`;
   }
+
+  async destroy () {
+    await this.close();
+    super.destroy();
+    this.pool = null;
+    // @ts-ignore
+    this.cfg = undefined;
+  }
 }
