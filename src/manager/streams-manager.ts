@@ -18,6 +18,8 @@ import { toUTC_ } from '../utils/date-utils';
 
 const findLast = require('array.prototype.findlast');
 
+const STATISTICS_SEND_INTERVAL = { SLOW: 1000, QUICK: 200 };
+
 export interface IPrepareRectifierOptions {
   /**
    * Периодичность отправки ts-объектов,
@@ -140,30 +142,13 @@ export class StreamsManager {
 
   private _connectedSockets: Set<string>;
 
+  private statisticsSendIntervalMillis: number = STATISTICS_SEND_INTERVAL.QUICK;
+
   constructor (public commonConfig: ICommonConfig) {
     this.map = {};
     this._locked = true;
     this._connectedSockets = new Set();
     this.checkCommonConfig(true);
-  }
-
-  async destroy () {
-    localEventEmitter.removeAllListeners('before-lnp');
-    localEventEmitter.removeAllListeners('after-lnp');
-    localEventEmitter.removeAllListeners('time-stat');
-    this._locked = true;
-    this.stopIoStatistics();
-    this._connectedSockets = new Set();
-    this._statLoopTimerId = undefined;
-    await Promise.all(this.streams.map((stream) => stream.destroy()));
-    this.map = {};
-    this.rectifier?.destroy();
-    this.rectifier = null as unknown as Rectifier;
-    this.virtualTimeObj?.lock();
-    this.virtualTimeObj?.reset();
-    this.alertsBuffer?.destroy();
-    this.alertsBuffer = null as unknown as AlertsBuffer;
-    this.commonConfig.echo.warn('DESTROYED: [StreamsManager]');
   }
 
   checkCommonConfig (isInit: boolean = false) {
@@ -388,12 +373,14 @@ export class StreamsManager {
       speed: this.virtualTimeObj?.speed,
       emailSendRule: STREAMS_ENV.EMAIL_SEND_RULE,
       saveHistoricalAlerts: !STREAMS_ENV.NO_SAVE_HISTORY_ALERTS,
+      isStopped: this.isStopped(),
+      isSuspended: this._locked,
     };
   }
 
   suspend () {
     this._locked = true;
-    this.stopIoStatistics();
+    this.slowDownStatistics();
     this.streams.forEach((stream) => {
       stream.lock(true);
     });
@@ -404,12 +391,12 @@ export class StreamsManager {
       stream.unLock(true);
     });
     this._locked = false;
-    this.startIoStatistics();
+    this.startIoStatistics(true);
   }
 
-  stop () {
+  stop () { // VVR
     this._locked = true;
-    this.stopIoStatistics();
+    this.slowDownStatistics();
     this.streams.forEach((stream) => {
       stream.stop({ noResetVirtualTimeObj: true });
     });
@@ -422,11 +409,11 @@ export class StreamsManager {
     this.virtualTimeObj?.startUpInfo();
     const streams = await Promise.all(this.streams.map((stream) => stream.start()));
     this._locked = false;
-    this.startIoStatistics();
+    this.startIoStatistics(true);
     return streams;
   }
 
-  async restart () {
+  async restart () { // VVR
     this.stop();
     return this.start();
   }
@@ -444,33 +431,41 @@ export class StreamsManager {
     мин-макс события в буфере 1 потока + количество
     мин-макс события в буфере 2 потока + количество
     */
-    const { rectifier, virtualTimeObj, streams } = this;
-    const { accumulator } = rectifier;
-    const { length } = accumulator;
+    const isSuspended = this._locked;
+    const isStopped = this.isStopped();
+    let data: any = { isSuspended, isStopped };
 
-    const data = {
-      vt: virtualTimeObj.virtualTs,
-      isCurrentTime: virtualTimeObj.isCurrentTime,
-      rectifier: {
-        widthMillis: rectifier.options.accumulationTimeMillis,
-        rectifierItemsCount: length,
-      },
-      streams: streams.map((stream) => {
-        const { options: { streamConfig: { streamId } }, recordsBuffer: rb } = stream;
-        return {
-          buf: {
-            firstTs: rb.firstTs,
-            lastTs: rb.lastTs,
-            len: rb.length,
-          },
-          rec: {
-            firstTs: length && accumulator.find((d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
-            lastTs: length && findLast(accumulator, (d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
-            len: length && accumulator.reduce((accum, d) => accum + (d[STREAM_ID_FIELD] === streamId ? 1 : 0), 0),
-          },
-        };
-      }),
-    };
+    if (!isStopped) {
+      const { rectifier, virtualTimeObj, streams } = this;
+      const { accumulator } = rectifier || {};
+      const { length = 0 } = accumulator || {};
+
+      data = {
+        isSuspended,
+        isStopped,
+        vt: virtualTimeObj?.virtualTs || 0,
+        isCurrentTime: !!virtualTimeObj?.isCurrentTime,
+        rectifier: {
+          widthMillis: rectifier?.options.accumulationTimeMillis || 0,
+          rectifierItemsCount: length,
+        },
+        streams: streams.map((stream) => {
+          const { options: { streamConfig: { streamId } }, recordsBuffer: rb } = stream;
+          return {
+            buf: {
+              firstTs: rb.firstTs,
+              lastTs: rb.lastTs,
+              len: rb.length,
+            },
+            rec: {
+              firstTs: length && accumulator.find((d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
+              lastTs: length && findLast(accumulator, (d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
+              len: length && accumulator.reduce((accum, d) => accum + (d[STREAM_ID_FIELD] === streamId ? 1 : 0), 0),
+            },
+          };
+        }),
+      };
+    }
     localEventEmitter.emit('time-stat', data);
   }
 
@@ -511,21 +506,6 @@ export class StreamsManager {
       socket.applyFn(args, this._locked);
     });
 
-    socket.on('sm-stop', (...args) => {
-      this.stop();
-      socket.applyFn(args, this._locked);
-    });
-
-    socket.on('sm-start', async (...args) => {
-      await this.start();
-      socket.applyFn(args, this._locked);
-    });
-
-    socket.on('sm-restart', async (...args) => {
-      await this.restart();
-      socket.applyFn(args, this._locked);
-    });
-
     socket.on('change-streams-params', (data, ...args) => {
       this.changeStreamsParams(data);
       // Все указанные свойства в data.env перечитываем после обновления и возвращаем новые значения
@@ -549,7 +529,10 @@ export class StreamsManager {
     return this._locked;
   }
 
-  startIoStatistics () {
+  startIoStatistics (speedUp: boolean = false) {
+    if (speedUp) {
+      this.speedUpStatistics();
+    }
     if (this._locked || !this._connectedSockets.size) {
       return;
     }
@@ -561,12 +544,47 @@ export class StreamsManager {
       this.collectAndEmitStatistics();
       this._statLoopTimerId = setTimeout(() => {
         statLoop();
-      }, 200);
+      }, this.statisticsSendIntervalMillis);
     };
     statLoop();
   }
 
+  slowDownStatistics () {
+    this.statisticsSendIntervalMillis = STATISTICS_SEND_INTERVAL.SLOW;
+  }
+
+  speedUpStatistics () {
+    this.statisticsSendIntervalMillis = STATISTICS_SEND_INTERVAL.QUICK;
+  }
+
   stopIoStatistics () {
     clearTimeout(this._statLoopTimerId);
+  }
+
+  isStopped () {
+    return this._locked
+      && (
+        !this.alertsBuffer
+        || !Object.keys(this.map).length
+      );
+  }
+
+  async destroy () {
+    localEventEmitter.removeAllListeners('before-lnp');
+    localEventEmitter.removeAllListeners('after-lnp');
+    localEventEmitter.removeAllListeners('time-stat');
+    this._locked = true;
+    this.slowDownStatistics();
+    this._connectedSockets = new Set();
+    this._statLoopTimerId = undefined;
+    await Promise.all(this.streams.map((stream) => stream.destroy()));
+    this.map = {};
+    this.rectifier?.destroy();
+    this.rectifier = null as unknown as Rectifier;
+    this.virtualTimeObj?.lock();
+    this.virtualTimeObj?.reset();
+    this.alertsBuffer?.destroy();
+    this.alertsBuffer = null as unknown as AlertsBuffer;
+    this.commonConfig.echo.warn('DESTROYED: [StreamsManager]');
   }
 }
