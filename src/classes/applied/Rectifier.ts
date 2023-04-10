@@ -59,9 +59,9 @@ export class Rectifier {
    */
   public lastTs: number = 0;
 
-  readonly virtualTimeObj: VirtualTimeObj;
+  virtualTimeObj: VirtualTimeObj;
 
-  readonly sendFunction: (_eventRecordsArray: TEventRecord[]) => number;
+  sendFunction: (_eventRecordsArray: TEventRecord[]) => number;
 
   readonly fieldNameToSort: string;
 
@@ -139,5 +139,9 @@ export class Rectifier {
     this._sendTimer = undefined;
     // @ts-ignore
     this.accumulator = undefined;
+    // @ts-ignore
+    this.virtualTimeObj = undefined;
+    // @ts-ignore
+    this.sendFunction = undefined;
   }
 }
