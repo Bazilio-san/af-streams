@@ -8,8 +8,8 @@ import { VirtualTimeObj, getVirtualTimeObj, IVirtualTimeObjOptions } from '../Vi
 import {
   ICommonConfig, IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion, IOFnArgs, ISenderConfig, IStartTimeConfig, IStreamConfig, IVirtualTimeConfig, TEventRecord,
 } from '../interfaces';
-import { cloneDeep, intEnv } from '../utils/utils';
-import { DEFAULTS, STREAMS_ENV, reloadStreamsEnv, STREAM_ID_FIELD } from '../constants';
+import { cloneDeep, intEnv, timeParamRE } from '../utils/utils';
+import { DEFAULTS, STREAMS_ENV, reloadStreamsEnv, STREAM_ID_FIELD, EMailSendRule } from '../constants';
 import { IRectifierOptions, Rectifier } from '../classes/applied/Rectifier';
 import localEventEmitter from '../ee-scoped';
 import { AlertsBuffer } from '../alerts-buffer/AlertsBuffer';
@@ -115,11 +115,6 @@ const changeStreamParams = (stream: Stream, params: any) => {
         break;
       case 'STREAM_SKIP_GAPS':
         stream.setSkipGaps(value);
-        break;
-      case 'STREAM_START_BEFORE':
-      case 'STREAM_START_TIME':
-      case 'STREAM_USE_START_TIME_FROM_REDIS_CACHE':
-        // только прописать ENV
         break;
       default:
         isSetEnv = false;
@@ -284,15 +279,49 @@ export class StreamsManager {
         case 'STREAM_LOOP_TIME_MILLIS':
           virtualTimeObj.setLoopTimeMillis(value);
           break;
-        case 'STREAM_SPEED':
-          virtualTimeObj.setSpeed(value);
-          break;
         case 'STREAM_SPEED_CALC_INTERVAL_SEC':
           virtualTimeObj.setSpeedCalcIntervalSec(value);
           break;
         case 'STREAM_TIME_FRONT_UPDATE_INTERVAL_MILLIS':
           virtualTimeObj.setTimeFrontUpdateIntervalMillis(value);
           break;
+        // #################################################
+        case 'startFromLastStop': {
+          process.env.STREAM_USE_START_TIME_FROM_REDIS_CACHE = value ? '1' : '0';
+          virtualTimeObj.options.startTimeRedis.options.startTimeConfig.useStartTimeFromRedisCache = !!value;
+          break;
+        }
+        case 'streamStartTime': {
+          process.env.STREAM_START_TIME = value;
+          break;
+        }
+        case 'streamStartBefore': {
+          if (timeParamRE.test(String(value || ''))) {
+            process.env.STREAM_START_BEFORE = value;
+          }
+          break;
+        }
+        case 'speed': {
+          const speed = Math.floor(parseFloat(String(value)) || 0);
+          if (speed < 1) {
+            return;
+          }
+          process.env.STREAM_SPEED = String(speed);
+          virtualTimeObj.setSpeed(value);
+          break;
+        }
+        case 'emailSendRule': {
+          if (Object.values(EMailSendRule).includes(value)) {
+            process.env.EMAIL_SEND_RULE = value;
+          }
+          break;
+        }
+        case 'saveHistoricalAlerts': {
+          if (typeof value === 'boolean') {
+            process.env.NO_SAVE_HISTORY_ALERTS = value ? '0' : '1';
+          }
+          break;
+        }
         default:
           isSetEnv = false;
       }
@@ -300,6 +329,7 @@ export class StreamsManager {
         process.env[key] = String(value);
       }
     });
+    reloadStreamsEnv();
 
     let { streamIds } = data;
     if (!Array.isArray(streamIds)) {
@@ -324,10 +354,16 @@ export class StreamsManager {
   }
 
   getConfigsParams (): { [paramName: string]: string | number | boolean | undefined } {
-    const virtualTimeConfig = this.virtualTimeObj.options;
+    const { options } = this.virtualTimeObj;
+    let streamStartBefore: string | undefined = process.env.STREAM_START_BEFORE;
+    if (!timeParamRE.test(String(streamStartBefore || ''))) {
+      streamStartBefore = undefined;
+    }
+
     return {
-      startFromLastStop: virtualTimeConfig.useStartTimeFromRedisCache,
-      streamStartTime: toUTC_(virtualTimeConfig.startTimeMillis),
+      startFromLastStop: options.startTimeRedis.options.startTimeConfig.useStartTimeFromRedisCache,
+      streamStartTime: toUTC_(options.startTimeMillis),
+      streamStartBefore,
       speed: this.virtualTimeObj.speed,
       emailSendRule: STREAMS_ENV.EMAIL_SEND_RULE,
       saveHistoricalAlerts: !STREAMS_ENV.NO_SAVE_HISTORY_ALERTS,
@@ -354,12 +390,15 @@ export class StreamsManager {
     this._locked = true;
     this.stopIoStatistics();
     this.streams.forEach((stream) => {
-      stream.stop();
+      stream.stop({ noResetVirtualTimeObj: true });
     });
+    this.virtualTimeObj?.reset();
   }
 
   async start (): Promise<Stream[]> {
     reloadStreamsEnv();
+    await this.virtualTimeObj?.resetWithStartTime();
+    this.virtualTimeObj?.startUpInfo();
     const streams = await Promise.all(this.streams.map((stream) => stream.start()));
     this._locked = false;
     this.startIoStatistics();
@@ -468,6 +507,7 @@ export class StreamsManager {
 
     socket.on('change-streams-params', (data, ...args) => {
       this.changeStreamsParams(data);
+      // Все указанные свойства в data.env перечитываем после обновления и возвращаем новые значения
       const { env } = data || {};
       const result: any = {};
       if (typeof env === 'object') {
@@ -476,6 +516,7 @@ export class StreamsManager {
           result.env[envName] = process.env[envName];
         });
       }
+      result.params = this.getConfigsParams();
       result.actualConfigs = this.getConfigs();
       if (!socket.applyFn(args, result)) {
         socket.emit('actual-streams-configs', result);

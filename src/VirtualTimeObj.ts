@@ -6,15 +6,14 @@ import { bold, boldOff, c, g, m, rs, y } from './utils/color';
 import { DEFAULTS, MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
 import { millis2isoZ } from './utils/date-utils';
 import { intEnv } from './utils/utils';
-import { getStartTime } from './StartTimeRedis';
+import { getStartTimeRedis, StartTimeRedis } from './StartTimeRedis';
 
 export interface IVirtualTimeObjOptions {
-  startTimeMillis: number,
-  isUsedSavedStartTime: boolean,
-  useStartTimeFromRedisCache: boolean,
-
   commonConfig: ICommonConfig,
   virtualTimeConfig: IVirtualTimeConfig,
+  startTimeRedis: StartTimeRedis,
+  startTimeMillis: number,
+  isUsedSavedStartTime: boolean,
 }
 
 export interface IVirtualTimeStat {
@@ -26,7 +25,7 @@ export interface IVirtualTimeStat {
 export class VirtualTimeObj {
   realStartTs: number = 0;
 
-  readonly virtualStartTs: number;
+  virtualStartTs: number;
 
   loopNumber: number = 0;
 
@@ -60,33 +59,7 @@ export class VirtualTimeObj {
     this.virtualStartTs = options.startTimeMillis; // timestamp millis from which to start uploading data
 
     this.reset();
-    this.setLoopTimeMillis();
-    this.setSpeed();
-    this.setTimeFrontUpdateIntervalMillis();
-    this.setSpeedCalcIntervalSec();
-
-    const msg = ` [af-streams:VirtualTimeObj::Service:${options.commonConfig.serviceName}] `;
-    const eq = '='.repeat(Math.max(1, Math.ceil((64 - msg.length) / 2)));
-    const info = `${g}${eq}${msg}${eq}
-${g}Start from beginning:  ${m}${options.useStartTimeFromRedisCache ? 'NOT' : 'YES'}
-${g}Speed:                 ${m}${this.speed} X
-${g}Cyclicity:             ${m}${this.loopTimeMillis ? `${this.loopTimeMillis / 1000} sec` : '-'}
-${g}Start time:            ${m}${millis2isoZ(options.startTimeMillis)}${options.isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
-${g}${'='.repeat(64)}`;
-    options.commonConfig.echo(info);
-  }
-
-  reset () {
-    const now = Date.now();
-    this.timeFront = this.virtualStartTs;
-    this.realStartTs = now; // Переустанавливать при запуске
-    this.loopNumber = 0;
-    this.isCurrentTime = false; // flag: virtual time has caught up with real time
-    this.stat = {
-      lastRealTs: now,
-      lastFrontTs: this.virtualStartTs,
-      speed: 0,
-    };
+    this.startUpInfo();
   }
 
   setLoopTimeMillis (value?: number) {
@@ -139,6 +112,44 @@ ${g}${'='.repeat(64)}`;
       this.stat.lastRealTs = Date.now();
       this.stat.lastFrontTs = this.timeFront;
     }, this.options.virtualTimeConfig.speedCalcIntervalSec * 1000);
+  }
+
+  reset () {
+    const now = Date.now();
+    this.timeFront = this.virtualStartTs;
+    this.realStartTs = now; // Переустанавливать при запуске
+    this.loopNumber = 0;
+    this.isCurrentTime = false; // flag: virtual time has caught up with real time
+    this.stat = {
+      lastRealTs: now,
+      lastFrontTs: this.virtualStartTs,
+      speed: 0,
+    };
+    this.setLoopTimeMillis();
+    this.setSpeed();
+    this.setTimeFrontUpdateIntervalMillis();
+    this.setSpeedCalcIntervalSec();
+  }
+
+  startUpInfo () {
+    const { options } = this;
+    const msg = ` [af-streams:VirtualTimeObj::Service:${options.commonConfig.serviceName}] `;
+    const eq = '='.repeat(Math.max(1, Math.ceil((64 - msg.length) / 2)));
+    const info = `${g}${eq}${msg}${eq}
+${g}Start from beginning:  ${m}${options.startTimeRedis.options.startTimeConfig.useStartTimeFromRedisCache ? 'NOT' : 'YES'}
+${g}Speed:                 ${m}${this.speed} X
+${g}Cyclicity:             ${m}${this.loopTimeMillis ? `${this.loopTimeMillis / 1000} sec` : '-'}
+${g}Start time:            ${m}${millis2isoZ(options.startTimeMillis)}${options.isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
+${g}${'='.repeat(64)}`;
+    options.commonConfig.echo(info);
+  }
+
+  async resetWithStartTime () {
+    const { isUsedSavedStartTime, startTimeMillis } = await this.options.startTimeRedis.getStartTime();
+    this.options.startTimeMillis = startTimeMillis;
+    this.virtualStartTs = startTimeMillis;
+    this.options.isUsedSavedStartTime = isUsedSavedStartTime;
+    this.reset();
   }
 
   setNextTimeFront (): [boolean, number] {
@@ -265,12 +276,13 @@ export const getVirtualTimeObj = async (
     return virtualTimeObj;
   }
   const { commonConfig, virtualTimeConfig, startTimeConfig } = args;
-  const { startTimeMillis, isUsedSavedStartTime } = await getStartTime({ commonConfig, startTimeConfig });
+  const startTimeRedis = getStartTimeRedis({ commonConfig, startTimeConfig });
+  const { startTimeMillis, isUsedSavedStartTime } = await startTimeRedis.getStartTime();
   return new VirtualTimeObj({
     commonConfig,
     virtualTimeConfig,
+    startTimeRedis,
     startTimeMillis,
     isUsedSavedStartTime,
-    useStartTimeFromRedisCache: !!startTimeConfig.useStartTimeFromRedisCache,
   });
 };

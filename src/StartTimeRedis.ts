@@ -22,7 +22,7 @@ export class StartTimeRedis {
 
   private readonly url: string;
 
-  constructor (private options: StartTimeRedisConstructorOptions) {
+  constructor (public options: StartTimeRedisConstructorOptions) {
     const { commonConfig, startTimeConfig } = options;
     const { redis = { port: 0, host: '' } } = startTimeConfig;
     const { logger, exitOnError, serviceName } = commonConfig;
@@ -134,6 +134,3 @@ export const getStartTimeRedis = (options: StartTimeRedisConstructorOptions): St
   }
   return startTimeRedis;
 };
-
-export const getStartTime = async (options: StartTimeRedisConstructorOptions):
-  Promise<{ isUsedSavedStartTime: boolean, startTimeMillis: number }> => getStartTimeRedis(options).getStartTime();

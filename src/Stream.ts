@@ -731,9 +731,11 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     return optionsCopy;
   }
 
-  stop () {
+  stop (options?: { noResetVirtualTimeObj?: boolean }) {
     this.lock(true);
-    this.virtualTimeObj.reset();
+    if (!options?.noResetVirtualTimeObj) {
+      this.virtualTimeObj.reset();
+    }
 
     this.lastRecordTs = 0;
     this.nextStartTs = this.virtualTimeObj.virtualStartTs;
