@@ -69,6 +69,8 @@ export class Stream {
 
   private _sendTimer: any;
 
+  private _sendInterval: any;
+
   private _printTimer: any;
 
   /**
@@ -153,6 +155,7 @@ export class Stream {
     this.lastTimeRecords = new LastTimeRecords(src.idFields);
 
     this._sendTimer = null;
+    this._sendInterval = null;
     this.totalRowsSent = 0;
     this.busy = 0;
 
@@ -298,7 +301,7 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     this._fetchLoop();
     this._printInfoLoop();
     // Additional external call loop in case of interruption of the chain of internal calls _sendLoop()
-    this._sendTimer = setInterval(() => {
+    this._sendInterval = setInterval(() => {
       this._sendLoop().then(() => null);
     }, 1000);
     return this;
@@ -607,39 +610,39 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     return new Promise((resolve: Function) => {
       let debugMessage = '';
 
-      const timer = setTimeout(() => {
-        clearTimeout(timer);
-        if (DEBUG_STREAM) {
-          debugMessage += `${this.prefix}`;
+      // const timer = setTimeout(() => {
+      //   clearTimeout(timer);
+      if (DEBUG_STREAM) {
+        debugMessage += `${this.prefix}`;
+      }
+      const first = eventsPacket[0];
+      const recordsComposite: IRecordsComposite = {
+        sessionId,
+        streamId,
+        eventsPacket,
+        isSingleRecordAsObject: true,
+        first,
+        last: first,
+      };
+      sender.sendEvents(recordsComposite).then(() => {
+        const { last, sendCount = 0, sentBufferLength } = recordsComposite;
+        const lastTs = last?.[TS_FIELD];
+        if (lastTs) {
+          const payload: IEmSaveLastTs = { streamId, lastTs };
+          eventEmitter.emit('save-last-ts', payload);
         }
-        const first = eventsPacket[0];
-        const recordsComposite: IRecordsComposite = {
-          sessionId,
-          streamId,
-          eventsPacket,
-          isSingleRecordAsObject: true,
-          first,
-          last: first,
-        };
-        sender.sendEvents(recordsComposite).then(() => {
-          const { last, sendCount = 0, sentBufferLength } = recordsComposite;
-          const lastTs = last?.[TS_FIELD];
-          if (lastTs) {
-            const payload: IEmSaveLastTs = { streamId, lastTs };
-            eventEmitter.emit('save-last-ts', payload);
-          }
-          this.totalRowsSent += sendCount;
-          if (DEBUG_STREAM) {
-            debugMessage += ` SENT: ${c}${Stream.packetInfo(sendCount, first, last)}`;
-            debugMessage += ` / ${padL(sentBufferLength, 6)}b`;
-            debugMessage += ` / r.tot: ${bold}${padL(this.totalRowsSent, 6)}${boldOff}${rs}`;
-          }
-          resolve({ debugMessage });
-        }).catch((err: Error | any) => {
-          logger.error(err);
-          resolve({ debugMessage, isError: true });
-        });
-      }, 5);
+        this.totalRowsSent += sendCount;
+        if (DEBUG_STREAM) {
+          debugMessage += ` SENT: ${c}${Stream.packetInfo(sendCount, first, last)}`;
+          debugMessage += ` / ${padL(sentBufferLength, 6)}b`;
+          debugMessage += ` / r.tot: ${bold}${padL(this.totalRowsSent, 6)}${boldOff}${rs}`;
+        }
+        resolve({ debugMessage });
+      }).catch((err: Error | any) => {
+        logger.error(err);
+        resolve({ debugMessage, isError: true });
+      });
+      // }, 5);
     });
   }
 
@@ -757,6 +760,7 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     this.prevLastRecordTs = 0;
     this.noRecordsQueryCounter = 0;
 
+    clearInterval(this._sendInterval);
     clearTimeout(this._sendTimer);
     clearTimeout(this._printTimer);
     this.stat = getInitStat();
