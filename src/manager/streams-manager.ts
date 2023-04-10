@@ -376,17 +376,16 @@ export class StreamsManager {
   }
 
   getConfigsParams (): { [paramName: string]: string | number | boolean | undefined } {
-    const { options } = this.virtualTimeObj;
     let streamStartBefore: string | undefined = process.env.STREAM_START_BEFORE;
     if (!timeParamRE.test(String(streamStartBefore || ''))) {
       streamStartBefore = undefined;
     }
 
     return {
-      startFromLastStop: options.startTimeRedis.options.startTimeConfig.useStartTimeFromRedisCache,
-      streamStartTime: toUTC_(options.startTimeMillis),
+      startFromLastStop: this.virtualTimeObj?.options.startTimeRedis.options.startTimeConfig.useStartTimeFromRedisCache,
+      streamStartTime: toUTC_(this.virtualTimeObj?.options.startTimeMillis || 0),
       streamStartBefore,
-      speed: this.virtualTimeObj.speed,
+      speed: this.virtualTimeObj?.speed,
       emailSendRule: STREAMS_ENV.EMAIL_SEND_RULE,
       saveHistoricalAlerts: !STREAMS_ENV.NO_SAVE_HISTORY_ALERTS,
     };
