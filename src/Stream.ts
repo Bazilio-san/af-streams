@@ -791,6 +791,6 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     this.prepareEvent = undefined;
     // @ts-ignore
     this.stat = undefined;
-    echo.warn(`Stream [${streamConfig.streamId}] destroyed`);
+    echo.warn(`DESTROYED: stream [${streamConfig.streamId}]`);
   }
 }

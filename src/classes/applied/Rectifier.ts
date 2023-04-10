@@ -144,6 +144,6 @@ export class Rectifier {
     this.virtualTimeObj = undefined;
     // @ts-ignore
     this.sendFunction = undefined;
-    echoSimple.warn(`Rectifier destroyed`);
+    echoSimple.warn('DESTROYED: [Rectifier]');
   }
 }

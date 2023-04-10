@@ -416,6 +416,6 @@ export class AlertsBuffer {
     this.alert2emailThrottled = undefined;
     // @ts-ignore
     this.sendMail = undefined;
-    this.options.echo.warn(`AlertsBuffer destroyed`);
+    this.options.echo.warn('DESTROYED: [AlertsBuffer]');
   }
 }
