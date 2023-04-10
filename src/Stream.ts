@@ -775,14 +775,14 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
       eventEmitter.removeListener('virtual-time-is-synchronized-with-current', this.onVirtualTimeIsSynchronizedWithCurrentCallBack);
     }
     this.stop({ noResetVirtualTimeObj: true });
-    await this.db.destroy();
+    await this.db?.destroy();
     // @ts-ignore
     this.recordsBuffer = undefined;
     // @ts-ignore
     this.lastTimeRecords = undefined;
     // @ts-ignore
     this.virtualTimeObj = undefined;
-    this.sender.destroy();
+    this.sender?.destroy();
     // @ts-ignore
     this.sender = undefined;
     // @ts-ignore
