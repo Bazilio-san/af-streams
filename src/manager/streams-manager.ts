@@ -126,7 +126,7 @@ const changeStreamParams = (stream: Stream, params: any) => {
 };
 
 export class StreamsManager {
-  public map: { [streamId: string]: Stream } = {};
+  public map: { [streamId: string]: Stream };
 
   public rectifier: Rectifier = null as unknown as Rectifier;
 
@@ -138,14 +138,31 @@ export class StreamsManager {
 
   private _locked: boolean = true;
 
-  private _connectedSockets: Set<string> = new Set();
+  private _connectedSockets: Set<string>;
 
   constructor (public commonConfig: ICommonConfig) {
+    this.map = {};
+    this._locked = true;
+    this._connectedSockets = new Set();
     this.checkCommonConfig(true);
   }
 
-  destroy () {
+  async destroy () {
+    localEventEmitter.removeAllListeners('before-lnp');
+    localEventEmitter.removeAllListeners('after-lnp');
+    localEventEmitter.removeAllListeners('time-stat');
+    this._locked = true;
+    this.stopIoStatistics();
+    this._connectedSockets = new Set();
+    this._statLoopTimerId = undefined;
+    await Promise.all(this.streams.map((stream) => stream.destroy()));
     this.map = {};
+    this.rectifier?.destroy();
+    this.rectifier = null as unknown as Rectifier;
+    this.virtualTimeObj?.lock();
+    this.virtualTimeObj?.reset();
+    this.alertsBuffer?.destroy();
+    this.alertsBuffer = null as unknown as AlertsBuffer;
   }
 
   checkCommonConfig (isInit: boolean = false) {

@@ -1,6 +1,7 @@
 /* eslint-disable no-await-in-loop */
 import * as cron from 'cron';
 import EventEmitter from 'events';
+import { CronJob } from 'cron';
 import { IAlertEmailSettings, TAlert, TAlertSentFlags, TMergeResult } from './i-alert';
 import { AlertsStat, getAlertsStat } from './AlertsStat';
 import { alertEmailFooter, alertEmailHeader, fillHtmlTemplate, fillSubjectTemplate, jsonToHtml, removeHTML } from './utils/utils';
@@ -71,9 +72,11 @@ export class AlertsBuffer {
 
   public alertsStat: AlertsStat;
 
-  private readonly alert2emailThrottled: (alert: TAlert) => any;
+  private alert2emailThrottled: (alert: TAlert) => any;
 
-  private readonly sendMail: (options: ISendAlertArgs) => void;
+  private sendMail: (options: ISendAlertArgs) => void;
+
+  private cronJob: CronJob | null = null;
 
   constructor (public options: IAlertsBufferConstructorOptions) {
     const { virtualTimeObj, trackAlertsStateMillis, removeExpiredItemsFromAlertsStatesCacheIntervalMillis } = options;
@@ -363,7 +366,7 @@ export class AlertsBuffer {
   initCron () {
     const maxBusy = 5;
     let busy = 0;
-    cron.job({
+    this.cronJob = cron.job({
       cronTime: `0/${this.options.flushBufferIntervalSeconds} * * * * *`,
       onTick: async () => {
         if (busy && busy <= maxBusy) {
@@ -397,5 +400,21 @@ export class AlertsBuffer {
     let alertsBufferTxt = `Alerts Buffer:${indent}Length ${Object.keys(this.buffer).length}`;
     alertsBufferTxt += this.alertsStat.getDiagnostics(1);
     return alertsBufferTxt;
+  }
+
+  destroy () {
+    this.cronJob?.stop();
+    // @ts-ignore
+    this.buffer = undefined;
+    this.sentAlertsFlags.destroy();
+    // @ts-ignore
+    this.sentAlertsFlags = undefined;
+    this.alertsStat.destroy();
+    // @ts-ignore
+    this.alertsStat = undefined;
+    // @ts-ignore
+    this.alert2emailThrottled = undefined;
+    // @ts-ignore
+    this.sendMail = undefined;
   }
 }

@@ -22,6 +22,8 @@ export class StartTimeRedis {
 
   private readonly url: string;
 
+  private onSaveLastTsCallBack: OmitThisParameter<({ lastTs }: { serviceName: string; lastTs: number }) => Promise<void>>;
+
   constructor (public options: StartTimeRedisConstructorOptions) {
     const { commonConfig, startTimeConfig } = options;
     const { redis = { port: 0, host: '' } } = startTimeConfig;
@@ -36,19 +38,22 @@ export class StartTimeRedis {
       : Boolean(startTimeConfig.useStartTimeFromRedisCache);
 
     this.url = `redis://${redis.host}:${redis.port}`;
-    const streamKey = getStreamKey(serviceName);
-    this.streamKey = streamKey;
+    this.streamKey = getStreamKey(serviceName);
     logger.info(`${prefix}Redis expected at ${this.url}`);
     this.client = createClient({ url: this.url });
     this.client.on('error', (err: Error | any) => {
       console.error('Redis Client Error');
       exitOnError(err);
     });
-    commonConfig.eventEmitter.on('save-last-ts', async ({ lastTs }: { serviceName: string, lastTs: number }) => {
-      const redisClient = await this.getRedisClient();
-      redisClient?.set(streamKey, lastTs).catch((err: Error | any) => {
-        logger.error(err);
-      });
+
+    this.onSaveLastTsCallBack = this.onSaveLastTs.bind(this);
+    commonConfig.eventEmitter.on('save-last-ts', this.onSaveLastTsCallBack);
+  }
+
+  async onSaveLastTs ({ lastTs }: { serviceName: string, lastTs: number }) {
+    const redisClient = await this.getRedisClient();
+    redisClient?.set(this.streamKey, lastTs).catch((err: Error | any) => {
+      this.options.commonConfig.logger.error(err);
     });
   }
 
@@ -123,6 +128,12 @@ export class StartTimeRedis {
     }
     startTimeMillis = startTimeMillis || this.getStartTimeFromENV() || Date.now();
     return { isUsedSavedStartTime, startTimeMillis };
+  }
+
+  destroy () {
+    const { commonConfig } = this.options;
+    commonConfig.eventEmitter.removeListener('save-last-ts', this.onSaveLastTsCallBack);
+    this.client.disconnect().then(() => 0);
   }
 }
 

@@ -23,6 +23,8 @@ class WSSender extends AbstractSender {
 
   private readonly socketRequestId: string;
 
+  private onAccessPointUpdatedCallBack: OmitThisParameter<({ accessPoint }: { accessPoint: TAccessPoint }) => void>;
+
   constructor (options: ISenderConstructorOptions) {
     super(options);
     this.lastConfigServiceAddress = '';
@@ -35,14 +37,16 @@ class WSSender extends AbstractSender {
     this.accessPointId = ap.id as string;
     this.token = ap.token as string;
     this.socketRequestId = ap.socketRequestId as string;
-
-    options.commonConfig.eventEmitter.on('access-point-updated', ({ accessPoint }: { accessPoint: TAccessPoint }) => {
-      if (accessPoint.id === this.accessPointId) {
-        this.reconnect().then(() => 0);
-      }
-    });
+    this.onAccessPointUpdatedCallBack = this.onAccessPointUpdated.bind(this);
+    options.commonConfig.eventEmitter.on('access-point-updated', this.onAccessPointUpdatedCallBack);
 
     this.reconnect().then(() => 0);
+  }
+
+  onAccessPointUpdated ({ accessPoint }: { accessPoint: TAccessPoint }) {
+    if (accessPoint.id === this.accessPointId) {
+      this.reconnect().then(() => 0);
+    }
   }
 
   isConnected (): boolean {
@@ -185,6 +189,8 @@ Connection established with WEBSOCKET ${mConsulServiceName} on ${mAddress}
   }
 
   destroy () {
+    this.options.commonConfig.eventEmitter.on('access-point-updated', this.onAccessPointUpdatedCallBack);
+    this.socketClient?.disconnect();
     // @ts-ignore
     this.socketClient = undefined;
   }

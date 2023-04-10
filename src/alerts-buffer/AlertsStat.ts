@@ -41,11 +41,12 @@ export class AlertsStat {
     }
   } = { all: iniTTtiu(), byAlertType: {} };
 
-  constructor (ee: EventEmitter) {
-    ee.on('virtual-date-changed', () => { // #1 / 0
-      // Сброс дневной статистики при смене суток
-      this.clearDayStat();
-    });
+  private callbackOnVDC: (...args: any[]) => void;
+
+  constructor (private eventEmitter: EventEmitter) {
+    this.callbackOnVDC = this.clearDayStat.bind(this);
+    // Сброс дневной статистики при смене суток // #1 / 0
+    this.eventEmitter.on('virtual-date-changed', this.callbackOnVDC);
   }
 
   clearDayStat () {
@@ -99,6 +100,26 @@ export class AlertsStat {
       alertsBufferTxt += `${indent}${tab()}${key}: ${ttiu(item, 2)}`;
     });
     return alertsBufferTxt;
+  }
+
+  destroy () {
+    this.eventEmitter.removeListener('virtual-date-changed', this.callbackOnVDC);
+    // @ts-ignore
+    this.callbackOnVDC = undefined;
+    // @ts-ignore
+    this.eventEmitter = undefined;
+    // @ts-ignore
+    this.addedToBuffer = undefined;
+    // @ts-ignore
+    this.sentByEmail = undefined;
+    // @ts-ignore
+    this.savedToDb.all = undefined;
+    Object.keys(this.savedToDb.byAlertType).forEach((key) => {
+      // @ts-ignore
+      this.savedToDb.byAlertType[key] = undefined;
+    });
+    // @ts-ignore
+    this.savedToDb = undefined;
   }
 }
 

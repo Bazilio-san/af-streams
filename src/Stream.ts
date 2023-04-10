@@ -98,6 +98,10 @@ export class Stream {
 
   private isPrepareEventAsync: boolean;
 
+  private onVirtualTimeLoopBackCallBack: OmitThisParameter<() => void>;
+
+  private onVirtualTimeIsSynchronizedWithCurrentCallBack: OmitThisParameter<(value?: number) => void>;
+
   constructor (public options: IStreamConstructorOptions) {
     this.virtualTimeObj = options.virtualTimeObj;
     const { streamConfig } = options;
@@ -152,20 +156,25 @@ export class Stream {
     this.totalRowsSent = 0;
     this.busy = 0;
 
-    options.commonConfig.eventEmitter?.on('virtual-time-loop-back', () => {
-      this.lastRecordTs = 0;
-      this.nextStartTs = this.virtualTimeObj.virtualStartTs;
-      this.recordsBuffer.flush();
-      this.lastTimeRecords.flush();
-      this.totalRowsSent = 0;
-      this.isFirstLoad = true;
-    });
-
-    options.commonConfig.eventEmitter?.on('virtual-time-is-synchronized-with-current', () => {
-      this.setStreamSendIntervalMillis(); // => resetSendIntervalVirtualMillis
-    });
+    this.onVirtualTimeLoopBackCallBack = this.onVirtualTimeLoopBack.bind(this);
+    this.onVirtualTimeIsSynchronizedWithCurrentCallBack = this.setStreamSendIntervalMillis.bind(this);
+    const { eventEmitter: ee } = options.commonConfig;
+    if (ee) {
+      ee.on('virtual-time-loop-back', this.onVirtualTimeLoopBackCallBack);
+      ee.on('virtual-time-is-synchronized-with-current', this.onVirtualTimeIsSynchronizedWithCurrentCallBack);
+    }
 
     this.prefix = `${lCyan}STREAM: ${lBlue}${streamConfig.streamId}${rs}`;
+  }
+
+  // ###############################  EE CALLBACKS  ############################
+  onVirtualTimeLoopBack () {
+    this.lastRecordTs = 0;
+    this.nextStartTs = this.virtualTimeObj.virtualStartTs;
+    this.recordsBuffer.flush();
+    this.lastTimeRecords.flush();
+    this.totalRowsSent = 0;
+    this.isFirstLoad = true;
   }
 
   // ####################################  SET  ################################
@@ -755,6 +764,11 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
   }
 
   async destroy () {
+    const { eventEmitter: ee } = this.options.commonConfig;
+    if (ee) {
+      ee.removeListener('virtual-time-loop-back', this.onVirtualTimeLoopBackCallBack);
+      ee.removeListener('virtual-time-is-synchronized-with-current', this.onVirtualTimeIsSynchronizedWithCurrentCallBack);
+    }
     this.stop({ noResetVirtualTimeObj: true });
     await this.db.destroy();
     // @ts-ignore

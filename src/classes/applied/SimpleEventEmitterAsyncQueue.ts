@@ -43,13 +43,14 @@ export class SimpleEventEmitterAsyncQueue<T> {
 
   locked: number = 0;
 
+  private readonly onEventCallBack: OmitThisParameter<(event: T) => void>;
+
   constructor (public options: ISimpleEventEmitterQueueConstructorOptions<T>) {
     const { name, eventId, queryQueuePeriodMillis } = options;
+
+    this.onEventCallBack = this.onEvent.bind(this);
+    options.eventEmitter.on(eventId, this.onEventCallBack);
     const self = this;
-    options.eventEmitter.on(eventId, (event: T) => {
-      this.add2Queue(event);
-      self.processQueue().then(() => 0);
-    });
     interval(async () => {
       await self.processQueue();
     }, queryQueuePeriodMillis || QUERY_QUEUE_PERIOD_DEFAULT_MILLIS, { stopOnError: false });
@@ -59,6 +60,11 @@ export class SimpleEventEmitterAsyncQueue<T> {
     } else {
       echoSimple(msg);
     }
+  }
+
+  onEvent (event: T) {
+    this.add2Queue(event);
+    this.processQueue().then(() => 0);
   }
 
   add2Queue (event: T) {
@@ -107,7 +113,7 @@ export class SimpleEventEmitterAsyncQueue<T> {
     this.queue.splice(0, this.queue.length);
     // @ts-ignore
     this.queue = undefined;
-    this.options.eventEmitter.removeAllListeners(this.options.eventId);
+    this.options.eventEmitter.removeListener(this.options.eventId, this.onEventCallBack);
     // @ts-ignore
     this.options = undefined;
   }
