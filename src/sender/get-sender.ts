@@ -16,7 +16,7 @@ const checkAccessPointAvailability = async (options: ISenderConstructorOptions) 
   }
 };
 
-const getSender = async (options: ISenderConstructorOptions): Promise<ISender> => {
+export const getSender = async (options: ISenderConstructorOptions): Promise<ISender> => {
   const { streamId } = options;
   let sender = sendersCache[streamId];
   if (sender) {
@@ -55,4 +55,8 @@ const getSender = async (options: ISenderConstructorOptions): Promise<ISender> =
   return sender;
 };
 
-export default getSender;
+export const destroySender = (sender: ISender) => {
+  const { streamId } = sender.options;
+  sender.destroy();
+  delete sendersCache[streamId];
+};

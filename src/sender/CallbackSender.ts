@@ -4,7 +4,7 @@ import { IRecordsComposite, ISenderConstructorOptions, TEventRecord } from '../i
 class CallbackSender extends AbstractSender {
   public eventCallback: Function;
 
-  constructor (options: ISenderConstructorOptions) {
+  constructor (public options: ISenderConstructorOptions) {
     super(options);
 
     const { eventCallback } = options.senderConfig;

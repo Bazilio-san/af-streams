@@ -26,7 +26,7 @@ import {
 } from './interfaces';
 import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
-import getSender from './sender/get-sender';
+import { destroySender, getSender } from './sender/get-sender';
 import { DEBUG_LNP, DEBUG_LTR, DEBUG_STREAM, DEFAULTS, STREAM_ID_FIELD, TS_FIELD } from './constants';
 import localEventEmitter from './ee-scoped';
 
@@ -814,7 +814,7 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     this.lastTimeRecords = undefined;
     // @ts-ignore
     this.virtualTimeObj = undefined;
-    this.sender?.destroy();
+    destroySender(this.sender);
     // @ts-ignore
     this.sender = undefined;
     // @ts-ignore

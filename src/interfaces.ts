@@ -68,13 +68,6 @@ export interface ISenderConfig {
   emitId?: string,
 }
 
-export interface ISender {
-  sendEvents: Function,
-  connect: Function
-  destroy: Function
-  eventCallback?: Function,
-}
-
 export type TDbRecord = { [fieldName: string | symbol]: any };
 export type TYMDms = string; // 'YYYY-MM-DDTHH:mm:ss.SSS'
 
@@ -227,6 +220,14 @@ export interface ISenderConstructorOptions {
   streamId: string,
   senderConfig: ISenderConfig,
   commonConfig: ICommonConfig,
+}
+
+export interface ISender {
+  sendEvents: Function,
+  connect: Function
+  destroy: Function
+  eventCallback?: Function,
+  options: ISenderConstructorOptions
 }
 
 export interface IDbConstructorOptions {
