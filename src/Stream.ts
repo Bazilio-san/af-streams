@@ -6,9 +6,7 @@ import { clearInterval } from 'timers';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { VirtualTimeObj } from './VirtualTimeObj';
-import {
-  boolEnv, cloneDeep, floatEnv, getBool, intEnv, memUsage, padL, sleep,
-} from './utils/utils';
+import { boolEnv, cloneDeep, floatEnv, getBool, intEnv, memUsage, padL } from './utils/utils';
 import getDb from './db/db';
 import {
   blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, bg, yellow,
@@ -803,9 +801,9 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     virtualTimeObj.isCurrentTime = true;
     virtualTimeObj.speed = 0;
 
-    const { streamId, fetchIntervalSec = 1, bufferMultiplier = 1 } = streamConfig;
+    const { streamId/* , fetchIntervalSec = 1, bufferMultiplier = 1 */ } = streamConfig;
     // Выдерживаем паузу для завершения уже запущенных циклов сброса данных
-    await sleep(fetchIntervalSec * 1000 * bufferMultiplier);
+    // await sleep(fetchIntervalSec * 1000 * bufferMultiplier);
     await this.db?.destroy();
 
     // @ts-ignore
