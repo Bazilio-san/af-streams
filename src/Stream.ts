@@ -2,10 +2,13 @@
 
 import { DateTime } from 'luxon';
 import * as cron from 'cron';
+import { clearInterval } from 'timers';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { VirtualTimeObj } from './VirtualTimeObj';
-import { boolEnv, cloneDeep, floatEnv, getBool, intEnv, memUsage, padL } from './utils/utils';
+import {
+  boolEnv, cloneDeep, floatEnv, getBool, intEnv, memUsage, padL, sleep,
+} from './utils/utils';
 import getDb from './db/db';
 import {
   blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, bg, yellow,
@@ -37,7 +40,7 @@ export interface IStreamConstructorOptions {
 
 const getInitStat = () => ({ queryTs: 0 });
 
-const TIMEOUT_TO_PREPARE_EVENT = 5 * 60_000;
+const TIMEOUT_TO_PREPARE_EVENT = 10_000;
 
 // noinspection JSConstantReassignment
 export class Stream {
@@ -80,9 +83,9 @@ export class Stream {
 
   public totalRowsSent: number;
 
-  private readonly tsFieldToMillis: Function;
+  private tsFieldToMillis: Function;
 
-  private readonly prepareEvent: Function;
+  private prepareEvent: Function;
 
   private initialized: boolean = false;
 
@@ -100,9 +103,9 @@ export class Stream {
 
   private isPrepareEventAsync: boolean;
 
-  private readonly onVirtualTimeLoopBackCallBack: OmitThisParameter<() => void>;
+  private destroyed: boolean = false;
 
-  private readonly onVirtualTimeIsSynchronizedWithCurrentCallBack: OmitThisParameter<(value?: number) => void>;
+  public eeListeners: { [eventId: string]: (...args: any[]) => any } = {};
 
   constructor (public options: IStreamConstructorOptions) {
     this.virtualTimeObj = options.virtualTimeObj;
@@ -159,25 +162,23 @@ export class Stream {
     this.totalRowsSent = 0;
     this.busy = 0;
 
-    this.onVirtualTimeLoopBackCallBack = this.onVirtualTimeLoopBack.bind(this);
-    this.onVirtualTimeIsSynchronizedWithCurrentCallBack = this.setStreamSendIntervalMillis.bind(this);
+    this.eeListeners['virtual-time-loop-back'] = () => {
+      this.lastRecordTs = 0;
+      this.nextStartTs = this.virtualTimeObj.virtualStartTs;
+      this.recordsBuffer.flush();
+      this.lastTimeRecords.flush();
+      this.totalRowsSent = 0;
+      this.isFirstLoad = true;
+    };
+    this.eeListeners['virtual-time-is-synchronized-with-current'] = this.setStreamSendIntervalMillis.bind(this);
     const { eventEmitter: ee } = options.commonConfig;
     if (ee) {
-      ee.on('virtual-time-loop-back', this.onVirtualTimeLoopBackCallBack);
-      ee.on('virtual-time-is-synchronized-with-current', this.onVirtualTimeIsSynchronizedWithCurrentCallBack);
+      Object.entries(this.eeListeners).forEach(([eventId, fn]) => {
+        ee.on(eventId, fn);
+      });
     }
 
     this.prefix = `${lCyan}STREAM: ${lBlue}${streamConfig.streamId}${rs}`;
-  }
-
-  // ###############################  EE CALLBACKS  ############################
-  onVirtualTimeLoopBack () {
-    this.lastRecordTs = 0;
-    this.nextStartTs = this.virtualTimeObj.virtualStartTs;
-    this.recordsBuffer.flush();
-    this.lastTimeRecords.flush();
-    this.totalRowsSent = 0;
-    this.isFirstLoad = true;
   }
 
   // ####################################  SET  ################################
@@ -335,6 +336,9 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
   }
 
   async prepareEventsPacket (dbRecordOrRecordset: (TDbRecord | null)[]): Promise<TEventRecord[]> {
+    if (this.destroyed) {
+      return [];
+    }
     const { options: { streamConfig: { streamId, src: { tsField } } }, prepareEvent, isPrepareEventAsync, tsFieldToMillis } = this;
     if (!Array.isArray(dbRecordOrRecordset)) {
       if (!dbRecordOrRecordset || typeof dbRecordOrRecordset !== 'object') {
@@ -380,6 +384,9 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
 
     if (loadedCount) {
       const forBuffer = await this.prepareEventsPacket(recordset);
+      if (this.destroyed) {
+        return;
+      }
       recordset.splice(0, recordset.length);
 
       if (loopTimeMillis) {
@@ -428,6 +435,9 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
   }
 
   private async _loadNextPortion () {
+    if (this.destroyed) {
+      return;
+    }
     const { options, recordsBuffer, virtualTimeObj, stat } = this;
     let { nextStartTs } = this;
     const { streamId, maxBufferSize, timeDelayMillis = 0 } = options.streamConfig;
@@ -648,7 +658,7 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
 
   private async _send () {
     const { recordsBuffer: rb, virtualTimeObj } = this;
-    if (virtualTimeObj.locked) {
+    if (virtualTimeObj.locked || this.destroyed) {
       return;
     }
 
@@ -746,36 +756,58 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
 
   stop (options?: { noResetVirtualTimeObj?: boolean }) {
     this.lock(true);
+    clearInterval(this._sendInterval);
+    clearTimeout(this._sendTimer);
+    clearTimeout(this._printTimer);
+
+    this.recordsBuffer.flush();
+    this.lastTimeRecords.flush();
+
     if (!options?.noResetVirtualTimeObj) {
       this.virtualTimeObj.reset();
     }
 
     this.lastRecordTs = 0;
     this.nextStartTs = this.virtualTimeObj.virtualStartTs;
-    this.recordsBuffer.flush();
-    this.lastTimeRecords.flush();
     this.totalRowsSent = 0;
     this.isFirstLoad = true;
 
     this.prevLastRecordTs = 0;
     this.noRecordsQueryCounter = 0;
 
-    clearInterval(this._sendInterval);
-    clearTimeout(this._sendTimer);
-    clearTimeout(this._printTimer);
     this.stat = getInitStat();
     this.initialized = false;
   }
 
   async destroy () {
-    const { commonConfig, streamConfig } = this.options;
-    const { eventEmitter, echo } = commonConfig;
-    if (eventEmitter) {
-      eventEmitter.removeListener('virtual-time-loop-back', this.onVirtualTimeLoopBackCallBack);
-      eventEmitter.removeListener('virtual-time-is-synchronized-with-current', this.onVirtualTimeIsSynchronizedWithCurrentCallBack);
+    this.locked = true;
+    this.destroyed = true;
+    const { virtualTimeObj, options } = this;
+    const { commonConfig, streamConfig } = options;
+    const { eventEmitter: ee, echo } = commonConfig;
+    if (ee) {
+      Object.entries(this.eeListeners).forEach(([eventId, fn]) => {
+        ee.removeListener(eventId, fn);
+      });
     }
-    this.stop({ noResetVirtualTimeObj: true });
+    this.prepareEvent = (dbRecord: TDbRecord) => dbRecord;
+    this.tsFieldToMillis = () => 0;
+    this.sender.eventCallback = () => null;
+
+    this.stop();
+
+    // Остановка virtualTimeObj
+    clearInterval(virtualTimeObj.frontUpdateInterval);
+    virtualTimeObj.locked = true;
+    virtualTimeObj.timeFront = Date.now();
+    virtualTimeObj.isCurrentTime = true;
+    virtualTimeObj.speed = 0;
+
+    const { streamId, fetchIntervalSec = 1, bufferMultiplier = 1 } = streamConfig;
+    // Выдерживаем паузу для завершения уже запущенных циклов сброса данных
+    await sleep(fetchIntervalSec * 1000 * bufferMultiplier);
     await this.db?.destroy();
+
     // @ts-ignore
     this.recordsBuffer = undefined;
     // @ts-ignore
@@ -795,6 +827,6 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     this.prepareEvent = undefined;
     // @ts-ignore
     this.stat = undefined;
-    echo.warn(`DESTROYED: stream [${streamConfig.streamId}]`);
+    echo.warn(`DESTROYED: stream [${streamId}]`);
   }
 }
