@@ -536,6 +536,7 @@ export class StreamsManager {
     if (this._locked || !this._connectedSockets.size) {
       return;
     }
+    clearTimeout(this._statLoopTimerId);
     const statLoop = () => {
       clearTimeout(this._statLoopTimerId);
       if (this._locked || !this._connectedSockets.size) {
@@ -575,7 +576,6 @@ export class StreamsManager {
     localEventEmitter.removeAllListeners('time-stat');
     this._locked = true;
     this.slowDownStatistics();
-    this._connectedSockets = new Set();
     this._statLoopTimerId = undefined;
     await Promise.all(this.streams.map((stream) => stream.destroy()));
     this.map = {};
