@@ -122,12 +122,3 @@ export class AlertsStat {
     this.savedToDb = undefined;
   }
 }
-
-let alertsStat: AlertsStat;
-
-export const getAlertsStat = (eventEmitter: EventEmitter): AlertsStat => {
-  if (!alertsStat) {
-    alertsStat = new AlertsStat(eventEmitter);
-  }
-  return alertsStat;
-};

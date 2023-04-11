@@ -119,7 +119,7 @@ export {
   TMergeResult,
 } from './alerts-buffer/i-alert';
 
-export { AlertsStat, IStatTT, IStatTTtiu, TIU, getAlertsStat } from './alerts-buffer/AlertsStat';
+export { AlertsStat, IStatTT, IStatTTtiu, TIU } from './alerts-buffer/AlertsStat';
 
 export { AlertsBuffer } from './alerts-buffer/AlertsBuffer';
 

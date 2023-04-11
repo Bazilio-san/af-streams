@@ -3,7 +3,7 @@ import * as cron from 'cron';
 import EventEmitter from 'events';
 import { CronJob } from 'cron';
 import { IAlertEmailSettings, TAlert, TAlertSentFlags, TMergeResult } from './i-alert';
-import { AlertsStat, getAlertsStat } from './AlertsStat';
+import { AlertsStat } from './AlertsStat';
 import { alertEmailFooter, alertEmailHeader, fillHtmlTemplate, fillSubjectTemplate, jsonToHtml, removeHTML } from './utils/utils';
 import { IThrottleExOptions, throttleEx } from '../utils/throttle-ex';
 import { getSendMail, ISendAlertArgs } from './utils/email-service';
@@ -87,7 +87,7 @@ export class AlertsBuffer {
       removeExpiredIntervalMillis: removeExpiredItemsFromAlertsStatesCacheIntervalMillis || 60_000,
     };
     this.sentAlertsFlags = new KeyedSingleEventTimeWindow(classOptions);
-    this.alertsStat = getAlertsStat(options.eventEmitter);
+    this.alertsStat = new AlertsStat(options.eventEmitter);
 
     // Дросселирование отправки писем: письма с одинаковым GUID отправляются не чаще,
     // чем 1 раз в config.email.throttleAlertsIntervalSeconds (задано 600 сек == 10 мин)
