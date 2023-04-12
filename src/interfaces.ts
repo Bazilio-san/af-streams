@@ -295,10 +295,6 @@ export interface IEmBeforeLoadNextPortion {
   vt: number,
 }
 
-export interface IStreamStat {
-  queryTs: number,
-}
-
 export interface IEmAfterLoadNextPortion {
   streamId: string,
   // Left time limit in last request
@@ -317,7 +313,10 @@ export interface IEmAfterLoadNextPortion {
   vt: number, // Virtual time stamp
   lastSpeed: number,
   totalSpeed: number,
-  stat: IStreamStat
+  queryTs: number,
+}
+
+export interface IStreamStat extends IEmAfterLoadNextPortion {
 }
 
 export interface IEmSaveLastTs {

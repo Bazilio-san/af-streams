@@ -6,7 +6,7 @@ import { Stream } from '../Stream';
 import { echoSimple } from '../utils/echo-simple';
 import { VirtualTimeObj, getVirtualTimeObj, IVirtualTimeObjOptions } from '../VirtualTimeObj';
 import {
-  ICommonConfig, IEcho, IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion, ILoggerEx, IOFnArgs, ISenderConfig, IStartTimeConfig, IStreamConfig, IVirtualTimeConfig, TEventRecord,
+  ICommonConfig, IEcho, ILoggerEx, IOFnArgs, ISenderConfig, IStartTimeConfig, IStreamConfig, IVirtualTimeConfig, TEventRecord,
 } from '../interfaces';
 import { cloneDeep, intEnv, timeParamRE } from '../utils/utils';
 import { DEFAULTS, STREAMS_ENV, reloadStreamsEnv, STREAM_ID_FIELD, EMailSendRule } from '../constants';
@@ -93,6 +93,39 @@ export interface IPrepareStreamOptions {
   senderConfig: ISenderConfig,
 }
 
+interface ISmStatisticsData {
+  isSuspended: boolean,
+  isStopped: boolean,
+  heapUsed: number,
+  rss: number,
+
+  vt?: number,
+  isCurrentTime?: boolean,
+
+  rectifier?: {
+    widthMillis: number,
+    rectifierItemsCount: number,
+  },
+  streams?: {
+    streamId: string,
+    recordsetLength: number,
+    isLimitExceed: boolean,
+    lastSpeed: number,
+    totalSpeed: number,
+    queryTs: number,
+    buf: {
+      firstTs: number,
+      lastTs: number,
+      len: number,
+    },
+    rec: {
+      firstTs: number,
+      lastTs: number,
+      len: number,
+    },
+  }[],
+}
+
 const changeStreamParams = (stream: Stream, params: any) => {
   Object.entries(params).forEach(([key, value]: [string, any]) => {
     let isSetEnv = true;
@@ -125,11 +158,6 @@ const changeStreamParams = (stream: Stream, params: any) => {
       process.env[key] = String(value);
     }
   });
-};
-
-const addMemUsage = (data: Object) => {
-  const { heapUsed, rss } = process.memoryUsage();
-  return { ...data, heapUsed, rss };
 };
 
 export class StreamsManager {
@@ -432,40 +460,43 @@ export class StreamsManager {
     */
     const isSuspended = this._locked;
     const isStopped = this.isStopped();
-    let data: any = { isSuspended, isStopped };
+    const { heapUsed, rss } = process.memoryUsage();
+    const data: ISmStatisticsData = { isSuspended, isStopped, heapUsed, rss };
 
     if (!isStopped) {
       const { rectifier, virtualTimeObj, streams } = this;
       const { accumulator } = rectifier || {};
       const { length = 0 } = accumulator || {};
-
-      data = {
-        isSuspended,
-        isStopped,
-        vt: virtualTimeObj?.virtualTs || 0,
-        isCurrentTime: !!virtualTimeObj?.isCurrentTime,
-        rectifier: {
-          widthMillis: rectifier?.options.accumulationTimeMillis || 0,
-          rectifierItemsCount: length,
-        },
-        streams: streams.map((stream) => {
-          const { options: { streamConfig: { streamId } }, recordsBuffer: rb } = stream;
-          return {
-            buf: {
-              firstTs: rb.firstTs,
-              lastTs: rb.lastTs,
-              len: rb.length,
-            },
-            rec: {
-              firstTs: length && accumulator.find((d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
-              lastTs: length && findLast(accumulator, (d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
-              len: length && accumulator.reduce((accum, d) => accum + (d[STREAM_ID_FIELD] === streamId ? 1 : 0), 0),
-            },
-          };
-        }),
+      data.vt = virtualTimeObj?.virtualTs || 0;
+      data.isCurrentTime = !!virtualTimeObj?.isCurrentTime;
+      data.rectifier = {
+        widthMillis: rectifier?.options.accumulationTimeMillis || 0,
+        rectifierItemsCount: length,
       };
+      data.streams = streams.map((stream) => {
+        const { options: { streamConfig: { streamId } }, recordsBuffer: rb, stat } = stream;
+        const { recordsetLength, isLimitExceed, lastSpeed, totalSpeed, queryTs } = stat;
+        return {
+          recordsetLength,
+          isLimitExceed,
+          lastSpeed,
+          totalSpeed,
+          queryTs,
+          streamId,
+          buf: {
+            firstTs: rb.firstTs,
+            lastTs: rb.lastTs,
+            len: rb.length,
+          },
+          rec: {
+            firstTs: length && accumulator.find((d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
+            lastTs: length && findLast(accumulator, (d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
+            len: length && accumulator.reduce((accum, d) => accum + (d[STREAM_ID_FIELD] === streamId ? 1 : 0), 0),
+          },
+        };
+      });
     }
-    localEventEmitter.emit('time-stat', data);
+    localEventEmitter.emit('sm-statistics', data);
   }
 
   streamsSocketIO ({ socket }: IOFnArgs) {
@@ -474,14 +505,8 @@ export class StreamsManager {
     this._connectedSockets.add(socketId);
 
     const listeners: { [eventId: string]: (...args: any[]) => any } = {};
-    listeners['before-lnp'] = (data: IEmBeforeLoadNextPortion) => {
-      socket.volatile.emit('before-lnp', addMemUsage(data));
-    };
-    listeners['after-lnp'] = (data: IEmAfterLoadNextPortion) => {
-      socket.volatile.emit('after-lnp', addMemUsage(data));
-    };
-    listeners['time-stat'] = (data: any) => {
-      socket.volatile.emit('time-stat', addMemUsage(data));
+    listeners['sm-statistics'] = (data: any) => {
+      socket.volatile.emit('sm-statistics', data);
     };
 
     Object.entries(listeners).forEach(([eventId, fn]) => {

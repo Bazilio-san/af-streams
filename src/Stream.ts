@@ -12,7 +12,7 @@ import {
   blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, bg, yellow,
 } from './utils/color';
 import {
-  ICommonConfig, IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion,
+  ICommonConfig, IEmBeforeLoadNextPortion,
   IEmCurrentLastTimeRecords, IEmFindNextTs, IEmSaveLastTs,
   IEmSubtractedLastTimeRecords,
   IRecordsComposite,
@@ -26,7 +26,6 @@ import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
 import { destroySender, getSender } from './sender/get-sender';
 import { DEBUG_LNP, DEBUG_LTR, DEBUG_STREAM, DEFAULTS, STREAM_ID_FIELD, TS_FIELD } from './constants';
-import localEventEmitter from './ee-scoped';
 
 export interface IStreamConstructorOptions {
   commonConfig: ICommonConfig,
@@ -36,7 +35,23 @@ export interface IStreamConstructorOptions {
   virtualTimeObj: VirtualTimeObj,
 }
 
-const getInitStat = () => ({ queryTs: 0 });
+const getInitStat = (obj?: any) => ({
+  streamId: '',
+  startTs: 0, // Left time limit in last request
+  endTs: 0, // Right time limit in last request
+  timeDelayMillis: 0,
+  limit: 0, // Timestamp of the last received record
+  lastRecordTs: 0, // Left border for next request
+  nextStartTs: 0,
+  recordsetLength: 0,
+  isLimitExceed: false,
+  last: null,
+  vt: 0, // Virtual time stamp
+  lastSpeed: 0,
+  totalSpeed: 0,
+  queryTs: 0,
+  ...obj,
+});
 
 const TIMEOUT_TO_PREPARE_EVENT = 10_000;
 
@@ -97,7 +112,7 @@ export class Stream {
 
   public prefix: string;
 
-  public stat: IStreamStat = getInitStat();
+  public stat: IStreamStat;
 
   private isPrepareEventAsync: boolean;
 
@@ -108,7 +123,7 @@ export class Stream {
   constructor (public options: IStreamConstructorOptions) {
     this.virtualTimeObj = options.virtualTimeObj;
     const { streamConfig } = options;
-    const { src, prepareEvent, tsFieldToMillis } = streamConfig;
+    const { streamId, src, prepareEvent, tsFieldToMillis } = streamConfig;
     src.timezoneOfTsField = src.timezoneOfTsField || 'GMT';
 
     const tsFieldToMillisDefault = (tsValue: string | Date | number) => {
@@ -176,7 +191,8 @@ export class Stream {
       });
     }
 
-    this.prefix = `${lCyan}STREAM: ${lBlue}${streamConfig.streamId}${rs}`;
+    this.prefix = `${lCyan}STREAM: ${lBlue}${streamId}${rs}`;
+    this.stat = getInitStat({ streamId });
   }
 
   // ####################################  SET  ################################
@@ -483,7 +499,12 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
 
     try {
       const payloadBefore: IEmBeforeLoadNextPortion = { streamId, startTs, endTs, vt: virtualTimeObj.virtualTs, timeDelayMillis };
-      localEventEmitter.emit('before-lnp', payloadBefore);
+
+      stat.startTs = startTs;
+      stat.endTs = endTs;
+      stat.vt = virtualTimeObj.virtualTs;
+      stat.timeDelayMillis = timeDelayMillis;
+
       if (DEBUG_LNP) {
         options.commonConfig.eventEmitter?.emit('before-load-next-portion', payloadBefore);
       }
@@ -491,12 +512,21 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
       // ================= get Portion Of Data =================
       const recordset: TDbRecord[] | null = await this.db.getPortionOfData({ startTs, endTs, limit, timeDelayMillis });
       // =======================================================
-      stat.queryTs = Date.now() - st;
-
       const recordsetLength = recordset?.length || 0;
-      await this._addPortionToBuffer(recordset); // Inside the function recordset is cleared
-
       const isLimitExceed = recordsetLength >= limit;
+
+      stat.queryTs = Date.now() - st;
+      stat.vt = virtualTimeObj.virtualTs;
+      stat.limit = limit;
+      stat.lastRecordTs = this.lastRecordTs;
+      stat.nextStartTs = this.nextStartTs;
+      stat.recordsetLength = recordsetLength;
+      stat.isLimitExceed = isLimitExceed;
+      stat.last = recordsBuffer.last;
+      stat.lastSpeed = virtualTimeObj.lastSpeed;
+      stat.totalSpeed = virtualTimeObj.totalSpeed;
+
+      await this._addPortionToBuffer(recordset); // Inside the function recordset is cleared
 
       ([isCurrentTime, virtualTs] = virtualTimeObj.setNextTimeFront());
 
@@ -515,25 +545,8 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
         await this.skipGap();
       }
 
-      const payloadAfter: IEmAfterLoadNextPortion = {
-        streamId,
-        startTs,
-        endTs,
-        timeDelayMillis,
-        limit,
-        lastRecordTs: this.lastRecordTs,
-        nextStartTs: this.nextStartTs,
-        recordsetLength,
-        isLimitExceed,
-        last: recordsBuffer.last,
-        vt: virtualTimeObj.virtualTs,
-        lastSpeed: virtualTimeObj.lastSpeed,
-        totalSpeed: virtualTimeObj.totalSpeed,
-        stat,
-      };
-      localEventEmitter.emit('after-lnp', payloadAfter);
       if (DEBUG_LNP) {
-        options.commonConfig.eventEmitter?.emit('after-load-next-portion', payloadAfter);
+        options.commonConfig.eventEmitter?.emit('after-load-next-portion', { ...this.stat });
       }
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
@@ -773,7 +786,7 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     this.prevLastRecordTs = 0;
     this.noRecordsQueryCounter = 0;
 
-    this.stat = getInitStat();
+    this.stat = getInitStat({ vt: this.virtualTimeObj.virtualTs });
     this.initialized = false;
   }
 
