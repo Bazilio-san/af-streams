@@ -6,7 +6,7 @@ import { Stream } from '../Stream';
 import { echoSimple } from '../utils/echo-simple';
 import { VirtualTimeObj, getVirtualTimeObj, IVirtualTimeObjOptions } from '../VirtualTimeObj';
 import {
-  ICommonConfig, IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion, IOFnArgs, ISenderConfig, IStartTimeConfig, IStreamConfig, IVirtualTimeConfig, TEventRecord,
+  ICommonConfig, IEcho, IEmAfterLoadNextPortion, IEmBeforeLoadNextPortion, ILoggerEx, IOFnArgs, ISenderConfig, IStartTimeConfig, IStreamConfig, IVirtualTimeConfig, TEventRecord,
 } from '../interfaces';
 import { cloneDeep, intEnv, timeParamRE } from '../utils/utils';
 import { DEFAULTS, STREAMS_ENV, reloadStreamsEnv, STREAM_ID_FIELD, EMailSendRule } from '../constants';
@@ -127,6 +127,11 @@ const changeStreamParams = (stream: Stream, params: any) => {
   });
 };
 
+const addMemUsage = (data: Object) => {
+  const { heapUsed, rss } = process.memoryUsage();
+  return { ...data, heapUsed, rss };
+};
+
 export class StreamsManager {
   public map: { [streamId: string]: Stream };
 
@@ -135,6 +140,12 @@ export class StreamsManager {
   public virtualTimeObj: VirtualTimeObj = null as unknown as VirtualTimeObj;
 
   public alertsBuffer: AlertsBuffer = null as unknown as AlertsBuffer;
+
+  public eventEmitter: EventEmitter;
+
+  public logger: ILoggerEx;
+
+  public echo: IEcho;
 
   private _statLoopTimerId: any;
 
@@ -149,6 +160,9 @@ export class StreamsManager {
     this._locked = true;
     this._connectedSockets = new Set();
     this.checkCommonConfig(true);
+    this.eventEmitter = this.commonConfig.eventEmitter;
+    this.logger = this.commonConfig.logger;
+    this.echo = this.commonConfig.echo;
   }
 
   checkCommonConfig (isInit: boolean = false) {
@@ -190,7 +204,7 @@ export class StreamsManager {
 
   prepareAlertsBuffer (prepareAlertsBufferOptions: IPrepareAlertsBufferOptions): AlertsBuffer {
     this.checkCommonConfig();
-    const { commonConfig: { logger, echo, eventEmitter }, virtualTimeObj } = this;
+    const { logger, echo, eventEmitter, virtualTimeObj } = this;
     this.alertsBuffer = new AlertsBuffer({ logger, echo, eventEmitter, virtualTimeObj, ...prepareAlertsBufferOptions });
     return this.alertsBuffer;
   }
@@ -259,10 +273,6 @@ export class StreamsManager {
 
   getStream (streamId: string): Stream | undefined {
     return this.map[streamId];
-  }
-
-  get eventEmitter (): EventEmitter {
-    return this.commonConfig.eventEmitter;
   }
 
   changeStreamsParams (data: any) {
@@ -384,6 +394,7 @@ export class StreamsManager {
     this.streams.forEach((stream) => {
       stream.lock(true);
     });
+    this.logger.info(`Streams manager suspended`);
   }
 
   continue () {
@@ -392,6 +403,7 @@ export class StreamsManager {
     });
     this._locked = false;
     this.startIO(true);
+    this.logger.info(`Streams manager continued`);
   }
 
   async start (): Promise<Stream[]> {
@@ -401,6 +413,7 @@ export class StreamsManager {
     const streams = await Promise.all(this.streams.map((stream) => stream.start()));
     this._locked = false;
     this.startIO(true);
+    this.logger.info(`Streams manager started`);
     return streams;
   }
 
@@ -462,15 +475,13 @@ export class StreamsManager {
 
     const listeners: { [eventId: string]: (...args: any[]) => any } = {};
     listeners['before-lnp'] = (data: IEmBeforeLoadNextPortion) => {
-      const { heapUsed, rss } = process.memoryUsage();
-      socket.volatile.emit('before-lnp', { ...data, heapUsed, rss });
+      socket.volatile.emit('before-lnp', addMemUsage(data));
     };
     listeners['after-lnp'] = (data: IEmAfterLoadNextPortion) => {
-      const { heapUsed, rss } = process.memoryUsage();
-      socket.volatile.emit('after-lnp', { ...data, heapUsed, rss });
+      socket.volatile.emit('after-lnp', addMemUsage(data));
     };
     listeners['time-stat'] = (data: any) => {
-      socket.volatile.emit('time-stat', data);
+      socket.volatile.emit('time-stat', addMemUsage(data));
     };
 
     Object.entries(listeners).forEach(([eventId, fn]) => {
@@ -564,7 +575,7 @@ export class StreamsManager {
 
   async destroy () {
     this._locked = true;
-    // this.slowDownStatistics();
+    this.slowDownStatistics();
     await Promise.all(this.streams.map((stream) => stream.destroy()));
     this.map = {};
     this.rectifier?.destroy();
@@ -573,6 +584,6 @@ export class StreamsManager {
     this.virtualTimeObj?.reset();
     this.alertsBuffer?.destroy();
     this.alertsBuffer = null as unknown as AlertsBuffer;
-    this.commonConfig.echo.warn('DESTROYED: [StreamsManager]');
+    this.logger.warn(`DESTROYED: [StreamsManager]`);
   }
 }
