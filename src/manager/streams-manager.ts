@@ -102,6 +102,9 @@ interface ISmStatisticsData {
   vt?: number,
   isCurrentTime?: boolean,
 
+  lastSpeed?: number,
+  totalSpeed?: number,
+
   rectifier?: {
     widthMillis: number,
     rectifierItemsCount: number,
@@ -110,8 +113,6 @@ interface ISmStatisticsData {
     streamId: string,
     recordsetLength: number,
     isLimitExceed: boolean,
-    lastSpeed: number,
-    totalSpeed: number,
     queryDurationMillis: number,
     buf: {
       firstTs: number,
@@ -461,40 +462,48 @@ export class StreamsManager {
     const isSuspended = this._locked;
     const isStopped = this.isStopped();
     const { heapUsed, rss } = process.memoryUsage();
-    const data: ISmStatisticsData = { isSuspended, isStopped, heapUsed, rss };
-
-    if (!isStopped) {
+    let data: ISmStatisticsData;
+    if (isStopped) {
+      data = { isSuspended, isStopped, heapUsed, rss };
+    } else {
       const { rectifier, virtualTimeObj, streams } = this;
+      const { virtualTs: vt, isCurrentTime, lastSpeed, totalSpeed } = virtualTimeObj || {};
       const { accumulator } = rectifier || {};
       const { length = 0 } = accumulator || {};
-      data.vt = virtualTimeObj?.virtualTs || 0;
-      data.isCurrentTime = !!virtualTimeObj?.isCurrentTime;
-      data.rectifier = {
-        widthMillis: rectifier?.options.accumulationTimeMillis || 0,
-        rectifierItemsCount: length,
+      data = {
+        isSuspended,
+        isStopped,
+        heapUsed,
+        rss,
+        vt,
+        isCurrentTime,
+        lastSpeed,
+        totalSpeed,
+        rectifier: {
+          widthMillis: rectifier?.options.accumulationTimeMillis || 0,
+          rectifierItemsCount: length,
+        },
+        streams: streams.map((stream) => {
+          const { options: { streamConfig: { streamId } }, recordsBuffer: rb, stat } = stream;
+          const { recordsetLength, isLimitExceed, queryDurationMillis } = stat;
+          return {
+            recordsetLength,
+            isLimitExceed,
+            queryDurationMillis,
+            streamId,
+            buf: {
+              firstTs: rb.firstTs,
+              lastTs: rb.lastTs,
+              len: rb.length,
+            },
+            rec: {
+              firstTs: length && accumulator.find((d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
+              lastTs: length && findLast(accumulator, (d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
+              len: length && accumulator.reduce((accum, d) => accum + (d[STREAM_ID_FIELD] === streamId ? 1 : 0), 0),
+            },
+          };
+        }),
       };
-      data.streams = streams.map((stream) => {
-        const { options: { streamConfig: { streamId } }, recordsBuffer: rb, stat } = stream;
-        const { recordsetLength, isLimitExceed, lastSpeed, totalSpeed, queryDurationMillis } = stat;
-        return {
-          recordsetLength,
-          isLimitExceed,
-          lastSpeed,
-          totalSpeed,
-          queryDurationMillis,
-          streamId,
-          buf: {
-            firstTs: rb.firstTs,
-            lastTs: rb.lastTs,
-            len: rb.length,
-          },
-          rec: {
-            firstTs: length && accumulator.find((d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
-            lastTs: length && findLast(accumulator, (d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
-            len: length && accumulator.reduce((accum, d) => accum + (d[STREAM_ID_FIELD] === streamId ? 1 : 0), 0),
-          },
-        };
-      });
     }
     localEventEmitter.emit('sm-statistics', data);
   }
