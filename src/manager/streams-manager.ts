@@ -131,12 +131,30 @@ const changeStreamParams = (stream: Stream, params: any) => {
   Object.entries(params).forEach(([key, value]: [string, any]) => {
     let isSetEnv = true;
     switch (key) {
-      case 'STREAM_BUFFER_MULTIPLIER':
-        stream.setBufferMultiplier(value);
+      case 'fetchIntervalSec': {
+        if (typeof value === 'number') {
+          stream.setFetchIntervalSec(value);
+        }
         break;
-      case 'STREAM_FETCH_INTERVAL_SEC':
-        stream.setFetchIntervalSec(value);
+      }
+      case 'bufferMultiplier': {
+        if (typeof value === 'number') {
+          stream.setBufferMultiplier(value);
+        }
         break;
+      }
+      case 'streamSendIntervalMillis': {
+        if (typeof value === 'number') {
+          stream.setStreamSendIntervalMillis(value);
+        }
+        break;
+      }
+      case 'maxRunUp': {
+        if (typeof value === 'number') {
+          stream.setMaxRunUpFirstTsVtMillis(value);
+        }
+        break;
+      }
       case 'STREAM_MAX_BUFFER_SIZE':
         stream.setMaxBufferSize(value);
         break;
@@ -145,9 +163,6 @@ const changeStreamParams = (stream: Stream, params: any) => {
         break;
       case 'STREAM_PRINT_INFO_INTERVAL_SEC':
         stream.setPrintInfoIntervalSec(value);
-        break;
-      case 'STREAM_SEND_INTERVAL_MILLIS':
-        stream.setStreamSendIntervalMillis(value);
         break;
       case 'STREAM_SKIP_GAPS':
         stream.setSkipGaps(value);
@@ -314,22 +329,15 @@ export class StreamsManager {
     if (typeof params !== 'object') {
       return;
     }
-    const { virtualTimeObj } = this;
+    const { virtualTimeObj, rectifier } = this;
     if (!virtualTimeObj) {
       return;
     }
 
     Object.entries(params).forEach(([key, value]: [string, any]) => {
-      let isSetEnv = true;
       switch (key) {
         case 'STREAM_LOOP_TIME_MILLIS':
           virtualTimeObj.setLoopTimeMillis(value);
-          break;
-        case 'STREAM_SPEED_CALC_INTERVAL_SEC':
-          virtualTimeObj.setSpeedCalcIntervalSec(value);
-          break;
-        case 'STREAM_TIME_FRONT_UPDATE_INTERVAL_MILLIS':
-          virtualTimeObj.setTimeFrontUpdateIntervalMillis(value);
           break;
         // #################################################
         case 'startFromLastStop': {
@@ -368,11 +376,60 @@ export class StreamsManager {
           }
           break;
         }
+        case 'fetchIntervalSec': {
+          if (typeof value === 'number') {
+            params.value = Math.max(1, Math.ceil(value));
+            process.env.STREAM_FETCH_INTERVAL_SEC = String(params.value);
+          }
+          break;
+        }
+        case 'bufferMultiplier': {
+          if (typeof value === 'number') {
+            params.value = Math.max(1, value);
+            process.env.STREAM_BUFFER_MULTIPLIER = String(params.value);
+          }
+          break;
+        }
+        case 'streamSendIntervalMillis': {
+          if (typeof value === 'number') {
+            params.value = Math.max(1, Math.ceil(value));
+            process.env.STREAM_SEND_INTERVAL_MILLIS = String(params.value);
+          }
+          break;
+        }
+        case 'maxRunUp': {
+          if (typeof value === 'number') {
+            params.value = Math.max(1, Math.ceil(value));
+            process.env.STREAM_MAX_RUNUP_FIRST_TS_VT_MILLIS = String(params.value);
+          }
+          break;
+        }
+        case 'timeFrontUpdateIntervalMillis': {
+          if (typeof value === 'number') {
+            params.value = Math.max(1, Math.ceil(value));
+            process.env.STREAM_TIME_FRONT_UPDATE_INTERVAL_MILLIS = String(params.value);
+            virtualTimeObj.setTimeFrontUpdateIntervalMillis(value);
+          }
+          break;
+        }
+        case 'rectifierSendIntervalMillis': {
+          if (typeof value === 'number') {
+            params.value = Math.max(1, Math.ceil(value));
+            process.env.RECTIFIER_SEND_INTERVAL_MILLIS = String(params.value);
+            rectifier?.setSendIntervalMillis(value);
+          }
+          break;
+        }
+        case 'rectifierAccumulationTimeMillis': {
+          if (typeof value === 'number') {
+            params.value = Math.max(1, Math.ceil(value));
+            process.env.RECTIFIER_ACCUMULATION_TIME_MILLIS = String(params.value);
+            rectifier?.setAccumulationTimeMillis(value);
+          }
+          break;
+        }
         default:
-          isSetEnv = false;
-      }
-      if (isSetEnv) {
-        process.env[key] = String(value);
+          //
       }
     });
     reloadStreamsEnv();
@@ -406,14 +463,22 @@ export class StreamsManager {
     }
 
     return {
+      isStopped: this.isStopped(),
+      isSuspended: this._locked,
       startFromLastStop: this.virtualTimeObj?.options.startTimeRedis.options.startTimeConfig.useStartTimeFromRedisCache,
       streamStartTime: toUTC_(this.virtualTimeObj?.options.startTimeMillis || 0),
       streamStartBefore,
       speed: this.virtualTimeObj?.speed,
       emailSendRule: STREAMS_ENV.EMAIL_SEND_RULE,
       saveHistoricalAlerts: !STREAMS_ENV.NO_SAVE_HISTORY_ALERTS,
-      isStopped: this.isStopped(),
-      isSuspended: this._locked,
+
+      fetchIntervalSec: STREAMS_ENV.FETCH_INTERVAL_SEC,
+      bufferMultiplier: STREAMS_ENV.BUFFER_MULTIPLIER,
+      streamSendIntervalMillis: STREAMS_ENV.STREAM_SEND_INTERVAL_MILLIS,
+      timeFrontUpdateIntervalMillis: STREAMS_ENV.STREAM_SEND_INTERVAL_MILLIS,
+      rectifierSendIntervalMillis: STREAMS_ENV.RECTIFIER_SEND_INTERVAL_MILLIS,
+      rectifierAccumulationTimeMillis: STREAMS_ENV.RECTIFIER_ACCUMULATION_TIME_MILLIS,
+      maxRunUp: STREAMS_ENV.RECTIFIER_ACCUMULATION_TIME_MILLIS,
     };
   }
 

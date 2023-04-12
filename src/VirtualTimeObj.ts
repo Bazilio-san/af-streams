@@ -17,8 +17,9 @@ export interface IVirtualTimeObjOptions {
 }
 
 export interface IVirtualTimeStat {
-  lastRealTs: number,
-  lastFrontTs: number,
+  arr: [number, number][],
+  interval: number,
+  maxNumberOfItems: number,
   speed: number,
 }
 
@@ -45,11 +46,23 @@ export class VirtualTimeObj {
 
   prevVirtualHourNumber: number = 0;
 
-  stat: IVirtualTimeStat = { lastRealTs: 0, lastFrontTs: 0, speed: 0 };
+  stat: IVirtualTimeStat = {
+    arr: [],
+    interval: 500,
+    maxNumberOfItems: 20,
+    get speed () {
+      if (this.arr.length < 2) {
+        return 0;
+      }
+      const [real1, virt1] = this.arr[0];
+      const [real2, virt2] = this.arr[this.arr.length - 1];
+      return Math.ceil((virt2 - virt1) / (real2 - real1));
+    },
+  };
 
-  frontUpdateInterval: any;
+  _frontUpdateTimer: any;
 
-  timeFrontUpdateInterval: any;
+  _speedCalcTimer: any;
 
   timeFrontUpdateIntervalMillis: number = 0;
 
@@ -85,8 +98,8 @@ export class VirtualTimeObj {
     this.options.virtualTimeConfig.timeFrontUpdateIntervalMillis = value;
     this.timeFrontUpdateIntervalMillis = value;
 
-    clearInterval(this.frontUpdateInterval);
-    this.frontUpdateInterval = setInterval(() => {
+    clearInterval(this._frontUpdateTimer);
+    this._frontUpdateTimer = setInterval(() => {
       if (this.locked) {
         return;
       }
@@ -97,21 +110,16 @@ export class VirtualTimeObj {
     }, this.timeFrontUpdateIntervalMillis);
   }
 
-  setSpeedCalcIntervalSec (value?: number) {
-    value = (value && Number(value))
-      || Number(this.options.virtualTimeConfig.speedCalcIntervalSec)
-      || intEnv('STREAM_SPEED_CALC_INTERVAL_SEC', DEFAULTS.SPEED_CALC_INTERVAL_SEC); // 10 s
-    this.options.virtualTimeConfig.speedCalcIntervalSec = value;
-
-    clearInterval(this.timeFrontUpdateInterval);
-    this.timeFrontUpdateInterval = setInterval(() => {
-      const dReal = Date.now() - this.stat.lastRealTs;
-      const dVirtual = this.timeFront - this.stat.lastFrontTs;
-      this.stat.speed = dReal ? Math.ceil(dVirtual / dReal) : 0;
-
-      this.stat.lastRealTs = Date.now();
-      this.stat.lastFrontTs = this.timeFront;
-    }, this.options.virtualTimeConfig.speedCalcIntervalSec * 1000);
+  startCyclicSpeedCalc () {
+    clearInterval(this._speedCalcTimer);
+    const { stat } = this;
+    const { arr, maxNumberOfItems } = stat;
+    this._speedCalcTimer = setInterval(() => {
+      arr.push([Date.now(), this.timeFront]);
+      if (arr.length > maxNumberOfItems) {
+        arr.splice(0, maxNumberOfItems - arr.length);
+      }
+    }, 500);
   }
 
   reset () {
@@ -120,15 +128,23 @@ export class VirtualTimeObj {
     this.realStartTs = now; // Переустанавливать при запуске
     this.loopNumber = 0;
     this.isCurrentTime = false; // flag: virtual time has caught up with real time
-    this.stat = {
-      lastRealTs: now,
-      lastFrontTs: this.virtualStartTs,
-      speed: 0,
-    };
+    this.stat.arr = [];
     this.setLoopTimeMillis();
     this.setSpeed();
     this.setTimeFrontUpdateIntervalMillis();
-    this.setSpeedCalcIntervalSec();
+    this.startCyclicSpeedCalc();
+  }
+
+  hardStop () {
+    this.lock();
+    clearInterval(this._frontUpdateTimer);
+    clearInterval(this._speedCalcTimer);
+    const now = Date.now();
+    this.timeFront = now;
+    this.realStartTs = now;
+    this.loopNumber = 0;
+    this.stat.arr = [];
+    this.speed = 0;
   }
 
   startUpInfo () {
@@ -231,8 +247,8 @@ ${g}${'='.repeat(64)}`;
 
   lock () {
     if (!this.locked) {
-      this.isCurrentTime = false;
       this.locked = true;
+      this.isCurrentTime = false;
     }
   }
 

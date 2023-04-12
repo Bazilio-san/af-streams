@@ -569,17 +569,20 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
       return;
     }
 
-    const nextTs = await this.db.getNextRecordTs(this.nextStartTs);
+    const nextRecordTime = await this.db.getNextRecordTs(nextStartTs);
     this.noRecordsQueryCounter = 0;
-    if (!nextTs) {
+    if (!nextRecordTime) {
       return;
     }
-    this.nextStartTs = this.tsFieldToMillis(nextTs);
+    const nextRecordTs = this.tsFieldToMillis(nextRecordTime);
+    const gap = nextRecordTs - nextStartTs;
+    this.nextStartTs = nextRecordTs;
     if (DEBUG_LNP) {
       const payload: IEmFindNextTs = {
         streamId: this.options.streamConfig.streamId,
         o: nextStartTs,
         n: this.nextStartTs,
+        gap,
       };
       this.options.commonConfig.eventEmitter?.emit('find-next-ts', payload);
     }
@@ -808,11 +811,7 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
     this.stop();
 
     // Остановка virtualTimeObj
-    clearInterval(virtualTimeObj.frontUpdateInterval);
-    virtualTimeObj.locked = true;
-    virtualTimeObj.timeFront = Date.now();
-    virtualTimeObj.isCurrentTime = true;
-    virtualTimeObj.speed = 0;
+    virtualTimeObj.hardStop();
 
     const { streamId/* , fetchIntervalSec = 1, bufferMultiplier = 1 */ } = streamConfig;
     // Выдерживаем паузу для завершения уже запущенных циклов сброса данных

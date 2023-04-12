@@ -211,7 +211,6 @@ export interface ICommonConfig {
 
 export interface IVirtualTimeConfig {
   speed?: number,
-  speedCalcIntervalSec?: number, // default 10 s
   timeFrontUpdateIntervalMillis?: number, // default 5 ms
   loopTimeMillis?: number,
 }
@@ -332,6 +331,7 @@ export interface IEmFindNextTs {
   streamId: string,
   o: number,
   n: number,
+  gap: number,
 }
 
 // eslint-disable-next-line no-shadow
