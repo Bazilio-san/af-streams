@@ -112,7 +112,7 @@ interface ISmStatisticsData {
     isLimitExceed: boolean,
     lastSpeed: number,
     totalSpeed: number,
-    queryTs: number,
+    queryDurationMillis: number,
     buf: {
       firstTs: number,
       lastTs: number,
@@ -475,13 +475,13 @@ export class StreamsManager {
       };
       data.streams = streams.map((stream) => {
         const { options: { streamConfig: { streamId } }, recordsBuffer: rb, stat } = stream;
-        const { recordsetLength, isLimitExceed, lastSpeed, totalSpeed, queryTs } = stat;
+        const { recordsetLength, isLimitExceed, lastSpeed, totalSpeed, queryDurationMillis } = stat;
         return {
           recordsetLength,
           isLimitExceed,
           lastSpeed,
           totalSpeed,
-          queryTs,
+          queryDurationMillis,
           streamId,
           buf: {
             firstTs: rb.firstTs,

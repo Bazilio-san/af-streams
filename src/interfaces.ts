@@ -313,7 +313,7 @@ export interface IEmAfterLoadNextPortion {
   vt: number, // Virtual time stamp
   lastSpeed: number,
   totalSpeed: number,
-  queryTs: number,
+  queryDurationMillis: number,
 }
 
 export interface IStreamStat extends IEmAfterLoadNextPortion {

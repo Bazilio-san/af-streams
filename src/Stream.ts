@@ -35,7 +35,7 @@ export interface IStreamConstructorOptions {
   virtualTimeObj: VirtualTimeObj,
 }
 
-const getInitStat = (obj?: any) => ({
+const getInitStat = (obj?: any): IStreamStat => ({
   streamId: '',
   startTs: 0, // Left time limit in last request
   endTs: 0, // Right time limit in last request
@@ -49,7 +49,7 @@ const getInitStat = (obj?: any) => ({
   vt: 0, // Virtual time stamp
   lastSpeed: 0,
   totalSpeed: 0,
-  queryTs: 0,
+  queryDurationMillis: 0,
   ...obj,
 });
 
@@ -476,7 +476,7 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
       return;
     }
     let startTs = nextStartTs;
-    let endTs = virtualTimeObj.virtualTs + bufferLookAheadMs + (stat.queryTs * (isCurrentTime ? 1 : virtualTimeObj.speed));
+    let endTs = virtualTimeObj.virtualTs + bufferLookAheadMs + (stat.queryDurationMillis * (isCurrentTime ? 1 : virtualTimeObj.speed));
     // С учетом предыдущих условий, тут расстояние между startTs и endTs не должно превышать
 
     if (this.isFirstLoad) {
@@ -515,7 +515,7 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
       const recordsetLength = recordset?.length || 0;
       const isLimitExceed = recordsetLength >= limit;
 
-      stat.queryTs = Date.now() - st;
+      stat.queryDurationMillis = Date.now() - st;
       stat.vt = virtualTimeObj.virtualTs;
       stat.limit = limit;
       stat.lastRecordTs = this.lastRecordTs;
