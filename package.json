@@ -1,6 +1,6 @@
 {
   "name": "af-streams",
-  "version": "3.0.78",
+  "version": "3.0.79",
   "description": "Data stream from database table",
   "main": "./dist/cjs/src/index.js",
   "module": "./dist/esm/index.js",
@@ -33,7 +33,7 @@
     "mssql": "^9.1.1",
     "nodemailer": "^6.9.1",
     "pg": "^8.10.0",
-    "pretty-print-json": "^1.4.1",
+    "pretty-print-json": "^2.0.0",
     "redis": "^4.6.5",
     "socket.io": "^4.6.1",
     "socket.io-client": "^4.6.1"
@@ -43,9 +43,9 @@
     "@types/app-root-path": "^1.2.4",
     "@types/cron": "2.0.1",
     "@types/jest": "^29.5.0",
-    "@types/luxon": "^3.2.0",
+    "@types/luxon": "^3.3.0",
     "@types/mssql": "^8.1.2",
-    "@types/node": "^18.15.5",
+    "@types/node": "^18.15.11",
     "@types/nodemailer": "^6.4.7",
     "@types/pg": "^8.6.6",
     "@types/supertest": "^2.0.12",
@@ -55,9 +55,9 @@
     "read-excel-file": "^5.6.1",
     "shx": "^0.3.4",
     "supertest": "^6.3.3",
-    "ts-jest": "^29.0.5",
+    "ts-jest": "^29.1.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.0.2"
+    "typescript": "^5.0.4"
   },
   "np": {
     "yarn": false,

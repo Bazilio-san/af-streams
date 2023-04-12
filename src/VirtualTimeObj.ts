@@ -250,15 +250,15 @@ ${g}${'='.repeat(64)}`;
     return `${c}<${millis2isoZ(this.timeFront)}${this.isCurrentTime ? '*' : ''}>${rs}`;
   }
 
-  get virtualTimeISO (): string {
+  get virtualTimeISO (): string | null {
     return millis2isoZ(this.timeFront);
   }
 
-  get virtualStartTimeISO (): string {
+  get virtualStartTimeISO (): string | null {
     return millis2isoZ(this.virtualStartTs);
   }
 
-  get realStartTimeISO (): string {
+  get realStartTimeISO (): string | null {
     return millis2isoZ(this.realStartTs);
   }
 }
