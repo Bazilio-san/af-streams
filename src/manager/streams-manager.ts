@@ -391,16 +391,7 @@ export class StreamsManager {
       stream.unLock(true);
     });
     this._locked = false;
-    this.startIoStatistics(true);
-  }
-
-  stop () { // VVR
-    this._locked = true;
-    this.slowDownStatistics();
-    this.streams.forEach((stream) => {
-      stream.stop({ noResetVirtualTimeObj: true });
-    });
-    this.virtualTimeObj?.reset();
+    this.startIO(true);
   }
 
   async start (): Promise<Stream[]> {
@@ -409,13 +400,8 @@ export class StreamsManager {
     this.virtualTimeObj?.startUpInfo();
     const streams = await Promise.all(this.streams.map((stream) => stream.start()));
     this._locked = false;
-    this.startIoStatistics(true);
+    this.startIO(true);
     return streams;
-  }
-
-  async restart () { // VVR
-    this.stop();
-    return this.start();
   }
 
   collectAndEmitStatistics () {
@@ -473,27 +459,34 @@ export class StreamsManager {
     const socketId = socket.id;
 
     this._connectedSockets.add(socketId);
+
+    const listeners: { [eventId: string]: (...args: any[]) => any } = {};
+    listeners['before-lnp'] = (data: IEmBeforeLoadNextPortion) => {
+      const { heapUsed, rss } = process.memoryUsage();
+      socket.volatile.emit('before-lnp', { ...data, heapUsed, rss });
+    };
+    listeners['after-lnp'] = (data: IEmAfterLoadNextPortion) => {
+      const { heapUsed, rss } = process.memoryUsage();
+      socket.volatile.emit('after-lnp', { ...data, heapUsed, rss });
+    };
+    listeners['time-stat'] = (data: any) => {
+      socket.volatile.emit('time-stat', data);
+    };
+
+    Object.entries(listeners).forEach(([eventId, fn]) => {
+      localEventEmitter.on(eventId, fn);
+    });
+    this.startIO();
+
     socket.on('disconnect', () => {
+      echoSimple.warn(`SOCKET DISCONNECTED: ${socketId}`);
       this._connectedSockets.delete(socketId);
       if (!this._connectedSockets.size) {
-        this.stopIoStatistics();
+        this.stopIO();
       }
-    });
-
-    this.startIoStatistics();
-
-    localEventEmitter.on('before-lnp', (data: IEmBeforeLoadNextPortion) => {
-      const { heapUsed, rss } = process.memoryUsage();
-      socket.emit('before-lnp', { ...data, heapUsed, rss });
-    });
-
-    localEventEmitter.on('after-lnp', (data: IEmAfterLoadNextPortion) => {
-      const { heapUsed, rss } = process.memoryUsage();
-      socket.emit('after-lnp', { ...data, heapUsed, rss });
-    });
-
-    localEventEmitter.on('time-stat', (data: any) => {
-      socket.emit('time-stat', data);
+      Object.entries(listeners).forEach(([eventId, fn]) => {
+        localEventEmitter.removeListener(eventId, fn);
+      });
     });
 
     socket.on('sm-suspend', (...args) => {
@@ -529,17 +522,20 @@ export class StreamsManager {
     return this._locked;
   }
 
-  startIoStatistics (speedUp: boolean = false) {
+  stopIO () {
+    clearTimeout(this._statLoopTimerId);
+  }
+
+  startIO (speedUp: boolean = false) {
     if (speedUp) {
       this.speedUpStatistics();
     }
-    if (this._locked || !this._connectedSockets.size) {
+    if (!this._connectedSockets.size) {
       return;
     }
-    clearTimeout(this._statLoopTimerId);
     const statLoop = () => {
-      clearTimeout(this._statLoopTimerId);
-      if (this._locked || !this._connectedSockets.size) {
+      this.stopIO();
+      if (!this._connectedSockets.size) {
         return;
       }
       this.collectAndEmitStatistics();
@@ -558,10 +554,6 @@ export class StreamsManager {
     this.statisticsSendIntervalMillis = STATISTICS_SEND_INTERVAL.QUICK;
   }
 
-  stopIoStatistics () {
-    clearTimeout(this._statLoopTimerId);
-  }
-
   isStopped () {
     return this._locked
       && (
@@ -571,12 +563,8 @@ export class StreamsManager {
   }
 
   async destroy () {
-    localEventEmitter.removeAllListeners('before-lnp');
-    localEventEmitter.removeAllListeners('after-lnp');
-    localEventEmitter.removeAllListeners('time-stat');
     this._locked = true;
-    this.slowDownStatistics();
-    this._statLoopTimerId = undefined;
+    // this.slowDownStatistics();
     await Promise.all(this.streams.map((stream) => stream.destroy()));
     this.map = {};
     this.rectifier?.destroy();
