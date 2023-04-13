@@ -1,7 +1,5 @@
 /* eslint-disable no-await-in-loop */
-import * as cron from 'cron';
 import EventEmitter from 'events';
-import { CronJob } from 'cron';
 import { IAlertEmailSettings, TAlert, TAlertSentFlags, TMergeResult } from './i-alert';
 import { AlertsStat } from './AlertsStat';
 import { alertEmailFooter, alertEmailHeader, fillHtmlTemplate, fillSubjectTemplate, jsonToHtml, removeHTML } from './utils/utils';
@@ -76,7 +74,9 @@ export class AlertsBuffer {
 
   private sendMail: (options: ISendAlertArgs) => void;
 
-  private cronJob: CronJob | null = null;
+  private _loopTimer: any;
+
+  private busy: number = 0;
 
   constructor (public options: IAlertsBufferConstructorOptions) {
     const { virtualTimeObj, trackAlertsStateMillis, removeExpiredItemsFromAlertsStatesCacheIntervalMillis } = options;
@@ -104,7 +104,7 @@ export class AlertsBuffer {
 
     this.options.flushBufferIntervalSeconds = this.options.flushBufferIntervalSeconds || 3;
     // Запуск сохранения сигналов из буфера каждые 3 секунды
-    this.initCron();
+    this.loop();
   }
 
   markAlertAsSentByEmail (alert: TAlert) {
@@ -363,24 +363,22 @@ export class AlertsBuffer {
     this.saveAlertsToDb(alerts).then(() => 0);
   }
 
-  initCron () {
+  async loop () {
     const maxBusy = 5;
-    let busy = 0;
-    this.cronJob = cron.job({
-      cronTime: `0/${this.options.flushBufferIntervalSeconds} * * * * *`,
-      onTick: async () => {
-        if (busy && busy <= maxBusy) {
-          busy++;
-          return;
-        }
-        if (busy > maxBusy) {
-          busy = 0;
-        }
-        await this.flushBuffer();
-        busy = 0;
-      },
-      start: true,
-    });
+    if (this.busy && this.busy <= maxBusy) {
+      this.busy++;
+      return;
+    }
+    if (this.busy > maxBusy) {
+      this.busy = 0;
+    }
+    try {
+      await this.flushBuffer();
+    } catch (err: any) {
+      this.options.logger.error(err);
+      return;
+    }
+    this.busy = 0;
   }
 
   printDebugMessage (alert: TAlert) {
@@ -403,7 +401,7 @@ export class AlertsBuffer {
   }
 
   destroy () {
-    this.cronJob?.stop();
+    clearTimeout(this._loopTimer);
     // @ts-ignore
     this.buffer = undefined;
     this.sentAlertsFlags.destroy();

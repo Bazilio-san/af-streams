@@ -1,7 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
 
 import { DateTime } from 'luxon';
-import * as cron from 'cron';
 import { clearInterval } from 'timers';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
@@ -81,13 +80,15 @@ export class Stream {
 
   public locked: boolean = false;
 
-  private busy: number;
+  private busy: number = 0;
 
   private _sendTimer: any;
 
   private _sendInterval: any;
 
   private _printTimer: any;
+
+  private _fetchLoopTimer: any;
 
   /**
    * The interval for sending data from the buffer multiplied by the speed of virtual time
@@ -175,7 +176,6 @@ export class Stream {
     this._sendTimer = null;
     this._sendInterval = null;
     this.totalRowsSent = 0;
-    this.busy = 0;
 
     this.eeListeners['virtual-time-loop-back'] = () => {
       this.lastRecordTs = 0;
@@ -607,30 +607,33 @@ ${timeDelay}`;
     }
   }
 
-  private _fetchLoop () {
-    const { options: { commonConfig: { echo }, streamConfig } } = this;
-    cron.job(`0/${streamConfig.fetchIntervalSec} * * * * *`, async () => {
-      if (this.locked) {
-        if (DEBUG_STREAM) {
-          const vt = `vt: ${this.virtualTimeObj.virtualTimeString} ${this.virtualTimeObj.locked ? `${bg.red}${yellow}LOCKED${rs}` : ''}}`;
-          echo(`${this.prefix} ${bg.red}${yellow}STREAM LOCKED${rs} ${vt}`);
-        }
+  private async _fetchLoop () {
+    clearTimeout(this._fetchLoopTimer);
+    const { options: { commonConfig: { echo } } } = this;
+    if (this.locked) {
+      if (DEBUG_STREAM) {
+        const vt = `vt: ${this.virtualTimeObj.virtualTimeString} ${this.virtualTimeObj.locked ? `${bg.red}${yellow}LOCKED${rs}` : ''}}`;
+        echo(`${this.prefix} ${bg.red}${yellow}STREAM LOCKED${rs} ${vt}`);
+      }
+      return;
+    }
+    if (this.busy === 0 || this.busy > 5) {
+      this.busy = 1;
+      try {
+        await this._loadNextPortion();
+      } catch (err: Error | any) {
+        this.options.commonConfig.exitOnError(err);
         return;
       }
-      if (this.busy === 0 || this.busy > 5) {
-        this.busy = 1;
-        try {
-          await this._loadNextPortion();
-        } catch (err: Error | any) {
-          this.options.commonConfig.exitOnError(err);
-          return;
-        }
-        this.busy = 0;
-      } else {
-        this.busy++;
-      }
-    }, null, true, 'GMT', undefined, false);
-    // onComplete, start, timeZone, context, runOnInit
+      this.busy = 0;
+    } else {
+      this.busy++;
+    }
+
+    const self = this;
+    this._fetchLoopTimer = setTimeout(() => {
+      self._fetchLoop();
+    }, (this.options.streamConfig.fetchIntervalSec || DEFAULTS.FETCH_INTERVAL_SEC) * 1000);
   }
 
   private _printInfoLoop () {
@@ -789,6 +792,7 @@ ${timeDelay}`;
 
   stop (options?: { noResetVirtualTimeObj?: boolean }) {
     this.lock(true);
+    clearTimeout(this._fetchLoopTimer);
     clearInterval(this._sendInterval);
     clearTimeout(this._sendTimer);
     clearTimeout(this._printTimer);
