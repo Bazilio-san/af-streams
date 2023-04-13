@@ -149,14 +149,17 @@ export class VirtualTimeObj {
 
   startUpInfo () {
     const { options } = this;
-    const msg = ` [af-streams:VirtualTimeObj::Service:${options.commonConfig.serviceName}] `;
+    const msg = ` [af-streams:VT :: ${m}${options.commonConfig.serviceName}${y}] `;
     const eq = '='.repeat(Math.max(1, Math.ceil((64 - msg.length) / 2)));
-    const info = `${g}${eq}${msg}${eq}
-${g}Start from beginning:  ${m}${options.startTimeRedis.options.startTimeConfig.useStartTimeFromRedisCache ? 'NOT' : 'YES'}
-${g}Speed:                 ${m}${this.speed} X
-${g}Cyclicity:             ${m}${this.loopTimeMillis ? `${this.loopTimeMillis / 1000} sec` : '-'}
-${g}Start time:            ${m}${millis2isoZ(options.startTimeMillis)}${options.isUsedSavedStartTime ? `${y}${bold} TAKEN FROM CACHE${boldOff}${rs}${g}` : ''}
-${g}${'='.repeat(64)}`;
+    let startFrom = `${m}${millis2isoZ(options.startTimeMillis)}${rs}`;
+    if (options.startTimeRedis.options.startTimeConfig.useStartTimeFromRedisCache) {
+      startFrom += `${y}${bold} ${options.isUsedSavedStartTime ? `TAKEN FROM CACHE` : 'NOW'}${boldOff}${rs}`;
+    }
+    const cyclic = this.loopTimeMillis ? `${g}Cyclic:      ${m}${this.loopTimeMillis / 1000} sec${rs}\n${rs}` : '';
+    const info = `${y}${eq}${msg}${eq}${rs}
+${g}Start from:  ${startFrom}
+${g}Speed:       ${m}${bold}${this.speed} X${rs}
+${cyclic}${y}${'-'.repeat(64)}${rs}`;
     options.commonConfig.echo(info);
   }
 
@@ -170,7 +173,7 @@ ${g}${'='.repeat(64)}`;
 
   setNextTimeFront (): [boolean, number] {
     const now = Date.now();
-    if (this.isCurrentTime) {
+    if (this.isCurrentTime || this.locked) {
       this.timeFront = now;
       return [true, now];
     }

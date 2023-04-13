@@ -9,172 +9,17 @@ import {
   ICommonConfig, IEcho, ILoggerEx, IOFnArgs, ISenderConfig, IStartTimeConfig, IStreamConfig, IVirtualTimeConfig, TEventRecord,
 } from '../interfaces';
 import { cloneDeep, intEnv, timeParamRE } from '../utils/utils';
-import { DEFAULTS, STREAMS_ENV, reloadStreamsEnv, STREAM_ID_FIELD, EMailSendRule } from '../constants';
+import { DEFAULTS, STREAMS_ENV, reloadStreamsEnv, STREAM_ID_FIELD } from '../constants';
 import { IRectifierOptions, Rectifier } from '../classes/applied/Rectifier';
 import localEventEmitter from '../ee-scoped';
 import { AlertsBuffer } from '../alerts-buffer/AlertsBuffer';
-import { IAlertEmailSettings, TAlert, TMergeResult } from '../alerts-buffer/i-alert';
 import { toUTC_ } from '../utils/date-utils';
+import { IPrepareAlertsBufferOptions, IPrepareRectifierOptions, IPrepareStreamOptions, ISmStatisticsData } from './i';
+import { changeSmParams } from './change-params';
 
 const findLast = require('array.prototype.findlast');
 
 const STATISTICS_SEND_INTERVAL = { SLOW: 1000, QUICK: 200 };
-
-export interface IPrepareRectifierOptions {
-  /**
-   * Периодичность отправки ts-объектов,
-   * время которых старше <virtualTs> - <accumulationTimeMillis>
-   */
-  sendIntervalMillis?: number,
-
-  /**
-   * Имя свойства ts-объектов, содержащих метку времени,
-   * по которому нужно производить упорядочивание внутри аккумулятора.
-   * Если не передано, используется "ts"
-   */
-  fieldNameToSort?: string,
-
-  /**
-   * Время, в пределах которого происходит аккумуляция и выпрямление событий
-   */
-  accumulationTimeMillis?: number,
-
-  /**
-   * Callback, которому передается массив ts-объектов, упорядоченный по возрастанию
-   * значения поля fieldNameToSort (или ts)
-   */
-  sendFunction: (_rectifierItemsArray: TEventRecord[]) => number,
-}
-
-export interface IPrepareAlertsBufferOptions {
-  /**
-   * Настройки для отправки E-Mail
-   */
-  emailSettings: IAlertEmailSettings,
-
-  /**
-   * Функция сохранения/обновления сигналов
-   */
-  mergeAlerts: (alerts: TAlert[]) => Promise<TMergeResult>;
-
-  /**
-   * Функция проверки наличия сохраненного сигнала в БД
-   */
-  checkAlertExists: (guid: string) => Promise<boolean>,
-
-  /**
-   * Функция сохранения признаков "обработан"
-   */
-  mergeAlertsActions: (guids: string[], operationIds: number[]) => Promise<void>
-
-  /**
-   * Время, в течение которого храним состояние отправки/сохранения сигнала
-   */
-  trackAlertsStateMillis?: number, // Default = MILLIS_IN_HOUR
-
-  /**
-   * Периодичность очистки кеша состояний сигналов
-   */
-  removeExpiredItemsFromAlertsStatesCacheIntervalMillis?: number, // Default = 60_000
-
-  /**
-   * Период вывода сигналов из буфера на отправку по Email и сохранение в БД
-   */
-  flushBufferIntervalSeconds?: number, // Default = 3
-
-  /**
-   * Массив идентификаторов операторов, для которых нужно устанавливать флажки - признаки новых сигналов
-   */
-  setFlagToProcForOperators?: number[],
-}
-
-export interface IPrepareStreamOptions {
-  streamConfig: IStreamConfig,
-  senderConfig: ISenderConfig,
-}
-
-interface ISmStatisticsData {
-  isSuspended: boolean,
-  isStopped: boolean,
-  heapUsed: number,
-  rss: number,
-
-  vt?: number,
-  isCurrentTime?: boolean,
-
-  lastSpeed?: number,
-  totalSpeed?: number,
-
-  rectifier?: {
-    widthMillis: number,
-    rectifierItemsCount: number,
-  },
-  streams?: {
-    streamId: string,
-    recordsetLength: number,
-    isLimitExceed: boolean,
-    queryDurationMillis: number,
-    buf: {
-      firstTs: number,
-      lastTs: number,
-      len: number,
-    },
-    rec: {
-      firstTs: number,
-      lastTs: number,
-      len: number,
-    },
-  }[],
-}
-
-const changeStreamParams = (stream: Stream, params: any) => {
-  Object.entries(params).forEach(([key, value]: [string, any]) => {
-    let isSetEnv = true;
-    switch (key) {
-      case 'fetchIntervalSec': {
-        if (typeof value === 'number') {
-          stream.setFetchIntervalSec(value);
-        }
-        break;
-      }
-      case 'bufferMultiplier': {
-        if (typeof value === 'number') {
-          stream.setBufferMultiplier(value);
-        }
-        break;
-      }
-      case 'streamSendIntervalMillis': {
-        if (typeof value === 'number') {
-          stream.setStreamSendIntervalMillis(value);
-        }
-        break;
-      }
-      case 'maxRunUp': {
-        if (typeof value === 'number') {
-          stream.setMaxRunUpFirstTsVtMillis(value);
-        }
-        break;
-      }
-      case 'STREAM_MAX_BUFFER_SIZE':
-        stream.setMaxBufferSize(value);
-        break;
-      case 'STREAM_MAX_RUNUP_FIRST_TS_VT_MILLIS':
-        stream.setMaxRunUpFirstTsVtMillis(value);
-        break;
-      case 'STREAM_PRINT_INFO_INTERVAL_SEC':
-        stream.setPrintInfoIntervalSec(value);
-        break;
-      case 'STREAM_SKIP_GAPS':
-        stream.setSkipGaps(value);
-        break;
-      default:
-        isSetEnv = false;
-    }
-    if (isSetEnv) {
-      process.env[key] = String(value);
-    }
-  });
-};
 
 export class StreamsManager {
   public map: { [streamId: string]: Stream };
@@ -319,133 +164,9 @@ export class StreamsManager {
     return this.map[streamId];
   }
 
-  changeStreamsParams (data: any) {
-    const { params, env } = data || {};
-    if (typeof env === 'object') {
-      Object.entries(env).forEach(([envName, envValue]) => {
-        process.env[envName] = String(envValue);
-      });
-    }
-    if (typeof params !== 'object') {
-      return;
-    }
-    const { virtualTimeObj, rectifier } = this;
-    if (!virtualTimeObj) {
-      return;
-    }
-
-    Object.entries(params).forEach(([key, value]: [string, any]) => {
-      switch (key) {
-        case 'STREAM_LOOP_TIME_MILLIS':
-          virtualTimeObj.setLoopTimeMillis(value);
-          break;
-        // #################################################
-        case 'startFromLastStop': {
-          process.env.STREAM_USE_START_TIME_FROM_REDIS_CACHE = value ? '1' : '0';
-          virtualTimeObj.options.startTimeRedis.options.startTimeConfig.useStartTimeFromRedisCache = !!value;
-          break;
-        }
-        case 'streamStartTime': {
-          process.env.STREAM_START_TIME = value;
-          break;
-        }
-        case 'streamStartBefore': {
-          if (timeParamRE.test(String(value || ''))) {
-            process.env.STREAM_START_BEFORE = value;
-          }
-          break;
-        }
-        case 'speed': {
-          const speed = Math.floor(parseFloat(String(value)) || 0);
-          if (speed < 1) {
-            return;
-          }
-          process.env.STREAM_SPEED = String(speed);
-          virtualTimeObj.setSpeed(value);
-          break;
-        }
-        case 'emailSendRule': {
-          if (Object.values(EMailSendRule).includes(value)) {
-            process.env.EMAIL_SEND_RULE = value;
-          }
-          break;
-        }
-        case 'saveHistoricalAlerts': {
-          if (typeof value === 'boolean') {
-            process.env.NO_SAVE_HISTORY_ALERTS = value ? '0' : '1';
-          }
-          break;
-        }
-        case 'fetchIntervalSec': {
-          if (typeof value === 'number') {
-            params.value = Math.max(1, Math.ceil(value));
-            process.env.STREAM_FETCH_INTERVAL_SEC = String(params.value);
-          }
-          break;
-        }
-        case 'bufferMultiplier': {
-          if (typeof value === 'number') {
-            params.value = Math.max(1, value);
-            process.env.STREAM_BUFFER_MULTIPLIER = String(params.value);
-          }
-          break;
-        }
-        case 'streamSendIntervalMillis': {
-          if (typeof value === 'number') {
-            params.value = Math.max(1, Math.ceil(value));
-            process.env.STREAM_SEND_INTERVAL_MILLIS = String(params.value);
-          }
-          break;
-        }
-        case 'maxRunUp': {
-          if (typeof value === 'number') {
-            params.value = Math.max(1, Math.ceil(value));
-            process.env.STREAM_MAX_RUNUP_FIRST_TS_VT_MILLIS = String(params.value);
-          }
-          break;
-        }
-        case 'timeFrontUpdateIntervalMillis': {
-          if (typeof value === 'number') {
-            params.value = Math.max(1, Math.ceil(value));
-            process.env.STREAM_TIME_FRONT_UPDATE_INTERVAL_MILLIS = String(params.value);
-            virtualTimeObj.setTimeFrontUpdateIntervalMillis(value);
-          }
-          break;
-        }
-        case 'rectifierSendIntervalMillis': {
-          if (typeof value === 'number') {
-            params.value = Math.max(1, Math.ceil(value));
-            process.env.RECTIFIER_SEND_INTERVAL_MILLIS = String(params.value);
-            rectifier?.setSendIntervalMillis(value);
-          }
-          break;
-        }
-        case 'rectifierAccumulationTimeMillis': {
-          if (typeof value === 'number') {
-            params.value = Math.max(1, Math.ceil(value));
-            process.env.RECTIFIER_ACCUMULATION_TIME_MILLIS = String(params.value);
-            rectifier?.setAccumulationTimeMillis(value);
-          }
-          break;
-        }
-        default:
-          //
-      }
-    });
-    reloadStreamsEnv();
-
-    let { streamIds } = data;
-    if (!Array.isArray(streamIds)) {
-      ({ streamIds } = this);
-    }
-    streamIds.forEach((streamId: string) => {
-      if (this.has(streamId)) {
-        const stream = this.getStream(streamId);
-        if (stream) {
-          changeStreamParams(stream, params);
-        }
-      }
-    });
+  changeParams (data: any) {
+    const { virtualTimeObj, rectifier, streams } = this;
+    changeSmParams(virtualTimeObj, rectifier, streams, data);
   }
 
   getConfigs (): { virtualTimeConfig: IVirtualTimeObjOptions, streamConfigs: { streamConfig: IStreamConfig, senderConfig: ISenderConfig }[] } {
@@ -479,6 +200,11 @@ export class StreamsManager {
       rectifierSendIntervalMillis: STREAMS_ENV.RECTIFIER_SEND_INTERVAL_MILLIS,
       rectifierAccumulationTimeMillis: STREAMS_ENV.RECTIFIER_ACCUMULATION_TIME_MILLIS,
       maxRunUp: STREAMS_ENV.RECTIFIER_ACCUMULATION_TIME_MILLIS,
+
+      loopTimeMillis: STREAMS_ENV.LOOP_TIME_MILLIS,
+      maxBufferSize: STREAMS_ENV.MAX_BUFFER_SIZE,
+      printInfoIntervalSec: STREAMS_ENV.PRINT_INFO_INTERVAL_SEC,
+      skipGaps: STREAMS_ENV.SKIP_GAPS,
     };
   }
 
@@ -512,18 +238,6 @@ export class StreamsManager {
   }
 
   collectAndEmitStatistics () {
-    /*
-    виртуальное время
-    диапазон запроса потока 1
-    диапазон запроса потока 2
-
-    ширина окна выпрямителя
-    мин-макс события в выпрямителе
-     - первого потока
-     - второго потока
-    мин-макс события в буфере 1 потока + количество
-    мин-макс события в буфере 2 потока + количество
-    */
     const isSuspended = this._locked;
     const isStopped = this.isStopped();
     const { heapUsed, rss } = process.memoryUsage();
@@ -607,24 +321,6 @@ export class StreamsManager {
     socket.on('sm-continue', (...args) => {
       this.continue();
       socket.applyFn(args, this._locked);
-    });
-
-    socket.on('change-streams-params', (data, ...args) => {
-      this.changeStreamsParams(data);
-      // Все указанные свойства в data.env перечитываем после обновления и возвращаем новые значения
-      const { env } = data || {};
-      const result: any = {};
-      if (typeof env === 'object') {
-        result.env = {};
-        Object.entries(env).forEach(([envName]) => {
-          result.env[envName] = process.env[envName];
-        });
-      }
-      result.params = this.getConfigsParams();
-      result.actualConfigs = this.getConfigs();
-      if (!socket.applyFn(args, result)) {
-        socket.emit('actual-streams-configs', result);
-      }
     });
   }
 

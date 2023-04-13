@@ -234,7 +234,7 @@ export class Stream {
     this.options.streamConfig.timeDelayMillis = Math.max(0, value);
   }
 
-  setSkipGaps (value?: number) {
+  setSkipGaps (value?: boolean) {
     if (value != null) {
       this.options.streamConfig.skipGaps = getBool(value, DEFAULTS.SKIP_GAPS);
       return;
@@ -280,22 +280,28 @@ export class Stream {
     this.setSkipGaps();
 
     const { commonConfig, streamConfig, senderConfig } = this.options;
-    const { streamId } = streamConfig;
+    const { streamId, timeDelayMillis } = streamConfig;
+    const { echo } = commonConfig;
 
     this.virtualTimeObj.registerStream(this);
     this.nextStartTs = this.virtualTimeObj.virtualStartTs;
 
-    const msg = ` [af-streams: ${streamId}] `;
+    const msg = ` [af-streams: ${m}${streamId}]${yellow} `;
     const eq = '='.repeat(Math.max(1, Math.ceil((64 - msg.length) / 2)));
-    const info = `${g}${eq}${msg}${eq}
-${g}Time field TZ:         ${m}${streamConfig.src.timezoneOfTsField}
-${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
-    commonConfig.echo(info);
+    const timeDelay = timeDelayMillis ? `${g}Time delay in request:   ${m}${timeDelayMillis} ms\n` : '';
+    const info = `${yellow}${eq}${msg}${eq}${rs}
+${g}Time field TZ:           ${m}${streamConfig.src.timezoneOfTsField}
+${g}Db polling frequency:    ${m}${streamConfig.fetchIntervalSec} sec
+${g}Buffer multiplier:       ${m}${streamConfig.bufferMultiplier}
+${g}Buffer cleanup interval: ${m}${streamConfig.streamSendIntervalMillis} ms
+${g}Max RunUp ts-vt:         ${m}${streamConfig.maxRunUpFirstTsVtMillis} ms
+${timeDelay}`;
+    echo(info);
 
     // SENDER
     this.sender = await getSender({ streamId, senderConfig, commonConfig });
 
-    commonConfig.echo(`${g}${'='.repeat(64)}`);
+    echo(`${yellow}${'-'.repeat(64)}${rs}`);
 
     if (!commonConfig.skipInitDbConnection && !this.db) {
       this.db = await getDb({ commonConfig, streamConfig });
@@ -527,6 +533,10 @@ ${g}Db polling frequency:  ${m}${streamConfig.fetchIntervalSec} sec`;
       stat.totalSpeed = virtualTimeObj.totalSpeed;
 
       await this._addPortionToBuffer(recordset); // Inside the function recordset is cleared
+
+      if (this.destroyed) {
+        return;
+      }
 
       ([isCurrentTime, virtualTs] = virtualTimeObj.setNextTimeFront());
 
