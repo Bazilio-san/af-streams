@@ -200,35 +200,55 @@ export class Stream {
   // ####################################  SET  ################################
 
   setFetchIntervalSec (value?: number) {
+    const isEcho = value != null;
     this.options.streamConfig.fetchIntervalSec = (value && Number(value))
       || Number(this.options.streamConfig.fetchIntervalSec)
       || intEnv('STREAM_FETCH_INTERVAL_SEC', DEFAULTS.FETCH_INTERVAL_SEC); // 10 sec
+    if (isEcho) {
+      this.options.commonConfig.echo(`Новое значение ${m}fetchIntervalSec${rs} = ${lBlue}${this.options.streamConfig.fetchIntervalSec}`);
+    }
   }
 
   setBufferMultiplier (value?: number) {
+    const isEcho = value != null;
     value = (value && Number(value))
       || Number(this.options.streamConfig.bufferMultiplier)
       || floatEnv('STREAM_BUFFER_MULTIPLIER', DEFAULTS.BUFFER_MULTIPLIER); // Default 2
     this.options.streamConfig.bufferMultiplier = Math.max(value, 1);
+    if (isEcho) {
+      this.options.commonConfig.echo(`Новое значение ${m}bufferMultiplier${rs} = ${lBlue}${this.options.streamConfig.bufferMultiplier}`);
+    }
   }
 
   setMaxBufferSize (value?: number) {
+    const isEcho = value != null;
     this.options.streamConfig.maxBufferSize = (value && Number(value))
       || Number(this.options.streamConfig.maxBufferSize)
       || intEnv('STREAM_MAX_BUFFER_SIZE', DEFAULTS.MAX_BUFFER_SIZE); // Default 65_000;
+    if (isEcho) {
+      this.options.commonConfig.echo(`Новое значение ${m}maxBufferSize${rs} = ${lBlue}${this.options.streamConfig.maxBufferSize}`);
+    }
   }
 
   setStreamSendIntervalMillis (value?: number) {
+    const isEcho = value != null;
     this.options.streamConfig.streamSendIntervalMillis = (value && Number(value))
       || Number(this.options.streamConfig.streamSendIntervalMillis)
       || intEnv('STREAM_SEND_INTERVAL_MILLIS', DEFAULTS.STREAM_SEND_INTERVAL_MILLIS); // 10 ms ;
     this.resetSendIntervalVirtualMillis();
+    if (isEcho) {
+      this.options.commonConfig.echo(`Новое значение ${m}streamSendIntervalMillis${rs} = ${lBlue}${this.options.streamConfig.streamSendIntervalMillis}`);
+    }
   }
 
   setMaxRunUpFirstTsVtMillis (value?: number) {
+    const isEcho = value != null;
     this.options.streamConfig.maxRunUpFirstTsVtMillis = (value && Number(value))
       || Number(this.options.streamConfig.maxRunUpFirstTsVtMillis)
       || intEnv('STREAM_MAX_RUNUP_FIRST_TS_VT_MILLIS', DEFAULTS.MAX_RUNUP_FIRST_TS_VT_MILLIS); // 2_000 ms
+    if (isEcho) {
+      this.options.commonConfig.echo(`Новое значение ${m}maxRunUpFirstTsVtMillis${rs} = ${lBlue}${this.options.streamConfig.maxRunUpFirstTsVtMillis}`);
+    }
   }
 
   setTimeDelay (value?: number) {
@@ -237,17 +257,25 @@ export class Stream {
   }
 
   setSkipGaps (value?: boolean) {
+    const isEcho = value != null;
     if (value != null) {
       this.options.streamConfig.skipGaps = getBool(value, DEFAULTS.SKIP_GAPS);
       return;
     }
     this.options.streamConfig.skipGaps = boolEnv('STREAM_SKIP_GAPS', DEFAULTS.SKIP_GAPS);
+    if (isEcho) {
+      this.options.commonConfig.echo(`Новое значение ${m}skipGaps${rs} = ${lBlue}${this.options.streamConfig.skipGaps}`);
+    }
   }
 
   setPrintInfoIntervalSec (value?: number) {
+    const isEcho = value != null;
     this.options.streamConfig.printInfoIntervalSec = (value && Number(value))
       || Number(this.options.streamConfig.printInfoIntervalSec)
       || intEnv('STREAM_PRINT_INFO_INTERVAL_SEC', DEFAULTS.PRINT_INFO_INTERVAL_SEC); // Default 60;
+    if (isEcho) {
+      this.options.commonConfig.echo(`Новое значение ${m}printInfoIntervalSec${rs} = ${lBlue}${this.options.streamConfig.printInfoIntervalSec}`);
+    }
   }
 
   setEventCallback (eventCallback: Function) {

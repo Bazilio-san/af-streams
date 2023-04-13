@@ -19,7 +19,7 @@ import { changeSmParams } from './change-params';
 
 const findLast = require('array.prototype.findlast');
 
-const STATISTICS_SEND_INTERVAL = { SLOW: 1000, QUICK: 200 };
+const STATISTICS_SEND_INTERVAL = { SLOW: 1000, QUICK: 100 };
 
 export class StreamsManager {
   public map: { [streamId: string]: Stream };
@@ -196,10 +196,10 @@ export class StreamsManager {
       fetchIntervalSec: STREAMS_ENV.FETCH_INTERVAL_SEC,
       bufferMultiplier: STREAMS_ENV.BUFFER_MULTIPLIER,
       streamSendIntervalMillis: STREAMS_ENV.STREAM_SEND_INTERVAL_MILLIS,
-      timeFrontUpdateIntervalMillis: STREAMS_ENV.STREAM_SEND_INTERVAL_MILLIS,
+      timeFrontUpdateIntervalMillis: STREAMS_ENV.TIME_FRONT_UPDATE_INTERVAL_MILLIS,
       rectifierSendIntervalMillis: STREAMS_ENV.RECTIFIER_SEND_INTERVAL_MILLIS,
       rectifierAccumulationTimeMillis: STREAMS_ENV.RECTIFIER_ACCUMULATION_TIME_MILLIS,
-      maxRunUp: STREAMS_ENV.RECTIFIER_ACCUMULATION_TIME_MILLIS,
+      maxRunUp: STREAMS_ENV.MAX_RUNUP_FIRST_TS_VT_MILLIS,
 
       loopTimeMillis: STREAMS_ENV.LOOP_TIME_MILLIS,
       maxBufferSize: STREAMS_ENV.MAX_BUFFER_SIZE,
