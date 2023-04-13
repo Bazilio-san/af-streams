@@ -264,16 +264,16 @@ export class StreamsManager {
         },
         streams: streams.map((stream) => {
           const { options: { streamConfig: { streamId } }, recordsBuffer: rb, stat } = stream;
-          const { recordsetLength, isLimitExceed, queryDurationMillis } = stat;
+          const { recordsetLength, isLimitExceed, queryDurationMillis } = stat || {};
           return {
             recordsetLength,
             isLimitExceed,
             queryDurationMillis,
             streamId,
             buf: {
-              firstTs: rb.firstTs,
-              lastTs: rb.lastTs,
-              len: rb.length,
+              firstTs: rb?.firstTs,
+              lastTs: rb?.lastTs,
+              len: rb?.length,
             },
             rec: {
               firstTs: length && accumulator.find((d: TEventRecord) => d[STREAM_ID_FIELD] === streamId)?.tradeTime,
