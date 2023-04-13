@@ -324,6 +324,7 @@ export interface IEmSaveLastTs {
 }
 
 export interface IStreamLike {
+  gapEdge: number,
   getDesiredTimeFront: (_timeFront: number, _timeShift: number) => number,
 }
 

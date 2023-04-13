@@ -28,6 +28,12 @@ export class VirtualTimeObj {
 
   virtualStartTs: number;
 
+  runningRealTime: {
+    prevTs: number,
+    expectedTimeFront: number,
+    millis: number, // Количество миллисекунд, когда сервис был в работе (остановки не всчет)
+  } = { prevTs: Date.now(), millis: 0, expectedTimeFront: 0 };
+
   loopNumber: number = 0;
 
   isCurrentTime: boolean = false;
@@ -70,7 +76,7 @@ export class VirtualTimeObj {
 
   constructor (public options: IVirtualTimeObjOptions) {
     this.virtualStartTs = options.startTimeMillis; // timestamp millis from which to start uploading data
-
+    this.runningRealTime.expectedTimeFront = options.startTimeMillis;
     this.reset();
     this.startUpInfo();
   }
@@ -91,6 +97,16 @@ export class VirtualTimeObj {
     this.speed = Math.max(1, value);
   }
 
+  updateRunningTime () {
+    const { prevTs } = this.runningRealTime;
+    const now = Date.now();
+    if (!this.locked) {
+      this.runningRealTime.millis += (now - prevTs);
+    }
+    this.runningRealTime.prevTs = now;
+    this.runningRealTime.expectedTimeFront = Math.max(this.virtualStartTs + this.runningRealTime.millis * this.speed, this.timeFront);
+  }
+
   setTimeFrontUpdateIntervalMillis (value?: number) {
     value = (value && Number(value))
       || Number(this.options.virtualTimeConfig.timeFrontUpdateIntervalMillis)
@@ -103,6 +119,7 @@ export class VirtualTimeObj {
       if (this.locked) {
         return;
       }
+      this.updateRunningTime();
       this.setNextTimeFront();
       this._loopIfNeed();
       this._detectDayChange();
@@ -119,6 +136,7 @@ export class VirtualTimeObj {
       if (arr.length > maxNumberOfItems) {
         arr.splice(0, maxNumberOfItems - arr.length);
       }
+      this.updateRunningTime();
     }, 500);
   }
 
@@ -178,8 +196,19 @@ ${cyclic}${y}${'-'.repeat(64)}${rs}`;
       return [true, now];
     }
     const timeShift: number = this.timeFrontUpdateIntervalMillis * this.speed;
-    if (this.streams.length) {
-      this.timeFront = Math.min(...this.streams.map((stream) => stream.getDesiredTimeFront(this.timeFront, timeShift)));
+    const { streams, timeFront: lastTF } = this;
+    if (streams.length) {
+      const allGaps = streams.map(({ gapEdge: v }) => v);
+      const minDesiredTimeFront = Math.min(...streams.map((stream) => stream.getDesiredTimeFront(lastTF, timeShift)));
+      if (allGaps.every(Boolean)) {
+        const minGapEdge = Math.min(...allGaps);
+        streams.forEach((stream) => {
+          stream.gapEdge = 0;
+        });
+        this.timeFront = Math.max(minGapEdge, minDesiredTimeFront);
+      } else {
+        this.timeFront = Math.min(minDesiredTimeFront, Math.max(lastTF, this.runningRealTime.expectedTimeFront) + timeShift);
+      }
     } else {
       this.timeFront += timeShift;
     }

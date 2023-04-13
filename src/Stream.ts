@@ -120,6 +120,8 @@ export class Stream {
 
   public eeListeners: { [eventId: string]: (...args: any[]) => any } = {};
 
+  gapEdge: number = 0;
+
   constructor (public options: IStreamConstructorOptions) {
     this.virtualTimeObj = options.virtualTimeObj;
     const { streamConfig } = options;
@@ -548,11 +550,16 @@ ${timeDelay}`;
       } else {
         // В случае, если лимит не превышен, чтобы не впасть в цикл пустых выборок
         // в режиме РЕАЛЬНОГО времени, нужно не допустить убегания nextStartTs в будущее.
-        this.nextStartTs = isCurrentTime ? Math.min(endTs, virtualTs) : endTs;
+        // в режиме ВИРТУАЛЬНОГО времени берем nextStartTs если он больше endTs, т.к. найден в алгоритме пропуска ГЕПов.
+        this.nextStartTs = isCurrentTime
+          ? Math.min(endTs, virtualTs)
+          : Math.max(endTs, this.nextStartTs);
       }
 
       if (!recordsetLength) {
         await this.skipGap();
+      } else {
+        this.gapEdge = 0;
       }
 
       if (DEBUG_LNP) {
@@ -566,6 +573,7 @@ ${timeDelay}`;
 
   private async skipGap () {
     if (!this.options.streamConfig.skipGaps || this.virtualTimeObj.isCurrentTime) {
+      this.gapEdge = 0;
       return;
     }
     const { lastRecordTs, nextStartTs } = this;
@@ -587,6 +595,7 @@ ${timeDelay}`;
     const nextRecordTs = this.tsFieldToMillis(nextRecordTime);
     const gap = nextRecordTs - nextStartTs;
     this.nextStartTs = nextRecordTs;
+    this.gapEdge = nextRecordTs;
     if (DEBUG_LNP) {
       const payload: IEmFindNextTs = {
         streamId: this.options.streamConfig.streamId,
@@ -747,8 +756,8 @@ ${timeDelay}`;
       // Не допускаем увеличение разницы между ts первого элемента и виртуальным временем боле, чем на maximumRunUp...
       return firstTs + (this.options.streamConfig.maxRunUpFirstTsVtMillis || DEFAULTS.MAX_RUNUP_FIRST_TS_VT_MILLIS);
     }
+    // Если буфер пуст
     if (this.nextStartTs) {
-      // Если буфер пуст
       return this.nextStartTs + this.sendIntervalVirtualMillis;
     }
     return timeFront + timeShift;
