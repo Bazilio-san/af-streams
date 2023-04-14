@@ -248,13 +248,13 @@ export class AlertsBuffer {
       }
     }
 
-    const allowMap = await Promise.all(alerts.map((alert) => {
+    const allowedSendByEmailMap = await Promise.all(alerts.map((alert) => {
       if (!alert.canSendByEmail) {
         return true;
       }
       return alert.canSendByEmail();
     }));
-    return alertsToSend.filter((_, index) => allowMap[index]);
+    return alertsToSend.filter((_, index) => allowedSendByEmailMap[index]);
   }
 
   /**
@@ -281,13 +281,13 @@ export class AlertsBuffer {
    */
   async filterAlertsAllowedSaveToDb (alerts: TAlert[]): Promise<TAlert[]> {
     alerts = alerts.filter((alert) => !this.isAlertSavedToDb(alert));
-    const allowMap = await Promise.all(alerts.map((alert) => {
+    const allowedSaveToDbMap = await Promise.all(alerts.map((alert) => {
       if (!alert.canSaveToDb) {
         return true;
       }
       return alert.canSaveToDb();
     }));
-    return alerts.filter((_, index) => allowMap[index]);
+    return alerts.filter((_, index) => allowedSaveToDbMap[index]);
   }
 
   /**
