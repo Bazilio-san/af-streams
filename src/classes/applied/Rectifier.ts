@@ -93,18 +93,6 @@ export class Rectifier {
     }, this.options.sendIntervalMillis);
   }
 
-  sendItemsFromLeft (): number {
-    const { accumulator, fieldNameToSort } = this;
-    const index = findIndexOfNearestSmaller(accumulator, this.virtualTimeObj.virtualTs - this.options.accumulationTimeMillis, fieldNameToSort);
-    if (index > -1) {
-      const toSend = accumulator.splice(0, index + 1);
-      const { length } = accumulator;
-      this.lastTs = length ? accumulator[length - 1][fieldNameToSort] : 0;
-      return this.sendFunction(toSend);
-    }
-    return 0;
-  }
-
   add (item: TEventRecord): void {
     const { accumulator, fieldNameToSort } = this;
     const ts = item[fieldNameToSort];
@@ -125,6 +113,18 @@ export class Rectifier {
     } else {
       accumulator.unshift(item);
     }
+  }
+
+  sendItemsFromLeft (): number {
+    const { accumulator, fieldNameToSort } = this;
+    const index = findIndexOfNearestSmaller(accumulator, this.virtualTimeObj.virtualTs - this.options.accumulationTimeMillis, fieldNameToSort);
+    if (index > -1) {
+      const toSend = accumulator.splice(0, index + 1);
+      const { length } = accumulator;
+      this.lastTs = length ? accumulator[length - 1][fieldNameToSort] : 0;
+      return this.sendFunction(toSend);
+    }
+    return 0;
   }
 
   /**

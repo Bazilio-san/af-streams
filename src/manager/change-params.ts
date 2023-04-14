@@ -132,9 +132,9 @@ export const changeSmParams = (virtualTimeObj: VirtualTimeObj, rectifier: Rectif
         }
         break;
       }
-      case 'saveHistoricalAlerts': {
+      case 'processHistoricalAlerts': {
         if (typeof value === 'boolean') {
-          process.env.NO_SAVE_HISTORY_ALERTS = value ? '0' : '1';
+          process.env.PROCESS_HISTORICAL_ALERTS = value ? '1' : '0';
         }
         break;
       }

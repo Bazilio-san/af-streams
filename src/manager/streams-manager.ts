@@ -191,7 +191,7 @@ export class StreamsManager {
       streamStartBefore,
       speed: this.virtualTimeObj?.speed,
       emailSendRule: STREAMS_ENV.EMAIL_SEND_RULE,
-      saveHistoricalAlerts: !STREAMS_ENV.NO_SAVE_HISTORY_ALERTS,
+      processHistoricalAlerts: STREAMS_ENV.PROCESS_HISTORICAL_ALERTS,
 
       fetchIntervalSec: STREAMS_ENV.FETCH_INTERVAL_SEC,
       bufferMultiplier: STREAMS_ENV.BUFFER_MULTIPLIER,
