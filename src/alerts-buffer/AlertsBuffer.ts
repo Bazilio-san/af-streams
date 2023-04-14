@@ -9,7 +9,7 @@ import * as color from '../utils/color';
 import { intEnv } from '../utils/utils';
 import { IKeyedSingleEventTimeWindowConstructorOptions, KeyedSingleEventTimeWindow } from '../classes/keyed/KeyedSingleEventTimeWindow';
 import { VirtualTimeObj } from '../VirtualTimeObj';
-import { DEBUG_ALERTS_BUFFER, EMailSendRule, STREAMS_ENV, isDeprecatedSendAlertsByEmail } from '../constants';
+import { DEBUG_ALERTS_BUFFER, EMailSendRule, STREAMS_ENV, isDeprecatedSendAlertsByEmail, DEFAULTS } from '../constants';
 import { IEcho, ILoggerEx } from '../interfaces';
 
 const MILLIS_IN_HOUR = 3_600_000;
@@ -104,7 +104,7 @@ export class AlertsBuffer {
 
     this.options.flushBufferIntervalSeconds = this.options.flushBufferIntervalSeconds || 3;
     // Запуск сохранения сигналов из буфера каждые 3 секунды
-    this.loop();
+    this.loop().then(() => 0);
   }
 
   markAlertAsSentByEmail (alert: TAlert) {
@@ -364,6 +364,7 @@ export class AlertsBuffer {
   }
 
   async loop () {
+    clearTimeout(this._loopTimer);
     const maxBusy = 5;
     if (this.busy && this.busy <= maxBusy) {
       this.busy++;
@@ -379,6 +380,10 @@ export class AlertsBuffer {
       return;
     }
     this.busy = 0;
+    const self = this;
+    this._loopTimer = setTimeout(() => {
+      self.loop();
+    }, (this.options.flushBufferIntervalSeconds || DEFAULTS.FLUSH_ALERTS_BUFFER_INTERVAL_SEC) * 1000);
   }
 
   printDebugMessage (alert: TAlert) {

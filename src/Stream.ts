@@ -349,7 +349,7 @@ ${timeDelay}`;
       await this.init();
     }
     await this._loadNextPortion();
-    this._fetchLoop();
+    this._fetchLoop().then(() => 0);
     this._printInfoLoop();
     // Additional external call loop in case of interruption of the chain of internal calls _sendLoop()
     this._sendInterval = setInterval(() => {
