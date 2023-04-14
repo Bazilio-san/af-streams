@@ -509,6 +509,7 @@ ${timeDelay}`;
       // === Режим виртуального времени ===
       // Если время начала следующего запроса находится впереди текущего виртуального времени более,
       // чем на расстояние bufferLookAheadMs, новых записей подгружать не нужно
+      this.gapEdge = nextStartTs;
       return;
     }
     let startTs = nextStartTs;
@@ -577,10 +578,10 @@ ${timeDelay}`;
         this.nextStartTs = this.lastRecordTs;
       } else {
         // В случае, если лимит не превышен, чтобы не впасть в цикл пустых выборок
-        // в режиме РЕАЛЬНОГО времени, нужно не допустить убегания nextStartTs в будущее.
-        // в режиме ВИРТУАЛЬНОГО времени берем nextStartTs если он больше endTs, т.к. найден в алгоритме пропуска ГЕПов.
         this.nextStartTs = isCurrentTime
+          // в режиме РЕАЛЬНОГО времени, нужно не допустить убегания nextStartTs в будущее.
           ? Math.min(endTs, virtualTs)
+          // в режиме ВИРТУАЛЬНОГО времени берем nextStartTs если он больше endTs, т.к. найден в алгоритме пропуска ГЕПов.
           : Math.max(endTs, this.nextStartTs);
       }
 
