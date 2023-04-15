@@ -1,10 +1,10 @@
 /* eslint-disable no-await-in-loop */
 import EventEmitter from 'events';
 import * as color from 'af-color';
+import { IThrottleExOptions, throttleEx } from 'af-tools-ts';
 import { IAlertEmailSettings, TAlert, TAlertSentFlags, TMergeResult } from './i-alert';
 import { AlertsStat } from './AlertsStat';
 import { alertEmailFooter, alertEmailHeader, fillHtmlTemplate, fillSubjectTemplate, jsonToHtml, removeHTML } from './utils/utils';
-import { IThrottleExOptions, throttleEx } from '../utils/throttle-ex';
 import { getSendMail, ISendAlertArgs } from './utils/email-service';
 import { intEnv } from '../utils/utils';
 import { IKeyedSingleEventTimeWindowConstructorOptions, KeyedSingleEventTimeWindow } from '../classes/keyed/KeyedSingleEventTimeWindow';

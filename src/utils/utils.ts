@@ -226,23 +226,3 @@ export const intEnv = (name: string, def: number) => Math.ceil(floatEnv(name, de
 export const strEnv = (name: string, def: string) => process.env[name] || def;
 
 export const boolEnv = (name: string, def = false) => getBool(process.env[name], def);
-
-/*
-export const copyRecord = (record: TDbRecord): TDbRecord => {
-  const recordCopy = { ...record };
-  Object.entries(recordCopy).forEach(([key, value]) => {
-    if (value && typeof value !== 'object') {
-      if (value instanceof Date) {
-        recordCopy[key] = Number(value);
-      } else {
-        try {
-          recordCopy[key] = JSON.parse(JSON.stringify(value));
-        } catch (err) {
-          //
-        }
-      }
-    }
-  });
-  return recordCopy;
-};
-*/

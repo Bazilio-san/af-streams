@@ -1230,10 +1230,10 @@ af-logger@^2.0.28:
     winston "^3.4.0"
     winston-daily-rotate-file "^4.5.5"
 
-af-tools-ts@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/af-tools-ts/-/af-tools-ts-1.0.4.tgz#4ea9da805d77772a3213f4caff084b7f12a4d88e"
-  integrity sha512-yHSVXsYGBYyUpnBfdViG75U1HglUB1TCPGEF8inWmII0k7PSKHnDE77z8tpX4V7gCzgZBsRht7fOXZrQ2ovDqg==
+af-tools-ts@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/af-tools-ts/-/af-tools-ts-1.0.5.tgz#2d92d7f01f79131d8ceff0cdd8a8b81b2ceb5882"
+  integrity sha512-KjqYypR+Td2MTjMTJCxQozoa2ltn85heeMz2zpGP7sshwZQQoZ9WbI94CMV+0Km8OMFAfAL5XIqynGd5rKFC1Q==
   dependencies:
     af-color "^0.0.1"
     af-echo-ts "^1.0.3"
