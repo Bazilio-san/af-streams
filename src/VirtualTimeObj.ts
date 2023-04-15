@@ -1,8 +1,8 @@
 // noinspection JSUnusedGlobalSymbols
 
 import { clearInterval } from 'timers';
+import { bold, boldOff, c, g, m, rs, y } from 'af-color';
 import { ICommonConfig, IEmVirtualDateChanged, IEmVirtualHourChanged, IStartTimeConfig, IStreamLike, IVirtualTimeConfig } from './interfaces';
-import { bold, boldOff, c, g, m, rs, y } from './utils/color';
 import { DEFAULTS, MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
 import { millis2isoZ } from './utils/date-utils';
 import { intEnv } from './utils/utils';

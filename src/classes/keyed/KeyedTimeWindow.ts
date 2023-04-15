@@ -1,10 +1,10 @@
 // noinspection JSUnusedGlobalSymbols
 
+import { lBlue, m } from 'af-color';
+import { echo } from 'af-echo-ts';
+import { Debug } from 'af-tools-ts';
 import { ITimeWindowItem, ITimeWindowSetStatOptions, TimeWindow } from '../base/TimeWindow';
-import { echoSimple } from '../../utils/echo-simple';
 import { MILLIS_IN_HOUR, MIN_WINDOW_MILLIS } from '../../constants';
-import { Debug } from '../../utils/debug';
-import { lBlue, m } from '../../utils/color';
 import { toUTC } from '../../utils/date-utils';
 import { VirtualTimeObj } from '../../VirtualTimeObj';
 import { getTimeParamFromMillis } from '../../utils/utils';
@@ -102,7 +102,7 @@ export class KeyedTimeWindow<T, S = any> {
         const st = Date.now();
         const removedCount = self.removeExpired(virtualTimeObj.virtualTs);
         if (debug.enabled && removedCount) {
-          echoSimple(`${m}Удалено ${lBlue}${removedCount}${m} устаревших событий из окон [KeyedTimeWindow] winName: ${lBlue
+          echo(`${m}Удалено ${lBlue}${removedCount}${m} устаревших событий из окон [KeyedTimeWindow] winName: ${lBlue
           }${this.options.winName}${m} 🕒 ${Date.now() - st} ms`);
         }
       }, removeExpiredIntervalMillis || 10_000);
@@ -157,13 +157,13 @@ export class KeyedTimeWindow<T, S = any> {
 
     if (debug.enabled && removed.length) {
       const winWidth = getTimeParamFromMillis(this.widthMillis, 'biggest');
-      echoSimple(`${m}Удалены устаревшее события (${lBlue}${removed.length}${m} шт) из окна [KeyedTimeWindow] winName: ${lBlue
+      echo(`${m}Удалены устаревшее события (${lBlue}${removed.length}${m} шт) из окна [KeyedTimeWindow] winName: ${lBlue
       }${this.options.winName}${m} (width: ${winWidth})`);
       const inputTimes = removed.map(({ ts }) => ts);
       const minInputTs = Math.min(...inputTimes);
       const maxInputTs = Math.max(...inputTimes);
       const minInterval = getTimeParamFromMillis(virtualTs - minInputTs, 'biggest');
-      echoSimple(`${m}\t min ts: ${lBlue}${toUTC(minInputTs)}${m} / max ts: ${lBlue}${toUTC(maxInputTs)}${m
+      echo(`${m}\t min ts: ${lBlue}${toUTC(minInputTs)}${m} / max ts: ${lBlue}${toUTC(maxInputTs)}${m
       } /  vt: ${lBlue}${toUTC(virtualTs)}${m} / period: ${lBlue}${minInterval}${m}`);
     }
     removed.forEach((timeWindowItem) => {

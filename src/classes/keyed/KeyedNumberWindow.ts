@@ -1,10 +1,10 @@
 // noinspection JSUnusedGlobalSymbols
 
+import { lBlue, m } from 'af-color';
+import { echo } from 'af-echo-ts';
+import { Debug } from 'af-tools-ts';
 import { INumberWindowItem, INumberWindowSetStatOptions, NumberWindow } from '../base/NumberWindow';
 import { toUTC } from '../../utils/date-utils';
-import { Debug } from '../../utils/debug';
-import { echoSimple } from '../../utils/echo-simple';
-import { lBlue, m } from '../../utils/color';
 import { VirtualTimeObj } from '../../VirtualTimeObj';
 import { getTimeParamFromMillis } from '../../utils/utils';
 
@@ -137,11 +137,11 @@ export class KeyedNumberWindow<T> {
     });
 
     if (debug.enabled && removedWindowsCount) {
-      echoSimple(`${m}Удалено ${lBlue}${removedWindowsCount}${m} опустевших окон [KeyedNumberWindow] winName: ${lBlue
+      echo(`${m}Удалено ${lBlue}${removedWindowsCount}${m} опустевших окон [KeyedNumberWindow] winName: ${lBlue
       }${this.options.winName}`);
       if (maxTs) {
         const minInterval = getTimeParamFromMillis(virtualTs - maxTs, 'biggest');
-        echoSimple(`${m}\t max ts: ${lBlue}${toUTC(maxTs)}${m} /  vt: ${lBlue}${toUTC(virtualTs)}${m} / period: ${lBlue}${minInterval}${m}`);
+        echo(`${m}\t max ts: ${lBlue}${toUTC(maxTs)}${m} /  vt: ${lBlue}${toUTC(virtualTs)}${m} / period: ${lBlue}${minInterval}${m}`);
       }
     }
 

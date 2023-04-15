@@ -2,7 +2,7 @@
 // noinspection JSUnusedGlobalSymbols
 
 import EventEmitter from 'events';
-import { echoSimple } from '../../utils/echo-simple';
+import { echo } from 'af-echo-ts';
 import { Stream } from '../../Stream';
 
 const interval = require('interval-promise');
@@ -58,7 +58,7 @@ export class SimpleEventEmitterAsyncQueue<T> {
     if (options.logger?.info) {
       options.logger.info(msg);
     } else {
-      echoSimple(msg);
+      echo(msg);
     }
   }
 
@@ -98,7 +98,7 @@ export class SimpleEventEmitterAsyncQueue<T> {
         if (this.options.logger?.error) {
           this.options.logger.error(err);
         } else {
-          echoSimple(String(err.message || err));
+          echo(String(err.message || err));
         }
       }
     }

@@ -2,14 +2,14 @@
 
 import { DateTime } from 'luxon';
 import { clearInterval } from 'timers';
+import {
+  blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, bg, yellow,
+} from 'af-color';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { VirtualTimeObj } from './VirtualTimeObj';
 import { boolEnv, cloneDeep, floatEnv, getBool, intEnv, memUsage, padL } from './utils/utils';
 import getDb from './db/db';
-import {
-  blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, bg, yellow,
-} from './utils/color';
 import {
   ICommonConfig, IEmBeforeLoadNextPortion,
   IEmCurrentLastTimeRecords, IEmFindNextTs, IEmSaveLastTs,

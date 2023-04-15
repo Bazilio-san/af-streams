@@ -1,11 +1,11 @@
 /* eslint-disable no-use-before-define */
+import { m } from 'af-color';
+import { echo } from 'af-echo-ts';
+import { Debug } from 'af-tools-ts';
 import { ITimeWindowItem } from './TimeWindow';
 import { MIN_WINDOW_MILLIS } from '../../constants';
-import { Debug } from '../../utils/debug';
-import { m } from '../../utils/color';
 import { VirtualTimeObj } from '../../VirtualTimeObj';
 import { toUTC } from '../../utils/date-utils';
-import { echoSimple } from '../../utils/echo-simple';
 
 const debug = Debug('SingleEventTimeWindow');
 
@@ -185,7 +185,7 @@ export class SingleEventTimeWindow<T, S = any> {
     if (item && item.ts < expireTs) {
       this.item = undefined;
       if (debug.enabled && this.options.removeExpiredIntervalMillis !== undefined) {
-        echoSimple(`${m}Удалено устаревшее событие из окна [SingleEventTimeWindow] winName: ${this.options.winName
+        echo(`${m}Удалено устаревшее событие из окна [SingleEventTimeWindow] winName: ${this.options.winName
         } / key: ${this.options.key} / -> ${toUTC(this.inputTs)} - ${toUTC(this.lastTs)} ->`);
       }
       this.setStat({ singleEventTimeWindow: this, removed: item });

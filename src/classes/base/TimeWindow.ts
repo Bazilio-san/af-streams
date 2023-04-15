@@ -1,10 +1,10 @@
 /* eslint-disable no-use-before-define */
 // noinspection JSUnusedGlobalSymbols
 
+import { lBlue, m } from 'af-color';
+import { echo } from 'af-echo-ts';
+import { Debug } from 'af-tools-ts';
 import { MIN_WINDOW_MILLIS } from '../../constants';
-import { Debug } from '../../utils/debug';
-import { echoSimple } from '../../utils/echo-simple';
-import { lBlue, m } from '../../utils/color';
 import { EWinInsertType } from '../../interfaces';
 import { findIndexOfNearestSmaller } from '../../utils/find-index-of-nearest-smaller';
 import { VirtualTimeObj } from '../../VirtualTimeObj';
@@ -160,7 +160,7 @@ export class TimeWindow<T, S = any> {
         const st = Date.now();
         const removedCount = self.removeExpired((virtualTimeObj as VirtualTimeObj).virtualTs).length;
         if (debug.enabled && removedCount) {
-          echoSimple(`${m}Удалено ${lBlue}${removedCount}${m
+          echo(`${m}Удалено ${lBlue}${removedCount}${m
           } устаревших событий из окна [TimeWindow] winName: ${this.options.winName} / key: ${this.options.key}  🕒 ${Date.now() - st} ms`);
         }
       }, removeExpiredIntervalMillis);

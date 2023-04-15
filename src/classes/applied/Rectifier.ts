@@ -1,12 +1,12 @@
 // noinspection JSUnusedGlobalSymbols
 
 import { clearInterval } from 'timers';
+import { echo } from 'af-echo-ts';
 import { findIndexOfNearestSmaller } from '../../utils/find-index-of-nearest-smaller';
 import { VirtualTimeObj } from '../../VirtualTimeObj';
 import { TEventRecord } from '../../interfaces';
 import { DEFAULTS } from '../../constants';
 import { intEnv } from '../../utils/utils';
-import { echoSimple } from '../../utils/echo-simple';
 
 export interface IRectifierOptions {
   virtualTimeObj: VirtualTimeObj,
@@ -144,6 +144,6 @@ export class Rectifier {
     this.virtualTimeObj = undefined;
     // @ts-ignore
     this.sendFunction = undefined;
-    echoSimple.warn('DESTROYED: [Rectifier]');
+    echo.warn('DESTROYED: [Rectifier]');
   }
 }

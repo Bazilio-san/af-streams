@@ -2,8 +2,8 @@
 // noinspection JSUnusedGlobalSymbols
 
 import EventEmitter from 'events';
+import { echo as echoSimple } from 'af-echo-ts';
 import { Stream } from '../Stream';
-import { echoSimple } from '../utils/echo-simple';
 import { VirtualTimeObj, getVirtualTimeObj, IVirtualTimeObjOptions } from '../VirtualTimeObj';
 import {
   ICommonConfig, IEcho, ILoggerEx, IOFnArgs, ISenderConfig, IStartTimeConfig, IStreamConfig, IVirtualTimeConfig, TEventRecord,
@@ -56,13 +56,13 @@ export class StreamsManager {
 
   checkCommonConfig (isInit: boolean = false) {
     const t = `${isInit ? 'passed to' : 'found in'} stream manager`;
-    const { exitOnError, logger, echo, eventEmitter } = this.commonConfig || {};
+    const { exitOnError, logger, echo: ech, eventEmitter } = this.commonConfig || {};
     if (!exitOnError) {
       // eslint-disable-next-line no-console
       console.error(`No 'exitOnError' function ${t}`);
       process.exit(1);
     }
-    if (!echo) {
+    if (!ech) {
       exitOnError(`No 'echo' object ${t}`);
     }
     if (!logger) {
@@ -75,7 +75,7 @@ export class StreamsManager {
 
   checkVirtualTimeObject () {
     if (!this.virtualTimeObj) {
-      this.commonConfig.exitOnError(`No 'echo' object found in stream manager`);
+      this.commonConfig.exitOnError(`No 'virtualTimeObj' object found in stream manager`);
     }
   }
 
