@@ -1,7 +1,7 @@
 import { magenta, lBlue, cyan, rs, green } from 'af-color';
 import { IStreamConfig } from '../interfaces';
 
-export const streamsInfo = (cfg: any, streamConfigs: IStreamConfig[]) => {
+export const startUpStreamsInfo = (cfg: any, streamConfigs: IStreamConfig[]) => {
   const padding = Math.max(...streamConfigs.map((v) => v.streamId.length)) + 2;
   const pad = (v: any) => String(v) + ' '.repeat(padding - String(v).length);
 

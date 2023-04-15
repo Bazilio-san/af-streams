@@ -140,4 +140,4 @@ export {
 } from './alerts-buffer/utils/utils';
 
 export { ISendAlertArgs, getSendMail } from './alerts-buffer/utils/email-service';
-export { streamsInfo } from './utils/startup-streams-info';
+export { startUpStreamsInfo } from './utils/startup-streams-info';
