@@ -1,8 +1,10 @@
 // noinspection JSUnusedGlobalSymbols
 
 import { clearInterval } from 'timers';
-import { bold, boldOff, c, g, m, rs, y } from 'af-color';
-import { intEnv, millisTo } from 'af-tools-ts';
+import EventEmitter from 'events';
+import { bold, boldOff, c, rs, y } from 'af-color';
+import { infoBlock, intEnv, millisTo } from 'af-tools-ts';
+import { DateTime } from 'luxon';
 import { ICommonConfig, IEmVirtualDateChanged, IEmVirtualHourChanged, IStartTimeConfig, IStreamLike, IVirtualTimeConfig } from './interfaces';
 import { DEFAULTS, MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
 import { getStartTimeRedis, StartTimeRedis } from './StartTimeRedis';
@@ -73,11 +75,27 @@ export class VirtualTimeObj {
 
   speed: number = 1;
 
+  stopAt: number = 0;
+
+  ee: EventEmitter;
+
   constructor (public options: IVirtualTimeObjOptions) {
     this.virtualStartTs = options.startTimeMillis; // timestamp millis from which to start uploading data
+    this.ee = options.commonConfig.eventEmitter;
     this.runningRealTime.expectedTimeFront = options.startTimeMillis;
     this.reset();
     this.startUpInfo();
+  }
+
+  setStopAt () {
+    const { STREAM_STOP_TIME = '' } = process.env;
+    if (!STREAM_STOP_TIME) {
+      return;
+    }
+    const dt = DateTime.fromISO(STREAM_STOP_TIME, { zone: 'GMT' });
+    if (dt.isValid) {
+      this.stopAt = dt.toMillis();
+    }
   }
 
   setLoopTimeMillis (value?: number) {
@@ -120,9 +138,14 @@ export class VirtualTimeObj {
       }
       this.updateRunningTime();
       this.setNextTimeFront();
+
       this._loopIfNeed();
       this._detectDayChange();
       this._detectHourChange();
+      if (this.stopAt && this.timeFront >= this.stopAt) {
+        this.lock();
+        this.ee.emit('virtual-time-stopped-at', this.stopAt);
+      }
     }, this.timeFrontUpdateIntervalMillis);
   }
 
@@ -165,19 +188,29 @@ export class VirtualTimeObj {
   }
 
   startUpInfo () {
-    const { options } = this;
-    const msg = ` [af-streams:VT :: ${m}${options.commonConfig.serviceName}${y}] `;
-    const eq = '='.repeat(Math.max(1, Math.ceil((64 - msg.length) / 2)));
-    let startFrom = `${m}${millisTo.iso.z(options.startTimeMillis)}${rs}`;
+    const { options, stopAt, loopTimeMillis } = this;
+    const { echo } = options.commonConfig;
+
+    let startFrom = millisTo.iso.z(options.startTimeMillis);
     if (options.startTimeRedis.options.startTimeConfig.useStartTimeFromRedisCache) {
-      startFrom += `${y}${bold} ${options.isUsedSavedStartTime ? `TAKEN FROM CACHE` : 'NOW'}${boldOff}${rs}`;
+      startFrom += `${y}${bold} ${options.isUsedSavedStartTime ? `TAKEN FROM CACHE` : 'NOW'}${boldOff}`;
     }
-    const cyclic = this.loopTimeMillis ? `${g}Cyclic:      ${m}${this.loopTimeMillis / 1000} sec${rs}\n${rs}` : '';
-    const info = `${y}${eq}${msg}${eq}${rs}
-${g}Start from:  ${startFrom}
-${g}Speed:       ${m}${bold}${this.speed} X${rs}
-${cyclic}${y}${'-'.repeat(64)}${rs}`;
-    options.commonConfig.echo(info);
+    const info: [string, any][] = [
+      ['Start from', startFrom],
+      ['Speed', `${bold}${this.speed} X`],
+    ];
+    if (stopAt) {
+      info.push(['Stop at', millisTo.iso.z(stopAt)]);
+    }
+    if (loopTimeMillis) {
+      info.push(['Cyclic', `${loopTimeMillis / 1000} sec`]);
+    }
+    infoBlock({
+      echo,
+      title: '[af-streams:VT]',
+      padding: 0,
+      info,
+    });
   }
 
   async resetWithStartTime () {
@@ -214,7 +247,7 @@ ${cyclic}${y}${'-'.repeat(64)}${rs}`;
     if (this.timeFront >= now) {
       this.timeFront = now;
       this.isCurrentTime = true;
-      this.options.commonConfig.eventEmitter.emit('virtual-time-is-synchronized-with-current');
+      this.ee.emit('virtual-time-is-synchronized-with-current');
     }
     return [this.isCurrentTime, this.timeFront];
   }
@@ -224,7 +257,7 @@ ${cyclic}${y}${'-'.repeat(64)}${rs}`;
       this.timeFront = this.virtualStartTs;
       this.loopNumber++;
       this.options.commonConfig.echo(`[af-streams]: New cycle from ${this.virtualTimeString}`);
-      this.options.commonConfig.eventEmitter.emit('virtual-time-loop-back');
+      this.ee.emit('virtual-time-loop-back');
     }
   }
 
@@ -238,7 +271,7 @@ ${cyclic}${y}${'-'.repeat(64)}${rs}`;
         prevTs: pvd * MILLIS_IN_DAY,
         currTs: this.prevVirtualDateNumber * MILLIS_IN_DAY,
       };
-      this.options.commonConfig.eventEmitter.emit('virtual-date-changed', payload);
+      this.ee.emit('virtual-date-changed', payload);
     }
   }
 
@@ -254,7 +287,7 @@ ${cyclic}${y}${'-'.repeat(64)}${rs}`;
         prevTs: pvh * MILLIS_IN_HOUR,
         currTs: this.prevVirtualHourNumber * MILLIS_IN_HOUR,
       };
-      this.options.commonConfig.eventEmitter.emit('virtual-hour-changed', payload);
+      this.ee.emit('virtual-hour-changed', payload);
     }
   }
 

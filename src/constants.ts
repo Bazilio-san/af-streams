@@ -27,7 +27,7 @@ export const DEBUG_SQL = isTotalStreamDebug || /\baf-streams:sql\b/i.test(DEBUG)
 export const DEBUG_LTR = isTotalStreamDebug || /\baf-streams:ltr\b/i.test(DEBUG); // LastTimeRecords
 export const DEBUG_LNP = isTotalStreamDebug || /\baf-streams:lnp\b/i.test(DEBUG); // before & after load next portion
 export const DEBUG_STREAM = isTotalStreamDebug || /\baf-streams:stream\b/i.test(DEBUG);
-export const DEBUG_ALERTS_BUFFER = isTotalStreamDebug || /\baf-streams:alerts-buffer\b/i.test(DEBUG);
+export const DEBUG_ALERTS_BUFFER = isTotalStreamDebug || /\baf-streams:alerts\b/i.test(DEBUG);
 
 const getBool = (v: any): boolean => /^(true|1|yes)$/i.test(String(v));
 const floatEnv = (name: string, def: number) => {
