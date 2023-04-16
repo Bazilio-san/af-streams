@@ -117,12 +117,12 @@ export class AlertsStat {
     const tiuVal = (v: any) => [v?.t || 0, v?.i || 0, v?.u || 0].join('/');
     const data: { [key: string]: unknown[] } = {
       all: [
-        addedToBuffer.all.total,
-        addedToBuffer.all.today,
-        sentByEmail.all.total,
-        sentByEmail.all.today,
-        tiuVal(savedToDb.all.total),
-        tiuVal(savedToDb.all.today),
+        addedToBuffer.all.total || '',
+        addedToBuffer.all.today || '',
+        sentByEmail.all.total || '',
+        sentByEmail.all.today || '',
+        tiuVal(savedToDb.all.total || ''),
+        tiuVal(savedToDb.all.today || ''),
       ],
     };
     eventNames.forEach((eventName) => {
@@ -130,10 +130,10 @@ export class AlertsStat {
       const e = sentByEmail.byEventName[eventName];
       const d = savedToDb.byEventName[eventName];
       data[eventName] = [
-        b?.total,
-        b?.today,
-        e?.total,
-        e?.today,
+        b?.total || '',
+        b?.today || '',
+        e?.total || '',
+        e?.today || '',
         tiuVal(d?.total),
         tiuVal(d?.today),
       ];
