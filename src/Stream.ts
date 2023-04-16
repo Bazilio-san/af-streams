@@ -3,7 +3,7 @@
 import { DateTime } from 'luxon';
 import { clearInterval } from 'timers';
 import {
-  blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, bg, yellow,
+  blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, bg, yellow, black,
 } from 'af-color';
 import { boolEnv, cloneDeep, floatEnv, getBool, intEnv, memUsage, padL } from 'af-tools-ts';
 import { LastTimeRecords } from './LastTimeRecords';
@@ -57,6 +57,8 @@ const TIMEOUT_TO_PREPARE_EVENT = 10_000;
 // noinspection JSConstantReassignment
 export class Stream {
   id: string;
+
+  color: string = black;
 
   /**
    * Timestamp of the last loaded record

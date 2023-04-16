@@ -4,6 +4,8 @@
 import EventEmitter from 'events';
 import { echo as echoSimple } from 'af-echo-ts';
 import { cloneDeep, intEnv, millisTo, timeParamRE } from 'af-tools-ts';
+import { cyan, lBlue, magenta, yellow } from 'af-color';
+import { green } from 'af-color/src';
 import { Stream } from '../Stream';
 import { VirtualTimeObj, getVirtualTimeObj, IVirtualTimeObjOptions } from '../VirtualTimeObj';
 import {
@@ -17,6 +19,8 @@ import { IPrepareAlertsBufferOptions, IPrepareRectifierOptions, IPrepareStreamOp
 import { changeSmParams } from './change-params';
 
 const findLast = require('array.prototype.findlast');
+
+const streamsColors = [lBlue, magenta, cyan, yellow, green];
 
 const STATISTICS_SEND_INTERVAL = { SLOW: 1000, QUICK: 100 };
 
@@ -119,7 +123,7 @@ export class StreamsManager {
       // Подготавливаем "Выпрямитель". Он будет получать все события потоков
       this.rectifier = new Rectifier(rectifierOptions);
     }
-    return optionsArray.map((options: IPrepareStreamOptions) => {
+    return optionsArray.map((options: IPrepareStreamOptions, index) => {
       if (prepareRectifierOptions) {
         options.senderConfig.type = 'callback';
         // Заглушка. Поскольку инициализируется Выпрямитель, сюда будет
@@ -132,6 +136,7 @@ export class StreamsManager {
         return this.map[streamId];
       }
       const stream = new Stream({ ...options, commonConfig, virtualTimeObj });
+      stream.color = streamsColors[index] || '';
       this.map[streamId] = stream;
       return stream;
     });
