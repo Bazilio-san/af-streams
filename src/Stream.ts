@@ -56,6 +56,8 @@ const TIMEOUT_TO_PREPARE_EVENT = 10_000;
 
 // noinspection JSConstantReassignment
 export class Stream {
+  id: string;
+
   /**
    * Timestamp of the last loaded record
    */
@@ -127,6 +129,7 @@ export class Stream {
     this.virtualTimeObj = options.virtualTimeObj;
     const { streamConfig } = options;
     const { streamId, src, prepareEvent, tsFieldToMillis } = streamConfig;
+    this.id = streamId;
     src.timezoneOfTsField = src.timezoneOfTsField || 'GMT';
 
     const tsFieldToMillisDefault = (tsValue: string | Date | number) => {
