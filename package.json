@@ -1,6 +1,6 @@
 {
   "name": "af-streams",
-  "version": "3.0.106",
+  "version": "3.0.107",
   "description": "Data stream from database table",
   "main": "./dist/cjs/src/index.js",
   "module": "./dist/esm/index.js",
@@ -25,7 +25,7 @@
     "cb": "npm run clean && npm run build"
   },
   "dependencies": {
-    "af-color": "^0.0.1",
+    "af-color": "^0.0.2",
     "af-echo-ts": "^1.0.3",
     "af-tools-ts": "^1.0.20",
     "array.prototype.findlast": "^1.2.2",

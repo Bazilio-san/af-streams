@@ -5,7 +5,9 @@ import { clearInterval } from 'timers';
 import {
   blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, bg, yellow, black,
 } from 'af-color';
-import { boolEnv, cloneDeep, floatEnv, getBool, intEnv, memUsage, padL } from 'af-tools-ts';
+import {
+  boolEnv, cloneDeep, floatEnv, getBool, infoBlock, intEnv, memUsage, padL,
+} from 'af-tools-ts';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { VirtualTimeObj } from './VirtualTimeObj';
@@ -321,22 +323,28 @@ export class Stream {
     this.virtualTimeObj.registerStream(this);
     this.nextStartTs = this.virtualTimeObj.virtualStartTs;
 
-    const msg = ` [af-streams: ${m}${streamId}]${yellow} `;
-    const eq = '='.repeat(Math.max(1, Math.ceil((64 - msg.length) / 2)));
-    const timeDelay = timeDelayMillis ? `${g}Time delay in request:   ${m}${timeDelayMillis} ms\n` : '';
-    const info = `${yellow}${eq}${msg}${eq}${rs}
-${g}Time field TZ:           ${m}${streamConfig.src.timezoneOfTsField}
-${g}Db polling frequency:    ${m}${streamConfig.fetchIntervalSec} sec
-${g}Buffer multiplier:       ${m}${streamConfig.bufferMultiplier}
-${g}Buffer cleanup interval: ${m}${streamConfig.streamSendIntervalMillis} ms
-${g}Max RunUp ts-vt:         ${m}${streamConfig.maxRunUpFirstTsVtMillis} ms
-${timeDelay}`;
-    echo(info);
+    const info: [string, any][] = [
+      ['Time field TZ', streamConfig.src.timezoneOfTsField],
+      ['Db polling frequency', `${streamConfig.fetchIntervalSec} sec`],
+      ['Buffer multiplier', streamConfig.bufferMultiplier],
+      ['Buffer cleanup interval', `${streamConfig.streamSendIntervalMillis} ms`],
+      ['Max RunUp ts-vt', `${streamConfig.maxRunUpFirstTsVtMillis} ms`],
+    ];
+    if (timeDelayMillis) {
+      info.push(['Time delay in request', `${timeDelayMillis} ms`]);
+    }
+
+    infoBlock({
+      echo,
+      title: `[af-streams: ${m}${streamId}]${yellow}`,
+      titleColor: yellow,
+      padding: 0,
+      info,
+    });
+    echo(`${yellow}${'-'.repeat(64)}${rs}`);
 
     // SENDER
     this.sender = await getSender({ streamId, senderConfig, commonConfig });
-
-    echo(`${yellow}${'-'.repeat(64)}${rs}`);
 
     if (!commonConfig.skipInitDbConnection && !this.db) {
       this.db = await getDb({ commonConfig, streamConfig });
