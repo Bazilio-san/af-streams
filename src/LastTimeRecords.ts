@@ -1,6 +1,6 @@
+import { millisTo } from 'af-tools-ts';
 import { DEBUG_LTR, TS_FIELD } from './constants';
 import { TDbRecord } from './interfaces';
-import { millis2isoZ } from './utils/date-utils';
 
 export class LastTimeRecords {
   private idFields: string[];
@@ -29,7 +29,7 @@ export class LastTimeRecords {
       return {};
     }
     const ts = bufferRecord[TS_FIELD];
-    const info: TDbRecord = { ts, tsISO: millis2isoZ(ts) };
+    const info: TDbRecord = { ts, tsISO: millisTo.iso.z(ts) };
     this.idFields.forEach((fName) => {
       info[fName] = bufferRecord[fName];
     });

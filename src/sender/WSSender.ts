@@ -1,7 +1,7 @@
 /* eslint-disable class-methods-use-this,no-await-in-loop */
 import { io, Socket } from 'socket.io-client';
 import { cyan, lBlue, reset } from 'af-color';
-import { sleep } from '../utils/utils';
+import { sleep } from 'af-tools-ts';
 import AbstractSender from './AbstractSender';
 import { IRecordsComposite, ISenderConstructorOptions, Nullable, TAccessPoint } from '../interfaces';
 
@@ -125,6 +125,7 @@ Connection established with WEBSOCKET ${mConsulServiceName} on ${mAddress}
         this.options.commonConfig.logger.warn('Socket is not still connected...');
       }
       await this.reconnect(true);
+      // eslint-disable-next-line no-undef
       await sleep(LOOP_SLEEP_MILLIS);
     }
     return this.isConnected();

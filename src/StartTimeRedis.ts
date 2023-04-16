@@ -4,9 +4,9 @@
 import { createClient, RedisClientType, RedisDefaultModules, RedisModules, RedisScripts } from 'redis';
 import { DateTime } from 'luxon';
 import { RedisFunctions } from '@redis/client';
-import { boolEnv, getStreamKey, getTimeParamMillis, intEnv, strEnv, timeParamRE } from './utils/utils';
+import { boolEnv, getTimeParamMillis, intEnv, millisTo, strEnv, timeParamRE } from 'af-tools-ts';
+import { getStreamKey } from './utils/utils';
 import { ICommonConfig, IStartTimeConfig } from './interfaces';
-import { millis2iso } from './utils/date-utils';
 
 const prefix = '[af-streams:redis]: ';
 
@@ -92,7 +92,7 @@ export class StartTimeRedis {
       logger.error(`Cache stored data is not a unix timestamp: ${startTimeMillis}`);
       return 0;
     }
-    logger.info(`${prefix}Get time of last sent entry: ${millis2iso(startTimeMillis, { includeOffset: true })
+    logger.info(`${prefix}Get time of last sent entry: ${millisTo.iso._(startTimeMillis, { includeOffset: true })
     } from the Redis cache using key ${this.streamKey}`);
     return startTimeMillis;
   }

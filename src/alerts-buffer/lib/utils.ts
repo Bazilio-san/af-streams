@@ -1,87 +1,7 @@
 import { FormatOptions, prettyPrintJson } from 'pretty-print-json';
 import * as os from 'os';
-import { DateTime } from 'luxon';
+import { millisTo, removeHTML } from 'af-tools-ts';
 import { TAlert, TAlertEmailDetails } from '../i-alert';
-
-export interface ITraverseNode {
-  key: string | undefined,
-  val: any,
-  parents: string[],
-  path: string[],
-  isLeaf: boolean,
-  isRoot: boolean,
-  isPrimitive: boolean,
-  isCyclic: boolean,
-}
-
-export const traverse = (
-  val: any,
-  callback: (_args: ITraverseNode) => void = () => undefined,
-  parents: string[] = [],
-  key: string | undefined = undefined,
-  hash: WeakSet<any> = new WeakSet(),
-) => {
-  const isRoot = key === undefined;
-  const path = isRoot ? [] : [...parents, key];
-  let isPrimitive = false;
-  const ret = (isLeaf = true, isCyclic = false) => {
-    callback({
-      key, val, parents, path, isLeaf, isPrimitive, isRoot, isCyclic,
-    });
-  };
-
-  if (hash.has(val)) {
-    // cyclic reference
-    return ret(true, true);
-  }
-
-  if (Object(val) !== val) {
-    // primitives
-    isPrimitive = true;
-    return ret();
-  }
-  hash.add(val);
-  if (val instanceof Set || val instanceof Date || val instanceof RegExp || val instanceof Function) {
-    return ret();
-  }
-  if (val instanceof Map) {
-    ret(false);
-    [...val.entries()].forEach(([key2, val2]) => traverse(val2, callback, path, key2, hash));
-    return;
-  }
-  ret(false);
-  Object.entries(val).forEach(([key2, val2]) => {
-    traverse(val2, callback, path, key2, hash);
-  });
-};
-
-export const flattenObjectPrimitiveLeafs = (obj: any, options: { keysAsPath?: boolean, noOverrideKeys?: boolean } = {}) => {
-  const { keysAsPath = true, noOverrideKeys = false } = options;
-  const leafs: { [key: string]: string | number | boolean | null } = {};
-  traverse(obj, (data) => {
-    if (data.isLeaf && data.isPrimitive) {
-      const key = keysAsPath ? data.path.join('.') : data.key;
-      if (key && (!noOverrideKeys || leafs[key] === undefined)) {
-        leafs[key] = data.val;
-      }
-    }
-  });
-  return leafs;
-};
-
-/**
- * Замена мест подстановки {place_name} на значения одноименных свойств из obj
- */
-export const fillSubjectTemplate = (template: string, obj: any): string => {
-  const flattened = flattenObjectPrimitiveLeafs(obj);
-  template = template.replace(/{([\w]+)}/g, (place: any, placeName: any) => {
-    const val = flattened[String(placeName)];
-    return val === undefined ? place : val;
-  });
-  return template;
-};
-
-export const removeHTML = (s: string) => String(s).replace(/<\/?[^>]+>/ig, '');
 
 export const htmlTemplate = `
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -179,17 +99,6 @@ export const alertEmailDetails = (options: { detailsArray: TAlertEmailDetails, i
   const { detailsArray, indent = '', prefix = '' } = options;
   const padLen = Math.max(...detailsArray.map(([label]) => removeHTML(label).length)) + 2;
   return detailsArray.map(([label, text]) => indent + prefix + label + rSpace(label, padLen) + text).join('\n');
-};
-
-const utc$ = (millis?: number): DateTime => DateTime.fromMillis(millis == null ? Date.now() : millis).setZone('UTC');
-
-const millisTo = {
-  human: {
-    utc: {
-      // 2022-05-15 16:56:42 UTC
-      z: (millis?: number): string => utc$(millis).toFormat('yyyy-MM-dd HH:mm:ss z'),
-    },
-  },
 };
 
 export const alertEmailHeader = (args: { alert: TAlert, wrapPre?: boolean, indent?: string, prefix?: string }): string => {

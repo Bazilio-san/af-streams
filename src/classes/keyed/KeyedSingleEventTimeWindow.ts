@@ -2,12 +2,10 @@
 
 import { lBlue, g, m, rs } from 'af-color';
 import { echo } from 'af-echo-ts';
-import { Debug } from 'af-tools-ts';
+import { Debug, getTimeParamFromMillis, millisTo, padR } from 'af-tools-ts';
 import { ISingleEventTimeWindowConstructorOptions, SingleEventTimeWindow } from '../base/SingleEventTimeWindow';
 import { ITimeWindowItem } from '../base/TimeWindow';
 import { MIN_WINDOW_MILLIS, STREAMS_ENV } from '../../constants';
-import { toUTC } from '../../utils/date-utils';
-import { getTimeParamFromMillis, padR } from '../../utils/utils';
 
 const debug = Debug('KeyedSingleEventTimeWindow');
 
@@ -160,15 +158,15 @@ export class KeyedSingleEventTimeWindow<T, S = any> {
         removed.forEach(([key, hashItem]) => {
           const { inputTs: inp, lastTs: lst } = hashItem;
           const distance = getTimeParamFromMillis(lst - inp, 'biggest');
-          echo(`${m}\t - key: ${lBlue}${padR(key, padLen)}${rs} / in ${m}${toUTC(inp)}${rs} out ${m}${toUTC(lst)}${rs} / ${g}${distance}`);
+          echo(`${m}\t - key: ${lBlue}${padR(key, padLen)}${rs} / in ${m}${millisTo.human.utc.z(inp)}${rs} out ${m}${millisTo.human.utc.z(lst)}${rs} / ${g}${distance}`);
         });
       } else {
         const inputTimes = removed.map(([, hashItem]) => hashItem.inputTs);
         const minInputTs = Math.min(...inputTimes);
         const maxInputTs = Math.max(...inputTimes);
         const minInterval = getTimeParamFromMillis(virtualTs - minInputTs, 'biggest');
-        echo(`${m}\t min ts: ${lBlue}${toUTC(minInputTs)}${m} / max ts: ${lBlue}${toUTC(maxInputTs)}${m
-        } /  vt: ${lBlue}${toUTC(virtualTs)}${m} / period: ${lBlue}${minInterval}${m}`);
+        echo(`${m}\t min ts: ${lBlue}${millisTo.human.utc.z(minInputTs)}${m} / max ts: ${lBlue}${millisTo.human.utc.z(maxInputTs)}${m
+        } /  vt: ${lBlue}${millisTo.human.utc.z(virtualTs)}${m} / period: ${lBlue}${minInterval}${m}`);
       }
     }
     removed.forEach(([key, hashItem]) => {

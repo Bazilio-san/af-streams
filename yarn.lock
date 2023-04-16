@@ -1230,15 +1230,16 @@ af-logger@^2.0.28:
     winston "^3.4.0"
     winston-daily-rotate-file "^4.5.5"
 
-af-tools-ts@^1.0.5:
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/af-tools-ts/-/af-tools-ts-1.0.5.tgz#2d92d7f01f79131d8ceff0cdd8a8b81b2ceb5882"
-  integrity sha512-KjqYypR+Td2MTjMTJCxQozoa2ltn85heeMz2zpGP7sshwZQQoZ9WbI94CMV+0Km8OMFAfAL5XIqynGd5rKFC1Q==
+af-tools-ts@^1.0.12:
+  version "1.0.12"
+  resolved "https://registry.yarnpkg.com/af-tools-ts/-/af-tools-ts-1.0.12.tgz#c54d114ed84235dae9f04267c041be37bc25c40c"
+  integrity sha512-LABLJGarCFYZ76wBRrk3OwSWZ96micMIFEvedD1flTbtJIQY/W5iArpzhFmtp8smk8j4Sj/fEn8wbJtjfcI5eA==
   dependencies:
     af-color "^0.0.1"
     af-echo-ts "^1.0.3"
     config "^3.3.9"
     dotenv "^16.0.3"
+    humanize-duration "^3.28.0"
     json-to-pretty-yaml "^1.2.2"
     luxon "^3.3.0"
 
@@ -2657,6 +2658,11 @@ human-signals@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/human-signals/-/human-signals-2.1.0.tgz#dc91fcba42e4d06e4abaed33b3e7a3c02f514ea0"
   integrity sha512-B4FFZ6q/T2jhhksgkbEW3HBvWIfDW85snkQgawt07S7J5QXTk6BkNV+0yAeZrM5QpMAdYlocGoljn0sJ/WQkFw==
+
+humanize-duration@^3.28.0:
+  version "3.28.0"
+  resolved "https://registry.yarnpkg.com/humanize-duration/-/humanize-duration-3.28.0.tgz#f79770c0bec34d3bfd4899338cc40643bc04df72"
+  integrity sha512-jMAxraOOmHuPbffLVDKkEKi/NeG8dMqP8lGRd6Tbf7JgAeG33jjgPWDbXXU7ypCI0o+oNKJFgbSB9FKVdWNI2A==
 
 iconv-lite@^0.6.3:
   version "0.6.3"

@@ -2,12 +2,10 @@
 
 import { lBlue, m } from 'af-color';
 import { echo } from 'af-echo-ts';
-import { Debug } from 'af-tools-ts';
+import { Debug, getTimeParamFromMillis, millisTo } from 'af-tools-ts';
 import { ITimeWindowItem, ITimeWindowSetStatOptions, TimeWindow } from '../base/TimeWindow';
 import { MILLIS_IN_HOUR, MIN_WINDOW_MILLIS } from '../../constants';
-import { toUTC } from '../../utils/date-utils';
 import { VirtualTimeObj } from '../../VirtualTimeObj';
-import { getTimeParamFromMillis } from '../../utils/utils';
 
 const debug = Debug('KeyedTimeWindow');
 
@@ -163,8 +161,8 @@ export class KeyedTimeWindow<T, S = any> {
       const minInputTs = Math.min(...inputTimes);
       const maxInputTs = Math.max(...inputTimes);
       const minInterval = getTimeParamFromMillis(virtualTs - minInputTs, 'biggest');
-      echo(`${m}\t min ts: ${lBlue}${toUTC(minInputTs)}${m} / max ts: ${lBlue}${toUTC(maxInputTs)}${m
-      } /  vt: ${lBlue}${toUTC(virtualTs)}${m} / period: ${lBlue}${minInterval}${m}`);
+      echo(`${m}\t min ts: ${lBlue}${millisTo.human.utc.z(minInputTs)}${m} / max ts: ${lBlue}${millisTo.human.utc.z(maxInputTs)}${m
+      } /  vt: ${lBlue}${millisTo.human.utc.z(virtualTs)}${m} / period: ${lBlue}${minInterval}${m}`);
     }
     removed.forEach((timeWindowItem) => {
       timeWindowItem.data = undefined;

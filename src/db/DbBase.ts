@@ -1,9 +1,9 @@
 /* eslint-disable class-methods-use-this */
 // noinspection JSConstantReassignment
 
+import { millisTo } from 'af-tools-ts';
 import { IDbConstructorOptions, IEmNextRecordTsSql, IEmPortionOfDataCount, IEmPortionOfDataSql, TDbRecord } from '../interfaces';
 import { DEBUG_SQL } from '../constants';
-import { millis2iso } from '../utils/date-utils';
 
 export class DbBase {
   public readonly options: IDbConstructorOptions;
@@ -41,7 +41,7 @@ export class DbBase {
 
     this.millis2dbFn = typeof millis2dbFn === 'function'
       ? millis2dbFn.bind(this)
-      : (millis: number) => `'${millis2iso(millis)}'`;
+      : (millis: number) => `'${millisTo.iso._(millis)}'`;
     streamConfig.millis2dbFn = this.millis2dbFn;
 
     let host;

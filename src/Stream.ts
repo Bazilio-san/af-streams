@@ -5,10 +5,10 @@ import { clearInterval } from 'timers';
 import {
   blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, bg, yellow,
 } from 'af-color';
+import { boolEnv, cloneDeep, floatEnv, getBool, intEnv, memUsage, padL } from 'af-tools-ts';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { VirtualTimeObj } from './VirtualTimeObj';
-import { boolEnv, cloneDeep, floatEnv, getBool, intEnv, memUsage, padL } from './utils/utils';
 import getDb from './db/db';
 import {
   ICommonConfig, IEmBeforeLoadNextPortion,
@@ -365,9 +365,9 @@ ${timeDelay}`;
     /*
     if (DEBUG_STREAM) {
       const { buffer: rb } = this.recordsBuffer;
-      const firstISO = rb.length ? millis2iso(rb[0][TS_FIELD]) : '-';
-      const lastISO = rb.length > 1 ? millis2iso(rb[rb.length - 1][TS_FIELD]) : '-';
-        this.options.echo(`findEndIndex() ${c}virtualTime: ${m}${millis2iso(virtualTime)}${rs} [${m}${firstISO}${rs} - ${m}${lastISO}${rs}]`);
+      const firstISO = rb.length ? millisTo.iso._(rb[0][TS_FIELD]) : '-';
+      const lastISO = rb.length > 1 ? millisTo.iso._(rb[rb.length - 1][TS_FIELD]) : '-';
+        this.options.echo(`findEndIndex() ${c}virtualTime: ${m}${millisTo.iso._(virtualTime)}${rs} [${m}${firstISO}${rs} - ${m}${lastISO}${rs}]`);
     }
     */
     return this.recordsBuffer.findIndexOfNearestSmaller(vt);

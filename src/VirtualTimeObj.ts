@@ -2,10 +2,9 @@
 
 import { clearInterval } from 'timers';
 import { bold, boldOff, c, g, m, rs, y } from 'af-color';
+import { intEnv, millisTo } from 'af-tools-ts';
 import { ICommonConfig, IEmVirtualDateChanged, IEmVirtualHourChanged, IStartTimeConfig, IStreamLike, IVirtualTimeConfig } from './interfaces';
 import { DEFAULTS, MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
-import { millis2isoZ } from './utils/date-utils';
-import { intEnv } from './utils/utils';
 import { getStartTimeRedis, StartTimeRedis } from './StartTimeRedis';
 
 export interface IVirtualTimeObjOptions {
@@ -169,7 +168,7 @@ export class VirtualTimeObj {
     const { options } = this;
     const msg = ` [af-streams:VT :: ${m}${options.commonConfig.serviceName}${y}] `;
     const eq = '='.repeat(Math.max(1, Math.ceil((64 - msg.length) / 2)));
-    let startFrom = `${m}${millis2isoZ(options.startTimeMillis)}${rs}`;
+    let startFrom = `${m}${millisTo.iso.z(options.startTimeMillis)}${rs}`;
     if (options.startTimeRedis.options.startTimeConfig.useStartTimeFromRedisCache) {
       startFrom += `${y}${bold} ${options.isUsedSavedStartTime ? `TAKEN FROM CACHE` : 'NOW'}${boldOff}${rs}`;
     }
@@ -295,19 +294,19 @@ ${cyclic}${y}${'-'.repeat(64)}${rs}`;
   }
 
   get virtualTimeString (): string {
-    return `${c}<${millis2isoZ(this.timeFront)}${this.isCurrentTime ? '*' : ''}>${rs}`;
+    return `${c}<${millisTo.iso.z(this.timeFront)}${this.isCurrentTime ? '*' : ''}>${rs}`;
   }
 
   get virtualTimeISO (): string | null {
-    return millis2isoZ(this.timeFront);
+    return millisTo.iso.z(this.timeFront);
   }
 
   get virtualStartTimeISO (): string | null {
-    return millis2isoZ(this.virtualStartTs);
+    return millisTo.iso.z(this.virtualStartTs);
   }
 
   get realStartTimeISO (): string | null {
-    return millis2isoZ(this.realStartTs);
+    return millisTo.iso.z(this.realStartTs);
   }
 }
 

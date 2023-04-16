@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
+import { timeParamRE } from 'af-tools-ts';
 import { Stream } from '../Stream';
-import { timeParamRE } from '../utils/utils';
 import { EMailSendRule, reloadStreamsEnv } from '../constants';
 import { VirtualTimeObj } from '../VirtualTimeObj';
 import { Rectifier } from '../classes/applied/Rectifier';

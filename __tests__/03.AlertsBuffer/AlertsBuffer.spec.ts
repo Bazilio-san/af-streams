@@ -1,6 +1,6 @@
+import { START_OF_ERA_ISO } from 'af-tools-ts';
 import { initStreams, streamsManager } from './src/init-stream';
 import { initTestDbEnvironment } from './src/init-test-db';
-import { START_OF_ERA_ISO } from '../../src/utils/date-utils';
 
 const runTestStream = async (): Promise<void> => {
   await streamsManager.start();

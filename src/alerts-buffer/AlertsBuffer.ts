@@ -1,12 +1,11 @@
 /* eslint-disable no-await-in-loop */
 import EventEmitter from 'events';
 import * as color from 'af-color';
-import { IThrottleExOptions, throttleEx } from 'af-tools-ts';
+import { fillBracketTemplate, intEnv, IThrottleExOptions, removeHTML, throttleEx } from 'af-tools-ts';
 import { IAlertEmailSettings, TAlert, TAlertSentFlags, TMergeResult } from './i-alert';
 import { AlertsStat } from './AlertsStat';
-import { alertEmailFooter, alertEmailHeader, fillHtmlTemplate, fillSubjectTemplate, jsonToHtml, removeHTML } from './utils/utils';
-import { getSendMail, ISendAlertArgs } from './utils/email-service';
-import { intEnv } from '../utils/utils';
+import { alertEmailFooter, alertEmailHeader, fillHtmlTemplate, jsonToHtml } from './lib/utils';
+import { getSendMail, ISendAlertArgs } from './lib/email-service';
 import { IKeyedSingleEventTimeWindowConstructorOptions, KeyedSingleEventTimeWindow } from '../classes/keyed/KeyedSingleEventTimeWindow';
 import { VirtualTimeObj } from '../VirtualTimeObj';
 import { DEBUG_ALERTS_BUFFER, EMailSendRule, STREAMS_ENV, isDeprecatedSendAlertsByEmail, DEFAULTS } from '../constants';
@@ -186,7 +185,7 @@ export class AlertsBuffer {
     const { subjectPrefix = '' } = this.options.emailSettings;
     const text = removeHTML(htmlBody);
     try {
-      let subject = fillSubjectTemplate(subjectPrefix + subjectTemplate, alert);
+      let subject = fillBracketTemplate(subjectPrefix + subjectTemplate, alert);
       if (process.env.NODE_ENV === 'test') {
         subject = `TEST EMAIL :: ${subject}`;
       }

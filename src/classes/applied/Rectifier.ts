@@ -2,11 +2,11 @@
 
 import { clearInterval } from 'timers';
 import { echo } from 'af-echo-ts';
+import { intEnv } from 'af-tools-ts';
 import { findIndexOfNearestSmaller } from '../../utils/find-index-of-nearest-smaller';
 import { VirtualTimeObj } from '../../VirtualTimeObj';
 import { TEventRecord } from '../../interfaces';
 import { DEFAULTS } from '../../constants';
-import { intEnv } from '../../utils/utils';
 
 export interface IRectifierOptions {
   virtualTimeObj: VirtualTimeObj,

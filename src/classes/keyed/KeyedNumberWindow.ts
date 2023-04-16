@@ -2,11 +2,9 @@
 
 import { lBlue, m } from 'af-color';
 import { echo } from 'af-echo-ts';
-import { Debug } from 'af-tools-ts';
+import { Debug, getTimeParamFromMillis, millisTo } from 'af-tools-ts';
 import { INumberWindowItem, INumberWindowSetStatOptions, NumberWindow } from '../base/NumberWindow';
-import { toUTC } from '../../utils/date-utils';
 import { VirtualTimeObj } from '../../VirtualTimeObj';
-import { getTimeParamFromMillis } from '../../utils/utils';
 
 const debug = Debug('KeyedNumberWindow');
 
@@ -141,7 +139,7 @@ export class KeyedNumberWindow<T> {
       }${this.options.winName}`);
       if (maxTs) {
         const minInterval = getTimeParamFromMillis(virtualTs - maxTs, 'biggest');
-        echo(`${m}\t max ts: ${lBlue}${toUTC(maxTs)}${m} /  vt: ${lBlue}${toUTC(virtualTs)}${m} / period: ${lBlue}${minInterval}${m}`);
+        echo(`${m}\t max ts: ${lBlue}${millisTo.human.utc.z(maxTs)}${m} /  vt: ${lBlue}${millisTo.human.utc.z(virtualTs)}${m} / period: ${lBlue}${minInterval}${m}`);
       }
     }
 

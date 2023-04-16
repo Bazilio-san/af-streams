@@ -14,14 +14,6 @@ export {
 } from './interfaces';
 
 export {
-  getTimeParamMillis,
-  getTimeParamFromMillis,
-  timeParamRE,
-  padL,
-  padR,
-  sleep,
-} from './utils/utils';
-export {
   findIndexOfNearestSmallerLEFT,
   findIndexOfNearestSmallerRIGHT,
   findIndexOfNearestSmallerBINARY,
@@ -125,11 +117,6 @@ export { AlertsStat, IStatTT, IStatTTtiu, TIU } from './alerts-buffer/AlertsStat
 export { AlertsBuffer } from './alerts-buffer/AlertsBuffer';
 
 export {
-  traverse,
-  ITraverseNode,
-  flattenObjectPrimitiveLeafs,
-  fillSubjectTemplate,
-  removeHTML,
   jsonToHtml,
   fillHtmlTemplate,
   htmlTemplate,
@@ -137,7 +124,7 @@ export {
   alertEmailDetails,
   alertEmailHeader,
   alertEmailFooter,
-} from './alerts-buffer/utils/utils';
+} from './alerts-buffer/lib/utils';
 
-export { ISendAlertArgs, getSendMail } from './alerts-buffer/utils/email-service';
+export { ISendAlertArgs, getSendMail } from './alerts-buffer/lib/email-service';
 export { startUpStreamsInfo } from './utils/startup-streams-info';

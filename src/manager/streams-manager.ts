@@ -3,17 +3,16 @@
 
 import EventEmitter from 'events';
 import { echo as echoSimple } from 'af-echo-ts';
+import { cloneDeep, intEnv, millisTo, timeParamRE } from 'af-tools-ts';
 import { Stream } from '../Stream';
 import { VirtualTimeObj, getVirtualTimeObj, IVirtualTimeObjOptions } from '../VirtualTimeObj';
 import {
   ICommonConfig, IEcho, ILoggerEx, IOFnArgs, ISenderConfig, IStartTimeConfig, IStreamConfig, IVirtualTimeConfig, TEventRecord,
 } from '../interfaces';
-import { cloneDeep, intEnv, timeParamRE } from '../utils/utils';
 import { DEFAULTS, STREAMS_ENV, reloadStreamsEnv, STREAM_ID_FIELD } from '../constants';
 import { IRectifierOptions, Rectifier } from '../classes/applied/Rectifier';
 import localEventEmitter from '../ee-scoped';
 import { AlertsBuffer } from '../alerts-buffer/AlertsBuffer';
-import { toUTC_ } from '../utils/date-utils';
 import { IPrepareAlertsBufferOptions, IPrepareRectifierOptions, IPrepareStreamOptions, ISmStatisticsData } from './i';
 import { changeSmParams } from './change-params';
 
@@ -187,7 +186,7 @@ export class StreamsManager {
       isStopped: this.isStopped(),
       isSuspended: this._locked,
       startFromLastStop: this.virtualTimeObj?.options.startTimeRedis.options.startTimeConfig.useStartTimeFromRedisCache,
-      streamStartTime: toUTC_(this.virtualTimeObj?.options.startTimeMillis || 0),
+      streamStartTime: millisTo.human.utc._(this.virtualTimeObj?.options.startTimeMillis || 0),
       streamStartBefore,
       speed: this.virtualTimeObj?.speed,
       emailSendRule: STREAMS_ENV.EMAIL_SEND_RULE,
