@@ -341,10 +341,9 @@ export class Stream {
       padding: 0,
       info,
     });
-    echo(`${yellow}${'-'.repeat(64)}${rs}`);
-
     // SENDER
     this.sender = await getSender({ streamId, senderConfig, commonConfig });
+    echo(`${yellow}${'-'.repeat(64)}${rs}`);
 
     if (!commonConfig.skipInitDbConnection && !this.db) {
       this.db = await getDb({ commonConfig, streamConfig });
