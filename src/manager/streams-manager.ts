@@ -4,8 +4,7 @@
 import EventEmitter from 'events';
 import { echo as echoSimple } from 'af-echo-ts';
 import { cloneDeep, intEnv, millisTo, timeParamRE } from 'af-tools-ts';
-import { cyan, lBlue, magenta, yellow } from 'af-color';
-import { green } from 'af-color/src';
+import { green, cyan, lBlue, magenta, yellow } from 'af-color';
 import { Stream } from '../Stream';
 import { VirtualTimeObj, getVirtualTimeObj, IVirtualTimeObjOptions } from '../VirtualTimeObj';
 import {
