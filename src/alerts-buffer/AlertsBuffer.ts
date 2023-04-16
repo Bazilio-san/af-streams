@@ -142,7 +142,7 @@ export class AlertsBuffer {
   }
 
   async add (alert: TAlert): Promise<TAlert> {
-    this.alertsStat.oneAddedToBuffer();
+    this.alertsStat.oneAddedToBuffer(alert.eventName);
     const { guid } = alert;
     if (!guid) {
       this.options.logger.error(`Отсутствует alert.guid`);
@@ -208,7 +208,7 @@ export class AlertsBuffer {
       });
 
       const result = await Promise.all(recipients.map(fn));
-      this.alertsStat.oneSentByEmail();
+      this.alertsStat.oneSentByEmail(alert.eventName);
       return result;
     } catch (err) {
       logger.error(err);
@@ -397,12 +397,8 @@ export class AlertsBuffer {
     }
   }
 
-  getDiagnostics (): string {
-    const tab = (n: number = 1) => `${'    '.repeat(n)}`;
-    const indent = `\n${tab()}`;
-    let alertsBufferTxt = `Alerts Buffer:${indent}Length ${Object.keys(this.buffer).length}`;
-    alertsBufferTxt += this.alertsStat.getDiagnostics(1);
-    return alertsBufferTxt;
+  getDiagnostics (eventNames?: string[]): { data: { [key: string]: unknown[] }, headers: string[][] } {
+    return this.alertsStat.getDiagnostics(eventNames);
   }
 
   destroy () {

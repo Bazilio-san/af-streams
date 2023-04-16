@@ -22,8 +22,8 @@ describe('Test AlertsBuffer', () => {
   });
   test('test 2', async () => {
     const { alertsStat } = streamsManager.alertsBuffer;
-    expect(alertsStat.sentByEmail.total).toBe(3);
-    expect(alertsStat.addedToBuffer.total).toBe(62);
+    expect(alertsStat.sentByEmail.all.total).toBe(3);
+    expect(alertsStat.addedToBuffer.all.total).toBe(62);
     expect(alertsStat.savedToDb.all.total.t).toBe(2);
   });
 });

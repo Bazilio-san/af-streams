@@ -17,6 +17,7 @@ export interface IStatTTtiu {
   today: TIU,
 }
 
+const iniTT = (): IStatTT => ({ total: 0, today: 0 });
 const iniTIU = (): TIU => ({ t: 0, i: 0, u: 0 });
 const iniTTtiu = (): IStatTTtiu => ({ total: iniTIU(), today: iniTIU() });
 const tiuPlus = (obj: IStatTTtiu, mergeResult: TMergeResult) => {
@@ -29,17 +30,37 @@ const tiuPlus = (obj: IStatTTtiu, mergeResult: TMergeResult) => {
   });
 };
 
-export class AlertsStat {
-  public addedToBuffer: IStatTT = { total: 0, today: 0 };
+export type TAlertTTStat = {
+  all: IStatTT,
+  byEventName: {
+    [eventName: string]: IStatTT,
+  },
+}
 
-  public sentByEmail: IStatTT = { total: 0, today: 0 };
+const addOne = (stat: TAlertTTStat, eventName: string) => {
+  const { all, byEventName } = stat;
+  let obj = byEventName[eventName];
+  if (!obj) {
+    byEventName[eventName] = iniTT();
+    obj = byEventName[eventName];
+  }
+  [all, obj].forEach((v) => {
+    v.total++;
+    v.today++;
+  });
+};
+
+export class AlertsStat {
+  public addedToBuffer: TAlertTTStat = { all: iniTT(), byEventName: {} };
+
+  public sentByEmail: TAlertTTStat = { all: iniTT(), byEventName: {} };
 
   public savedToDb: {
     all: IStatTTtiu,
-    byAlertType: {
+    byEventName: {
       [eventName: string]: IStatTTtiu
     }
-  } = { all: iniTTtiu(), byAlertType: {} };
+  } = { all: iniTTtiu(), byEventName: {} };
 
   private callbackOnVDC: (...args: any[]) => void;
 
@@ -51,74 +72,97 @@ export class AlertsStat {
 
   clearDayStat () {
     // Сброс дневной статистики при смене суток
-    this.addedToBuffer.today = 0;
-    this.sentByEmail.today = 0;
+    this.addedToBuffer.all.today = 0;
+    Object.values(this.addedToBuffer.byEventName).forEach((s: IStatTT) => {
+      s.today = 0;
+    });
+    this.sentByEmail.all.today = 0;
+    Object.values(this.sentByEmail.byEventName).forEach((s: IStatTT) => {
+      s.today = 0;
+    });
     this.savedToDb.all.today = iniTIU();
-    Object.values(this.savedToDb.byAlertType).forEach((statAlertTyped: IStatTTtiu) => {
+    Object.values(this.savedToDb.byEventName).forEach((statAlertTyped: IStatTTtiu) => {
       statAlertTyped.today = iniTIU();
     });
   }
 
-  oneAddedToBuffer () {
-    this.addedToBuffer.total += 1;
-    this.addedToBuffer.today += 1;
+  oneAddedToBuffer (eventName: string) {
+    addOne(this.addedToBuffer, eventName);
   }
 
-  oneSentByEmail () {
-    this.sentByEmail.total += 1;
-    this.sentByEmail.today += 1;
+  oneSentByEmail (eventName: string) {
+    addOne(this.sentByEmail, eventName);
   }
 
   anySavedToDb (eventName: string, mergeResult: TMergeResult) {
-    const { all, byAlertType } = this.savedToDb;
-    tiuPlus(all, mergeResult);
-    let obj = byAlertType[eventName];
+    const { all, byEventName } = this.savedToDb;
+    let obj = byEventName[eventName];
     if (!obj) {
-      byAlertType[eventName] = iniTTtiu();
-      obj = byAlertType[eventName];
+      byEventName[eventName] = iniTTtiu();
+      obj = byEventName[eventName];
     }
+    tiuPlus(all, mergeResult);
     tiuPlus(obj, mergeResult);
   }
 
-  getDiagnostics (indents: number = 1): string {
-    const tab = (n: number = 1) => `${'    '.repeat(n)}`;
-    const indent = `\n${tab(indents)}`;
+  getDiagnostics (eventNames?: string[]): { data: { [key: string]: unknown[] }, headers: string[][] } {
     const { addedToBuffer, sentByEmail, savedToDb } = this;
-
-    const tiu = (obj: IStatTTtiu, prop: keyof IStatTTtiu, tabs: number) => {
-      const v = obj[prop];
-      return `${tab(tabs)}${prop}: t/i/u: ${v.t} / ${v.i} / ${v.u}`;
-    };
-    const ttiu = (obj: IStatTTtiu, tabs: number) => `${tiu(obj, 'total', tabs)} | ${tiu(obj, 'today', tabs)}`;
-    const tt = (obj: IStatTT, tabs: number) => `${tab(tabs)}total: ${obj.total}${tab(tabs)}today: ${obj.today}`;
-
-    let alertsBufferTxt = ``;
-    alertsBufferTxt += `${indent}Added to buffer: ${tt(addedToBuffer, 2)}`;
-    alertsBufferTxt += `${indent}Sent by email:   ${tt(sentByEmail, 2)}`;
-    alertsBufferTxt += `${indent}Saved to db: ALL:${ttiu(savedToDb.all, 2)}`;
-    Object.entries(savedToDb.byAlertType).forEach(([key, item]: [string, IStatTTtiu]) => {
-      alertsBufferTxt += `${indent}${tab()}${key}: ${ttiu(item, 2)}`;
+    const eventNamesSet = new Set(eventNames || []);
+    [addedToBuffer, sentByEmail, savedToDb].forEach((s) => {
+      Object.keys(s.byEventName).forEach((v) => {
+        eventNamesSet.add(v);
+      });
     });
-    return alertsBufferTxt;
+    eventNames = [...eventNamesSet].sort();
+    const tiuVal = (v: any) => [v?.t || 0, v?.i || 0, v?.u || 0].join('/');
+    const data: { [key: string]: unknown[] } = {
+      all: [
+        addedToBuffer.all.total,
+        addedToBuffer.all.today,
+        sentByEmail.all.total,
+        sentByEmail.all.today,
+        tiuVal(savedToDb.all.total),
+        tiuVal(savedToDb.all.today),
+      ],
+    };
+    eventNames.forEach((eventName) => {
+      const b = addedToBuffer.byEventName[eventName];
+      const e = sentByEmail.byEventName[eventName];
+      const d = savedToDb.byEventName[eventName];
+      data[eventName] = [
+        b?.total,
+        b?.today,
+        e?.total,
+        e?.today,
+        tiuVal(d?.total),
+        tiuVal(d?.today),
+      ];
+    });
+    const headers: string[][] = [
+      ['Added to buffer', '', 'Sent by Email', '', 'Saved to Db (t/i/u)', ''],
+      ['total', 'today', 'total', 'today', 'total', 'today'],
+    ];
+    return { data, headers };
   }
 
   destroy () {
+    const destroyStat = (n: string) => {
+      // @ts-ignore
+      const s = this[n] as any;
+      delete s.all;
+      Object.keys(s.byEventName).forEach((key) => {
+        delete s.byEventName[key];
+      });
+      // @ts-ignore
+      this[n] = undefined;
+    };
     this.eventEmitter.removeListener('virtual-date-changed', this.callbackOnVDC);
     // @ts-ignore
     this.callbackOnVDC = undefined;
     // @ts-ignore
     this.eventEmitter = undefined;
-    // @ts-ignore
-    this.addedToBuffer = undefined;
-    // @ts-ignore
-    this.sentByEmail = undefined;
-    // @ts-ignore
-    this.savedToDb.all = undefined;
-    Object.keys(this.savedToDb.byAlertType).forEach((key) => {
-      // @ts-ignore
-      this.savedToDb.byAlertType[key] = undefined;
-    });
-    // @ts-ignore
-    this.savedToDb = undefined;
+    destroyStat('addedToBuffer');
+    destroyStat('sentByEmail');
+    destroyStat('savedToDb');
   }
 }
