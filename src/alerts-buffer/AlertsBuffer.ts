@@ -1,6 +1,8 @@
 /* eslint-disable no-await-in-loop */
 import EventEmitter from 'events';
-import * as color from 'af-color';
+import {
+  bg, green, lBlue, magenta, red, reset, rs, yellow,
+} from 'af-color';
 import { fillBracketTemplate, intEnv, IThrottleExOptions, removeHTML, throttleEx } from 'af-tools-ts';
 import { IAlertEmailSettings, TAlert, TAlertSentFlags, TMergeResult } from './i-alert';
 import { AlertsStat } from './AlertsStat';
@@ -228,7 +230,7 @@ export class AlertsBuffer {
     for (let i = 0; i < alerts.length; i++) {
       const alert = alerts[i];
       const { guid, eventName } = alert;
-      const skipMsg = `SKIP ALERT TO EMAIL ${color.lBlue}${eventName}:[${color.magenta}${guid}${color.reset}]`;
+      const skipMsg = `SKIP ALERT TO EMAIL ${lBlue}${eventName}:[${magenta}${guid}${reset}]`;
       if (this.isAlertSentByEmail(alert)) {
         if (DEBUG_ALERTS_BUFFER) {
           echo.debug(`${skipMsg}: already sent by email`);
@@ -316,7 +318,7 @@ export class AlertsBuffer {
       this.alertsStat.anySavedToDb(eventName, mergeResult);
       if (DEBUG_ALERTS_BUFFER) {
         const { total, inserted, updated } = mergeResult;
-        this.options.echo.debug(`${color.green}ALERTS MERGED: t/i/u: ${total}/${inserted}/${updated} / ${eventName}`);
+        this.options.echo.debug(`${green}ALERTS MERGED: t/i/u: ${total}/${inserted}/${updated} / ${eventName}`);
       }
 
       // MARK SENT
@@ -387,7 +389,6 @@ export class AlertsBuffer {
 
   printDebugMessage (alert: TAlert) {
     if (DEBUG_ALERTS_BUFFER) {
-      const { red, yellow, reset: rs, magenta, lBlue, bg } = color;
       const { guid } = alert;
       const prefix = this.sentAlertsFlags.has(guid) ? `${yellow}UPDATE ` : `${red}${bg.yellow}`;
       const text = `${prefix}ALERT${rs}: ${lBlue}${alert.eventName}${rs} ${magenta}[${guid}]${rs}`;

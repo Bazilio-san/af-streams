@@ -1,6 +1,7 @@
+import { magenta, red } from 'af-color';
 import { Pool, PoolClient, PoolConfig, QueryResult, QueryResultRow } from 'pg';
 import { DateTime } from 'luxon';
-import { color, echo, logger } from './logger';
+import { echo, logger } from './logger';
 
 export const TEST_DB = 'af-streams-test';
 export const TEST_SCHEMA = 'test';
@@ -86,7 +87,7 @@ export const query = async <R extends QueryResultRow = any> (
     }
     return res;
   } catch (err) {
-    logger.error(`SQL Error:\n${color.magenta}${sqlText}${color.red}`);
+    logger.error(`SQL Error:\n${magenta}${sqlText}${red}`);
     logger.error(err);
     if (throwError) {
       throw err;

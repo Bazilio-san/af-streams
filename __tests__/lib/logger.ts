@@ -8,7 +8,7 @@ import emitter from './ee';
 const prefix = 'af-streams';
 const minLevel = process.env.LOGGER_LEVEL || 'silly';
 
-const { logger, fileLogger, exitOnError, echo, color } = getAFLogger({
+const { logger, fileLogger, exitOnError, echo } = getAFLogger({
   minLevel: minLevel as TLogLevelName,
   name: prefix,
   filePrefix: prefix,
@@ -25,4 +25,4 @@ const { logger, fileLogger, exitOnError, echo, color } = getAFLogger({
 });
 
 // const { info, error, loggerFinish } = fileLogger
-export { logger, fileLogger, exitOnError, echo, color };
+export { logger, fileLogger, exitOnError, echo };
