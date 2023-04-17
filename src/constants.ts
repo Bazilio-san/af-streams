@@ -1,3 +1,5 @@
+import { getBool, intEnv } from 'af-tools-ts';
+
 export const TS_FIELD = '__ts__';
 export const STREAM_ID_FIELD = '__streamId__';
 export const MILLIS_IN_DAY = 86_400_000;
@@ -28,19 +30,6 @@ export const DEBUG_LTR = isTotalStreamDebug || /\baf-streams:ltr\b/i.test(DEBUG)
 export const DEBUG_LNP = isTotalStreamDebug || /\baf-streams:lnp\b/i.test(DEBUG); // before & after load next portion
 export const DEBUG_STREAM = isTotalStreamDebug || /\baf-streams:stream\b/i.test(DEBUG);
 export const DEBUG_ALERTS_BUFFER = isTotalStreamDebug || /\baf-streams:alerts\b/i.test(DEBUG);
-
-const getBool = (v: any): boolean => /^(true|1|yes)$/i.test(String(v));
-const floatEnv = (name: string, def: number) => {
-  let v = process.env[name];
-  if (!v) {
-    return def;
-  }
-  v = v.replace(/_/g, '');
-  const val = parseFloat(v);
-  return val || val === 0 ? val : def;
-};
-
-const intEnv = (name: string, def: number) => Math.ceil(floatEnv(name, def));
 
 // eslint-disable-next-line no-shadow
 export enum EMailSendRule {
