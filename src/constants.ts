@@ -1,4 +1,4 @@
-import { getBool, intEnv } from 'af-tools-ts';
+import { boolEnv, getBool, intEnv } from 'af-tools-ts';
 
 export const TS_FIELD = '__ts__';
 export const STREAM_ID_FIELD = '__streamId__';
@@ -73,7 +73,7 @@ export const reloadStreamsEnv = () => {
   STREAMS_ENV.LOOP_TIME_MILLIS = intEnv('STREAM_LOOP_TIME_MILLIS', 0);
   STREAMS_ENV.MAX_BUFFER_SIZE = intEnv('STREAM_MAX_BUFFER_SIZE', DEFAULTS.MAX_BUFFER_SIZE);
   STREAMS_ENV.PRINT_INFO_INTERVAL_SEC = intEnv('STREAM_PRINT_INFO_INTERVAL_SEC', DEFAULTS.PRINT_INFO_INTERVAL_SEC);
-  STREAMS_ENV.SKIP_GAPS = getBool('STREAM_SKIP_GAPS');
+  STREAMS_ENV.SKIP_GAPS = boolEnv('STREAM_SKIP_GAPS', DEFAULTS.SKIP_GAPS);
 };
 
 reloadStreamsEnv();
