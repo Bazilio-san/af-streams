@@ -95,10 +95,11 @@ const rSpace = (str: string, strLength: number) => {
   return '';
 };
 
-export const alertEmailDetails = (options: { detailsArray: TAlertEmailDetails, indent?: string, prefix?: string }): string => {
-  const { detailsArray, indent = '', prefix = '' } = options;
+export const alertEmailDetails = (options: { detailsArray: TAlertEmailDetails, wrapPre?: boolean, indent?: string, prefix?: string }): string => {
+  const { detailsArray, wrapPre = false, indent = '', prefix = '' } = options;
   const padLen = Math.max(...detailsArray.map(([label]) => removeHTML(label).length)) + 2;
-  return detailsArray.map(([label, text]) => indent + prefix + label + rSpace(label, padLen) + text).join('\n');
+  const details = detailsArray.map(([label, text]) => indent + prefix + label + rSpace(label, padLen) + text).join('\n');
+  return wrapPre ? `<pre class="email-pre-header">${details}</pre>` : details;
 };
 
 export const alertEmailHeader = (args: { alert: TAlert, wrapPre?: boolean, indent?: string, prefix?: string }): string => {
