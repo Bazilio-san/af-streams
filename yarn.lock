@@ -1235,10 +1235,10 @@ af-logger@^2.0.28:
     winston "^3.4.0"
     winston-daily-rotate-file "^4.5.5"
 
-af-tools-ts@^1.0.23:
-  version "1.0.23"
-  resolved "https://registry.yarnpkg.com/af-tools-ts/-/af-tools-ts-1.0.23.tgz#3cddba7c9d172f3b31bb07831c9de8056931012c"
-  integrity sha512-Ud+/2HAeN3UIi0TOx6rmnmUXFfPoE2iQbT7eLa2WkEOoqKIvt1f6ce9XiK7NJJ1+5lJuZxLAPPpLnr4iRsqHaQ==
+af-tools-ts@^1.0.24:
+  version "1.0.24"
+  resolved "https://registry.yarnpkg.com/af-tools-ts/-/af-tools-ts-1.0.24.tgz#468de6eca82e83538ffe501bcb7e92396e9a6e1c"
+  integrity sha512-n+289wLYabuGwQWf/PziH87spnYEBPonaJ02CFfka1iBiY+e+68vddok87vyd8uhOyUqi94uSOzINYU20FGGgQ==
   dependencies:
     af-color "^0.0.5"
     af-echo-ts "^1.0.3"
@@ -3974,11 +3974,6 @@ pretty-format@^29.0.0, pretty-format@^29.5.0:
     "@jest/schemas" "^29.4.3"
     ansi-styles "^5.0.0"
     react-is "^18.0.0"
-
-pretty-print-json@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/pretty-print-json/-/pretty-print-json-2.0.0.tgz#12a2756215753b4b66ae9053636be39dcd89bab0"
-  integrity sha512-CYXVnf0NyvNnlMMNdaHBs/F3mKyw0/gl4g3H1iwimgdWYN49kNbIo/L/d6a6ZzhZ1vJJ75r9P7bmZp7yz1VEHg==
 
 process-nextick-args@~2.0.0:
   version "2.0.1"

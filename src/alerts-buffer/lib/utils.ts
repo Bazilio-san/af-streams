@@ -1,6 +1,5 @@
-import { FormatOptions, prettyPrintJson } from 'pretty-print-json';
 import * as os from 'os';
-import { millisTo, removeHTML } from 'af-tools-ts';
+import { FormatOptions, millisTo, prettyPrintJson, removeHTML } from 'af-tools-ts';
 import { TAlert, TAlertEmailDetails } from '../i-alert';
 
 export const htmlTemplate = `
