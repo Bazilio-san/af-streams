@@ -1212,10 +1212,10 @@ af-color@^0.0.1:
   resolved "https://registry.yarnpkg.com/af-color/-/af-color-0.0.1.tgz#672020dc3b09ca2f8d632ceb06893c328702a98f"
   integrity sha512-qrN265OCFUBf1s+MFQfqh4DQOB15vO+amQfhebKBuIHwHXukc+FxxzMksJw9bwI9MtOTbZUNvcKK/Glyrz66rw==
 
-af-color@^0.0.2:
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/af-color/-/af-color-0.0.2.tgz#b84b8d52c7913a62d38b81ab6776aaba43b50a49"
-  integrity sha512-sAI5LyAVVs8xynaC/OLJG9jLcRTqTxT72VT4mkVkNCVqL0sEPFKFBDtjSsPYfH60MJrHT3+AeQ0fn62gINHuUg==
+af-color@^0.0.5:
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/af-color/-/af-color-0.0.5.tgz#cc756742ca70f10fa87be00507ad3a03067a3a91"
+  integrity sha512-s+I+5A0aqLLKdOXeVlMeeO0umZz0rqdwnNOVbTXG/sUTsWMAMVw7s1kycVtTmHUhirAV3bqOiqCo5tLtMGYeBg==
 
 af-echo-ts@^1.0.3:
   version "1.0.3"
@@ -1235,12 +1235,12 @@ af-logger@^2.0.28:
     winston "^3.4.0"
     winston-daily-rotate-file "^4.5.5"
 
-af-tools-ts@^1.0.22:
-  version "1.0.22"
-  resolved "https://registry.yarnpkg.com/af-tools-ts/-/af-tools-ts-1.0.22.tgz#bd79a1e0516af6848e52ab1c07e9bd4d70a45e6e"
-  integrity sha512-QLD1csTKa8WVU2mucXrzJyn8Bz8vHcMULUPWkDfrNQcSpO467IOyVdLozsFX/zMLTDbn2yr4s6ueSABOgfFjfA==
+af-tools-ts@^1.0.23:
+  version "1.0.23"
+  resolved "https://registry.yarnpkg.com/af-tools-ts/-/af-tools-ts-1.0.23.tgz#3cddba7c9d172f3b31bb07831c9de8056931012c"
+  integrity sha512-Ud+/2HAeN3UIi0TOx6rmnmUXFfPoE2iQbT7eLa2WkEOoqKIvt1f6ce9XiK7NJJ1+5lJuZxLAPPpLnr4iRsqHaQ==
   dependencies:
-    af-color "^0.0.1"
+    af-color "^0.0.5"
     af-echo-ts "^1.0.3"
     config "^3.3.9"
     dotenv "^16.0.3"
