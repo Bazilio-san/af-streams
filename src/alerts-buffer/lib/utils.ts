@@ -99,7 +99,7 @@ export const alertEmailDetails = (options: { detailsArray: TAlertEmailDetails, w
   const { detailsArray, wrapPre = false, indent = '', prefix = '' } = options;
   const padLen = Math.max(...detailsArray.map(([label]) => removeHTML(label).length)) + 2;
   const details = detailsArray.map(([label, text]) => indent + prefix + label + rSpace(label, padLen) + text).join('\n');
-  return wrapPre ? `<pre class="email-pre-header">${details}</pre>` : details;
+  return wrapPre ? `<pre>${details}</pre>` : details;
 };
 
 export const alertEmailHeader = (args: { alert: TAlert, wrapPre?: boolean, indent?: string, prefix?: string }): string => {
