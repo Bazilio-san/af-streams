@@ -3,20 +3,18 @@ import EventEmitter from 'events';
 import {
   bg, green, lBlue, magenta, red, reset, rs, yellow,
 } from 'af-color';
-import { fillBracketTemplate, intEnv, IThrottleExOptions, removeHTML, throttleEx } from 'af-tools-ts';
+import { fillBracketTemplate, IThrottleExOptions, removeHTML, throttleEx } from 'af-tools-ts';
 import { IAlertEmailSettings, TAlert, TAlertSentFlags, TMergeResult } from './i-alert';
 import { AlertsStat } from './AlertsStat';
 import { alertEmailFooter, alertEmailHeader, fillHtmlTemplate, jsonToHtml } from './lib/utils';
 import { getSendMail, ISendAlertArgs } from './lib/email-service';
 import { IKeyedSingleEventTimeWindowConstructorOptions, KeyedSingleEventTimeWindow } from '../classes/keyed/KeyedSingleEventTimeWindow';
 import { VirtualTimeObj } from '../VirtualTimeObj';
-import { DEBUG_ALERTS_BUFFER, EMailSendRule, STREAMS_ENV, isDeprecatedSendAlertsByEmail, DEFAULTS } from '../constants';
+import { EMailSendRule, PARAMS } from '../params';
+import { DEBUG_ALERTS_BUFFER } from '../constants';
 import { IEcho, ILoggerEx } from '../interfaces';
 
 const MILLIS_IN_HOUR = 3_600_000;
-
-// Сигналы рассылаются пакетно. Отправляется не более этого количества писем. Остальные теряются.
-const ONE_TIME_EMAIL_SEND_LIMIT = intEnv('ONE_TIME_EMAIL_SEND_LIMIT', 20);
 
 interface IAlertsBufferConstructorOptions {
   logger: ILoggerEx,
@@ -32,21 +30,11 @@ interface IAlertsBufferConstructorOptions {
    */
   removeExpiredItemsFromAlertsStatesCacheIntervalMillis?: number, // Default = 60_000
 
-  /**
-   * Период вывода сигналов из буфера на отправку по Email и сохранение в БД
-   */
-  flushBufferIntervalSeconds?: number, // Default = 3
-
-  setFlagToProcForOperators?: number[],
-
   // Функция сохранения/обновления сигналов
   mergeAlerts: (alerts: TAlert[]) => Promise<TMergeResult>;
 
   // Функция проверки наличия сохраненного сигнала в БД
   checkAlertExists: (guid: string) => Promise<boolean>,
-
-  // Функция сохранения признаков "обработан"
-  mergeAlertsActions: (guids: string[], operationIds: number[]) => Promise<void>
 
   emailSettings: IAlertEmailSettings,
 
@@ -103,7 +91,6 @@ export class AlertsBuffer {
 
     this.sendMail = getSendMail(options.emailSettings, options.logger);
 
-    this.options.flushBufferIntervalSeconds = this.options.flushBufferIntervalSeconds || 3;
     // Запуск сохранения сигналов из буфера каждые 3 секунды
     this.loop().then(() => 0);
   }
@@ -220,7 +207,7 @@ export class AlertsBuffer {
    * Фильтрация сигналов, по признаку возможности отправки по Email
    */
   async filterAlertsAllowedSendByEmail (alerts: TAlert[]): Promise<TAlert[]> {
-    if (isDeprecatedSendAlertsByEmail()) {
+    if (PARAMS.emailSendRule === EMailSendRule.BLOCK) {
       return [];
     }
 
@@ -239,7 +226,7 @@ export class AlertsBuffer {
         if (DEBUG_ALERTS_BUFFER) {
           echo.debug(`${skipMsg}: already sent to DB`);
         }
-      } else if (STREAMS_ENV.EMAIL_SEND_RULE !== EMailSendRule.FORCE && await this.options.checkAlertExists(guid)) {
+      } else if (PARAMS.emailSendRule !== EMailSendRule.FORCE && await this.options.checkAlertExists(guid)) {
         if (DEBUG_ALERTS_BUFFER) {
           echo.debug(`${skipMsg}: already present in DB`);
         }
@@ -267,9 +254,10 @@ export class AlertsBuffer {
     if (!alertsToSend) {
       return;
     }
-    if (alertsToSend.length > ONE_TIME_EMAIL_SEND_LIMIT) {
-      this.options.logger.error(`Превышен лимит ${ONE_TIME_EMAIL_SEND_LIMIT} на одновременную отправку сигналов по E-Mali (${alertsToSend.length})`);
-      alertsToSend = alertsToSend.splice(0, ONE_TIME_EMAIL_SEND_LIMIT);
+    const limit = PARAMS.emailOneTimeSendLimit;
+    if (alertsToSend.length > limit) {
+      this.options.logger.error(`Превышен лимит ${limit} на одновременную отправку сигналов по E-Mali (${alertsToSend.length})`);
+      alertsToSend = alertsToSend.splice(0, limit);
     }
     alertsToSend.forEach((alert) => {
       this.markAlertAsSentByEmail(alert);
@@ -307,10 +295,6 @@ export class AlertsBuffer {
   }
 
   private async saveAlertsOfTypeToDb (eventName: string, alertsOfTypeToSave: TAlert[]) {
-    const newAlertsGuids = alertsOfTypeToSave
-      .map(({ guid }) => guid)
-      .filter((guid) => !this.sentAlertsFlags.getItemData(guid)?.noUpdateToProcForOperators);
-
     try {
       // MERGE
       const mergeResult = await this.options.mergeAlerts(alertsOfTypeToSave);
@@ -325,11 +309,6 @@ export class AlertsBuffer {
       alertsOfTypeToSave.forEach((alert) => {
         this.markAlertAsSavedToDb(alert, true);
       });
-
-      // Alerts Operators Actions
-      if (this.options.setFlagToProcForOperators && newAlertsGuids.length) {
-        await this.options.mergeAlertsActions(newAlertsGuids, this.options.setFlagToProcForOperators);
-      }
     } catch (err) {
       this.options.logger.error(err);
     }
@@ -384,7 +363,7 @@ export class AlertsBuffer {
     const self = this;
     this._loopTimer = setTimeout(() => {
       self.loop();
-    }, (this.options.flushBufferIntervalSeconds || DEFAULTS.FLUSH_ALERTS_BUFFER_INTERVAL_SEC) * 1000);
+    }, (PARAMS.flushAlertsBufferIntervalSec) * 1000);
   }
 
   printDebugMessage (alert: TAlert) {

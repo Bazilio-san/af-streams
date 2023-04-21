@@ -6,7 +6,19 @@ import { Server } from 'socket.io';
 
 export type TEventRecord = { [fieldName: string | symbol]: any };
 export type Nullable<T> = T | null;
-
+/**
+ * GetNames тип для извлечения набора ключей
+ * @template FromType тип - источник ключей
+ * @template KeepType критерий фильтрации
+ * @template Include признак для указания как интерпретировать критерий фильтрации. В случае false - инвертировать результат для KeepType
+ */
+export type GetNames<FromType, KeepType = any, Include = true> = {
+  [K in keyof FromType]:
+  FromType[K] extends KeepType ?
+    Include extends true ? K :
+      never : Include extends true ?
+      never : K
+}[keyof FromType];
 /**
  * Data from the database, along with related information, to be sent to WSO2 over TCP as JSON
  */
@@ -167,9 +179,6 @@ export interface IPostgresConfig extends IPostgresClientConfig {
 
 export interface IStreamConfig {
   streamId: string,
-  fetchIntervalSec?: number,
-  bufferMultiplier?: number,
-  maxBufferSize?: number,
   src: {
     schema: string,
     table: string,
@@ -180,22 +189,15 @@ export interface IStreamConfig {
     dbConfig: IDbConfig,
   }
   fields: TFields,
-  printInfoIntervalSec?: number,
   prepareEvent?: Function,
   tsFieldToMillis?: Function,
   millis2dbFn?: Function,
-  skipGaps?: boolean, // skip gaps in data when working in virtual time mode
-  streamSendIntervalMillis?: number, // The interval for sending data from the buffer // default 10 ms
-  maxRunUpFirstTsVtMillis?: number, // Не допускаем увеличение разницы между ts первого элемента и виртуальным временем боле, чем на это значение
   timeDelayMillis?: number, // Искусственное отставание при выборке данных
 }
 
-export interface IStartTimeConfig {
-  redis?: {
-    host: string,
-    port?: string | number
-  },
-  useStartTimeFromRedisCache?: boolean,
+export interface IRedisConfig {
+  host: string,
+  port?: string | number
 }
 
 export interface ICommonConfig {
@@ -207,12 +209,6 @@ export interface ICommonConfig {
   eventEmitter: EventEmitter,
 
   skipInitDbConnection?: boolean,
-}
-
-export interface IVirtualTimeConfig {
-  speed?: number,
-  timeFrontUpdateIntervalMillis?: number, // default 5 ms
-  loopTimeMillis?: number,
 }
 
 export interface ISenderConstructorOptions {

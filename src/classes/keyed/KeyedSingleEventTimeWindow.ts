@@ -5,7 +5,8 @@ import { echo } from 'af-echo-ts';
 import { Debug, getTimeParamFromMillis, millisTo, padR } from 'af-tools-ts';
 import { ISingleEventTimeWindowConstructorOptions, SingleEventTimeWindow } from '../base/SingleEventTimeWindow';
 import { ITimeWindowItem } from '../base/TimeWindow';
-import { MIN_WINDOW_MILLIS, STREAMS_ENV } from '../../constants';
+import { MIN_WINDOW_MILLIS } from '../../constants';
+import { PARAMS } from '../../params';
 
 const debug = Debug('KeyedSingleEventTimeWindow');
 
@@ -154,7 +155,7 @@ export class KeyedSingleEventTimeWindow<T, S = any> {
       echo(`${m}Удалено ${lBlue}${removed.length}${m} устаревших событий из окон [KeyedSingleEventTimeWindow] winName: ${lBlue
       }${this.options.winName}`);
       const padLen = Math.max(...removed.map(([key]) => key.length)) + 2;
-      if (STREAMS_ENV.PRINT_EVERY_REMOVED_ITEM_FROM_KEYED_SINGLE_EVENT_TIME_WINDOW) {
+      if (PARAMS.printEveryRemovedItemFromKeyedSingleEventTimeWindow) {
         removed.forEach(([key, hashItem]) => {
           const { inputTs: inp, lastTs: lst } = hashItem;
           const distance = getTimeParamFromMillis(lst - inp, 'biggest');

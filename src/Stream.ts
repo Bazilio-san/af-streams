@@ -5,16 +5,14 @@ import { clearInterval } from 'timers';
 import {
   blue, bold, boldOff, c, g, lBlue, lc, lCyan, lm, m, rs, bg, yellow, black,
 } from 'af-color';
-import {
-  boolEnv, cloneDeep, floatEnv, getBool, infoBlock, intEnv, memUsage, padL,
-} from 'af-tools-ts';
+import { cloneDeep, infoBlock, memUsage, padL } from 'af-tools-ts';
 import { LastTimeRecords } from './LastTimeRecords';
 import { RecordsBuffer } from './RecordsBuffer';
 import { VirtualTimeObj } from './VirtualTimeObj';
 import getDb from './db/db';
 import {
   ICommonConfig, IEmBeforeLoadNextPortion,
-  IEmCurrentLastTimeRecords, IEmFindNextTs, IEmSaveLastTs,
+  IEmCurrentLastTimeRecords, IEmFindNextTs,
   IEmSubtractedLastTimeRecords,
   IRecordsComposite,
   ISender,
@@ -26,7 +24,8 @@ import {
 import { DbMsSql } from './db/DbMsSql';
 import { DbPostgres } from './db/DbPostgres';
 import { destroySender, getSender } from './sender/get-sender';
-import { DEBUG_LNP, DEBUG_LTR, DEBUG_STREAM, DEFAULTS, STREAM_ID_FIELD, TS_FIELD } from './constants';
+import { DEBUG_LNP, DEBUG_LTR, DEBUG_STREAM, STREAM_CONFIG_DEFAULTS, STREAM_ID_FIELD, TS_FIELD } from './constants';
+import { PARAMS } from './params';
 
 export interface IStreamConstructorOptions {
   commonConfig: ICommonConfig,
@@ -192,7 +191,10 @@ export class Stream {
       this.totalRowsSent = 0;
       this.isFirstLoad = true;
     };
-    this.eeListeners['virtual-time-is-synchronized-with-current'] = this.setStreamSendIntervalMillis.bind(this);
+
+    this.eeListeners['virtual-time-is-synchronized-with-current'] = () => {
+      this.resetSendIntervalVirtualMillis();
+    };
     const { eventEmitter: ee } = options.commonConfig;
     if (ee) {
       Object.entries(this.eeListeners).forEach(([eventId, fn]) => {
@@ -205,84 +207,22 @@ export class Stream {
   }
 
   // ####################################  SET  ################################
-
-  setFetchIntervalSec (value?: number) {
-    const isEcho = value != null;
-    this.options.streamConfig.fetchIntervalSec = (value && Number(value))
-      || Number(this.options.streamConfig.fetchIntervalSec)
-      || intEnv('STREAM_FETCH_INTERVAL_SEC', DEFAULTS.FETCH_INTERVAL_SEC); // 10 sec
+  setParam (paramName: string, value?: number): number {
+    const isEcho = typeof value === 'number';
+    const p = this.options.streamConfig;
+    if (!isEcho) {
+      // @ts-ignore
+      value = (Number(p[paramName]) || STREAM_CONFIG_DEFAULTS[paramName]);
+    }
+    if (paramName === 'timeDelayMillis') {
+      value = Math.max(value || 0, 0);
+    }
+    // @ts-ignore
+    p[paramName] = value;
     if (isEcho) {
-      this.options.commonConfig.echo(`Новое значение ${m}fetchIntervalSec${rs} = ${lBlue}${this.options.streamConfig.fetchIntervalSec}`);
+      this.options.commonConfig.echo(`Новое значение ${m}${paramName}${rs} = ${lBlue}${value}`);
     }
-  }
-
-  setBufferMultiplier (value?: number) {
-    const isEcho = value != null;
-    value = (value && Number(value))
-      || Number(this.options.streamConfig.bufferMultiplier)
-      || floatEnv('STREAM_BUFFER_MULTIPLIER', DEFAULTS.BUFFER_MULTIPLIER); // Default 2
-    this.options.streamConfig.bufferMultiplier = Math.max(value, 1);
-    if (isEcho) {
-      this.options.commonConfig.echo(`Новое значение ${m}bufferMultiplier${rs} = ${lBlue}${this.options.streamConfig.bufferMultiplier}`);
-    }
-  }
-
-  setMaxBufferSize (value?: number) {
-    const isEcho = value != null;
-    this.options.streamConfig.maxBufferSize = (value && Number(value))
-      || Number(this.options.streamConfig.maxBufferSize)
-      || intEnv('STREAM_MAX_BUFFER_SIZE', DEFAULTS.MAX_BUFFER_SIZE); // Default 65_000;
-    if (isEcho) {
-      this.options.commonConfig.echo(`Новое значение ${m}maxBufferSize${rs} = ${lBlue}${this.options.streamConfig.maxBufferSize}`);
-    }
-  }
-
-  setStreamSendIntervalMillis (value?: number) {
-    const isEcho = value != null;
-    this.options.streamConfig.streamSendIntervalMillis = (value && Number(value))
-      || Number(this.options.streamConfig.streamSendIntervalMillis)
-      || intEnv('STREAM_SEND_INTERVAL_MILLIS', DEFAULTS.STREAM_SEND_INTERVAL_MILLIS); // 10 ms ;
-    this.resetSendIntervalVirtualMillis();
-    if (isEcho) {
-      this.options.commonConfig.echo(`Новое значение ${m}streamSendIntervalMillis${rs} = ${lBlue}${this.options.streamConfig.streamSendIntervalMillis}`);
-    }
-  }
-
-  setMaxRunUpFirstTsVtMillis (value?: number) {
-    const isEcho = value != null;
-    this.options.streamConfig.maxRunUpFirstTsVtMillis = (value && Number(value))
-      || Number(this.options.streamConfig.maxRunUpFirstTsVtMillis)
-      || intEnv('STREAM_MAX_RUNUP_FIRST_TS_VT_MILLIS', DEFAULTS.MAX_RUNUP_FIRST_TS_VT_MILLIS); // 2_000 ms
-    if (isEcho) {
-      this.options.commonConfig.echo(`Новое значение ${m}maxRunUpFirstTsVtMillis${rs} = ${lBlue}${this.options.streamConfig.maxRunUpFirstTsVtMillis}`);
-    }
-  }
-
-  setTimeDelay (value?: number) {
-    value = (value && Number(value)) || Number(this.options.streamConfig.timeDelayMillis) || 0;
-    this.options.streamConfig.timeDelayMillis = Math.max(0, value);
-  }
-
-  setSkipGaps (value?: boolean) {
-    const isEcho = value != null;
-    if (value != null) {
-      this.options.streamConfig.skipGaps = getBool(value, DEFAULTS.SKIP_GAPS);
-      return;
-    }
-    this.options.streamConfig.skipGaps = boolEnv('STREAM_SKIP_GAPS', DEFAULTS.SKIP_GAPS);
-    if (isEcho) {
-      this.options.commonConfig.echo(`Новое значение ${m}skipGaps${rs} = ${lBlue}${this.options.streamConfig.skipGaps}`);
-    }
-  }
-
-  setPrintInfoIntervalSec (value?: number) {
-    const isEcho = value != null;
-    this.options.streamConfig.printInfoIntervalSec = (value && Number(value))
-      || Number(this.options.streamConfig.printInfoIntervalSec)
-      || intEnv('STREAM_PRINT_INFO_INTERVAL_SEC', DEFAULTS.PRINT_INFO_INTERVAL_SEC); // Default 60;
-    if (isEcho) {
-      this.options.commonConfig.echo(`Новое значение ${m}printInfoIntervalSec${rs} = ${lBlue}${this.options.streamConfig.printInfoIntervalSec}`);
-    }
+    return value as number;
   }
 
   setEventCallback (eventCallback: Function) {
@@ -291,8 +231,7 @@ export class Stream {
   }
 
   resetSendIntervalVirtualMillis () {
-    const streamSendIntervalMillis = this.options.streamConfig.streamSendIntervalMillis || DEFAULTS.STREAM_SEND_INTERVAL_MILLIS;
-    this.sendIntervalVirtualMillis = streamSendIntervalMillis * (this.virtualTimeObj.isCurrentTime ? 1 : this.virtualTimeObj.speed);
+    this.sendIntervalVirtualMillis = PARAMS.streamSendIntervalMillis * (this.virtualTimeObj.isCurrentTime ? 1 : PARAMS.speed);
   }
 
   // ###############################  INIT & START  ############################
@@ -308,13 +247,8 @@ export class Stream {
    * Output of start information
    */
   async init (): Promise<Stream> {
-    this.setFetchIntervalSec();
-    this.setBufferMultiplier();
-    this.setMaxBufferSize();
-    this.setStreamSendIntervalMillis();
-    this.setMaxRunUpFirstTsVtMillis();
-    this.setTimeDelay();
-    this.setSkipGaps();
+    this.resetSendIntervalVirtualMillis();
+    this.setParam('timeDelayMillis');
 
     const { commonConfig, streamConfig, senderConfig } = this.options;
     const { streamId, timeDelayMillis } = streamConfig;
@@ -325,10 +259,10 @@ export class Stream {
 
     const info: [string, any][] = [
       ['Time field TZ', streamConfig.src.timezoneOfTsField],
-      ['Db polling frequency', `${streamConfig.fetchIntervalSec} sec`],
-      ['Buffer multiplier', streamConfig.bufferMultiplier],
-      ['Buffer cleanup interval', `${streamConfig.streamSendIntervalMillis} ms`],
-      ['Max RunUp ts-vt', `${streamConfig.maxRunUpFirstTsVtMillis} ms`],
+      ['Db polling frequency', `${PARAMS.streamFetchIntervalSec} sec`],
+      ['Buffer multiplier', PARAMS.streamBufferMultiplier],
+      ['Buffer cleanup interval', `${PARAMS.streamSendIntervalMillis} ms`],
+      ['Max RunUp ts-vt', `${PARAMS.maxRunUpFirstTsVtMillis} ms`],
     ];
     if (timeDelayMillis) {
       info.push(['Time delay in request', `${timeDelayMillis} ms`]);
@@ -438,7 +372,7 @@ export class Stream {
   }
 
   async _addPortionToBuffer (recordset: TDbRecord[]): Promise<void> {
-    const { recordsBuffer, options, virtualTimeObj: { loopTimeMillis, loopNumber } } = this;
+    const { recordsBuffer, options, virtualTimeObj: { loopNumber } } = this;
     const { streamId } = options.streamConfig;
     const { length: loadedCount = 0 } = recordset;
     let skipped = 0;
@@ -451,8 +385,8 @@ export class Stream {
       }
       recordset.splice(0, recordset.length);
 
-      if (loopTimeMillis) {
-        const bias = loopNumber * loopTimeMillis;
+      if (PARAMS.loopTimeMillis) {
+        const bias = loopNumber * PARAMS.loopTimeMillis;
         forBuffer.forEach((row) => {
           row._ts = row[TS_FIELD] + bias;
           row.loopNumber = loopNumber;
@@ -490,10 +424,9 @@ export class Stream {
 
   // #################################  LOAD  ##################################
   getBufferLookAhead () {
-    const { fetchIntervalSec, bufferMultiplier } = this.options.streamConfig;
-    const { isCurrentTime, speed } = this.virtualTimeObj;
-    // Запрос данных со сдвигом виртуального времени на bufferMultiplier интервалов опроса
-    return (fetchIntervalSec as number) * 1000 * Math.max(bufferMultiplier as number, 1) * (isCurrentTime ? 1 : speed);
+    const { isCurrentTime } = this.virtualTimeObj;
+    // Запрос данных со сдвигом виртуального времени на streamBufferMultiplier интервалов опроса
+    return PARAMS.streamFetchIntervalSec * 1000 * Math.max(PARAMS.streamBufferMultiplier, 1) * (isCurrentTime ? 1 : PARAMS.speed);
   }
 
   private async _loadNextPortion () {
@@ -502,7 +435,7 @@ export class Stream {
     }
     const { options, recordsBuffer, virtualTimeObj, stat } = this;
     let { nextStartTs } = this;
-    const { streamId, maxBufferSize, timeDelayMillis = 0 } = options.streamConfig;
+    const { streamId, timeDelayMillis = 0 } = options.streamConfig;
 
     const bufferLookAheadMs = this.getBufferLookAhead();
 
@@ -525,7 +458,7 @@ export class Stream {
       return;
     }
     let startTs = nextStartTs;
-    let endTs = virtualTimeObj.virtualTs + bufferLookAheadMs + (stat.queryDurationMillis * (isCurrentTime ? 1 : virtualTimeObj.speed));
+    let endTs = virtualTimeObj.virtualTs + bufferLookAheadMs + (stat.queryDurationMillis * (isCurrentTime ? 1 : PARAMS.speed));
     // С учетом предыдущих условий, тут расстояние между startTs и endTs не должно превышать
 
     if (this.isFirstLoad) {
@@ -541,13 +474,14 @@ export class Stream {
     if (((recordsBuffer.getMsDistance()) > bufferLookAheadMs)) {
       return;
     }
-    const limit = (maxBufferSize || DEFAULTS.MAX_BUFFER_SIZE) - recordsBuffer.buffer.length;
+    const limit = PARAMS.streamMaxBufferSize - recordsBuffer.buffer.length;
     if (limit < 1) {
       return;
     }
 
     try {
       const payloadBefore: IEmBeforeLoadNextPortion = { streamId, startTs, endTs, vt: virtualTimeObj.virtualTs, timeDelayMillis };
+      const ee = options.commonConfig.eventEmitter;
 
       stat.startTs = startTs;
       stat.endTs = endTs;
@@ -555,7 +489,7 @@ export class Stream {
       stat.timeDelayMillis = timeDelayMillis;
 
       if (DEBUG_LNP) {
-        options.commonConfig.eventEmitter?.emit('before-load-next-portion', payloadBefore);
+        ee?.emit('before-load-next-portion', payloadBefore);
       }
       const st = Date.now();
       // ================= get Portion Of Data =================
@@ -583,6 +517,10 @@ export class Stream {
 
       ([isCurrentTime, virtualTs] = virtualTimeObj.setNextTimeFront());
 
+      if (!PARAMS.saveExactLastTsToRedis) {
+        ee?.emit('save-last-ts', { streamId, lastTs: virtualTs });
+      }
+
       if (isLimitExceed && this.lastRecordTs) {
         // Если превышен лимит количества записей в одном запросе, то считаем,
         // что последняя запись не может быть старше реального времени,
@@ -604,7 +542,7 @@ export class Stream {
       }
 
       if (DEBUG_LNP) {
-        options.commonConfig.eventEmitter?.emit('after-load-next-portion', { ...this.stat });
+        ee?.emit('after-load-next-portion', { ...this.stat });
       }
     } catch (err: Error | any) {
       err.message += `\n${this.db.schemaAndTable}`;
@@ -613,7 +551,7 @@ export class Stream {
   }
 
   private async skipGap () {
-    if (!this.options.streamConfig.skipGaps || this.virtualTimeObj.isCurrentTime) {
+    if (!PARAMS.skipGaps || this.virtualTimeObj.isCurrentTime) {
       this.gapEdge = 0;
       return;
     }
@@ -674,7 +612,7 @@ export class Stream {
     const self = this;
     this._fetchLoopTimer = setTimeout(() => {
       self._fetchLoop();
-    }, (this.options.streamConfig.fetchIntervalSec || DEFAULTS.FETCH_INTERVAL_SEC) * 1000);
+    }, PARAMS.streamFetchIntervalSec * 1000);
   }
 
   private _printInfoLoop () {
@@ -687,7 +625,7 @@ export class Stream {
     const self = this;
     this._printTimer = setTimeout(() => {
       self._printInfoLoop();
-    }, (this.options.streamConfig.printInfoIntervalSec || DEFAULTS.PRINT_INFO_INTERVAL_SEC) * 1000);
+    }, PARAMS.printInfoIntervalSec * 1000);
   }
 
   // #################################  SEND  ##################################
@@ -713,10 +651,11 @@ export class Stream {
       };
       sender.sendEvents(recordsComposite).then(() => {
         const { last, sendCount = 0, sentBufferLength } = recordsComposite;
-        const lastTs = last?.[TS_FIELD];
-        if (lastTs) {
-          const payload: IEmSaveLastTs = { streamId, lastTs };
-          eventEmitter.emit('save-last-ts', payload);
+        if (PARAMS.saveExactLastTsToRedis) {
+          const lastTs = last?.[TS_FIELD];
+          if (lastTs) {
+            eventEmitter.emit('save-last-ts', { streamId, lastTs });
+          }
         }
         this.totalRowsSent += sendCount;
         if (DEBUG_STREAM) {
@@ -772,7 +711,7 @@ export class Stream {
     }
     this._sendTimer = setTimeout(() => {
       self._sendLoop();
-    }, this.options.streamConfig.streamSendIntervalMillis);
+    }, PARAMS.streamSendIntervalMillis);
   }
 
   // #################################  LOCK  ##################################
@@ -798,7 +737,7 @@ export class Stream {
     if (firstTs) {
       // Если буфер не пуст:
       // Не допускаем увеличение разницы между ts первого элемента и виртуальным временем боле, чем на maximumRunUp...
-      return firstTs + (this.options.streamConfig.maxRunUpFirstTsVtMillis || DEFAULTS.MAX_RUNUP_FIRST_TS_VT_MILLIS);
+      return firstTs + PARAMS.maxRunUpFirstTsVtMillis;
     }
     // Если буфер пуст
     if (this.nextStartTs) {
@@ -877,9 +816,9 @@ export class Stream {
     // Остановка virtualTimeObj
     virtualTimeObj.hardStop();
 
-    const { streamId/* , fetchIntervalSec = 1, bufferMultiplier = 1 */ } = streamConfig;
+    const { streamId } = streamConfig;
     // Выдерживаем паузу для завершения уже запущенных циклов сброса данных
-    // await sleep(fetchIntervalSec * 1000 * bufferMultiplier);
+    // await sleep(PARAMS.streamFetchIntervalSec * 1000 * PARAMS.streamBufferMultiplier);
     await this.db?.destroy();
 
     // @ts-ignore

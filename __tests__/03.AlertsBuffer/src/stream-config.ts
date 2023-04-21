@@ -1,4 +1,5 @@
-import { IStreamConfig, TDbRecord, TEventRecord } from '../../../src';
+import { DateTime } from 'luxon';
+import { EMailSendRule, IParamsConfig, IStreamConfig, TDbRecord, TEventRecord } from '../../../src';
 import { millisToISO } from '../../lib/test-utils';
 
 const dbConfig = require('../../lib/local.db.config.json');
@@ -23,16 +24,32 @@ export const streamConfig: IStreamConfig = {
     },
   },
   fields: ['ts', 'guid', 'threshold', 'can_save_to_db', 'value', 'saved_to_db', 'sent_to_email'],
-  fetchIntervalSec: 1,
-  bufferMultiplier: 2,
-  maxBufferSize: 65000,
   prepareEvent: function prepareEvent (dbRecord: TDbRecord): TEventRecord {
     const eventRecord = { ...dbRecord };
     eventRecord.ts = +eventRecord.ts;
     eventRecord.tsISO = millisToISO(eventRecord.ts);
     return eventRecord;
   },
-  skipGaps: false,
-  streamSendIntervalMillis: 5,
+};
+export const paramsConfig: IParamsConfig = {
+  emailOneTimeSendLimit: 20,
+  emailSendRule: EMailSendRule.IF_ALERT_NOT_EXISTS,
+  flushAlertsBufferIntervalSec: 1,
+  loopTimeMillis: 0,
   maxRunUpFirstTsVtMillis: 100,
+  printInfoIntervalSec: 60,
+  processHistoricalAlerts: false,
+  rectifierAccumulationTimeMillis: 60_000,
+  rectifierSendIntervalMillis: 10,
+  skipGaps: false,
+  speed: 1,
+  streamBufferMultiplier: 2,
+  streamFetchIntervalSec: 1,
+  streamMaxBufferSize: 65000,
+  streamSendIntervalMillis: 5,
+  timeFrontUpdateIntervalMillis: 5,
+  timeStartBeforeMillis: 0,
+  timeStartMillis: DateTime.fromISO('2023-01-01T23:59:55').toMillis(),
+  timeStartTakeFromRedis: false,
+  timeStopMillis: 0,
 };

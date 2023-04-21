@@ -1,11 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { ACTIONS_TABLE, ALERT_TABLE, getPool, query, TEST_DB, TEST_SCHEMA, TEST_TABLE } from '../../lib/db';
+import { ALERT_TABLE, getPool, query, TEST_DB, TEST_SCHEMA, TEST_TABLE } from '../../lib/db';
 import { echo } from '../../lib/logger';
 
 const TT = `${TEST_SCHEMA}.${TEST_TABLE}`;
 const AT = `${TEST_SCHEMA}.${ALERT_TABLE}`;
-const AA = `${TEST_SCHEMA}.${ACTIONS_TABLE}`;
 
 export const initTestDbEnvironment = async () => {
   const pool = await getPool();
@@ -66,19 +65,6 @@ export const initTestDbEnvironment = async () => {
           ts timestamp with time zone not null,
           info_json jsonb not null,
           "updatedAt" timestamp with time zone not null
-      );
-  `;
-  await query(sql);
-  echo(`OK!`);
-
-  echo(`Пересоздаю таблицу действий операторов`);
-  sql = `
-      DROP TABLE IF EXISTS ${AA};
-      CREATE TABLE ${AA}
-      (
-          guid   uuid NOT NULL constraint alert_actions_pk primary key,
-          actions     jsonb,
-          "createdAt" timestamp with time zone default now()
       );
   `;
   await query(sql);

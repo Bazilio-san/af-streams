@@ -2,15 +2,15 @@ export { IStreamConstructorOptions, Stream } from './Stream';
 export { LastTimeRecords } from './LastTimeRecords';
 export { RecordsBuffer } from './RecordsBuffer';
 export { StartTimeRedis } from './StartTimeRedis';
-export { getVirtualTimeObj, IVirtualTimeObjOptions, VirtualTimeObj } from './VirtualTimeObj';
+export { getVirtualTimeObj, VirtualTimeObj } from './VirtualTimeObj';
 export {
   TDbRecord, TEventRecord, IDbConfig, TSlot,
   IEmPortionOfDataCount, IEmPortionOfDataSql,
   IEmVirtualHourChanged, IEmVirtualDateChanged,
   IEmSubtractedLastTimeRecords, IEmCurrentLastTimeRecords,
   IEmBeforeLoadNextPortion, IEmAfterLoadNextPortion, IEmSaveLastTs,
-  EWinInsertType, ISocket, IOFnArgs, ICommonConfig, IVirtualTimeConfig,
-  ISenderConfig, IStreamConfig, IStartTimeConfig,
+  EWinInsertType, ISocket, IOFnArgs, ICommonConfig,
+  ISenderConfig, IStreamConfig, IRedisConfig,
 } from './interfaces';
 
 export {
@@ -37,16 +37,23 @@ export {
   findSlotFloatBINARY,
   findSlotFloat,
 } from './utils/find-slot-float';
+export { setStartTimeParamsFromENV } from './utils/utils';
 
 export {
   TS_FIELD,
   STREAM_ID_FIELD,
-  DEFAULTS,
-  STREAMS_ENV,
-  EMailSendRule,
-  isDeprecatedSendAlertsByEmail,
-  reloadStreamsEnv,
 } from './constants';
+
+export {
+  PARAMS,
+  EMailSendRule,
+  IParams,
+  changeParams,
+  IParamsConfig,
+  applyParamsConfig,
+  applyParamsConfigOnce,
+  setValidatedParam,
+} from './params';
 
 // =============================== CLASSES =====================================
 export {

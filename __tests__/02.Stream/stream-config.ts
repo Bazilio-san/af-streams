@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { DEFAULTS, IStreamConfig, TDbRecord, TEventRecord } from '../../src';
+import { IStreamConfig, TDbRecord, TEventRecord, IParamsConfig } from '../../src';
 
 export const streamConfig: IStreamConfig = {
   streamId: 'test-stream',
@@ -27,9 +27,6 @@ export const streamConfig: IStreamConfig = {
     seccode: 'string',
     buysell: 'string',
   },
-  fetchIntervalSec: 10,
-  bufferMultiplier: 2,
-  maxBufferSize: 65000,
   prepareEvent: function prepareEvent (dbRecord: TDbRecord): TEventRecord {
     const eventRecord = { ...dbRecord };
     eventRecord.tradetime = DateTime.fromISO(dbRecord.tradetime, { zone: 'GMT' }).toMillis();
@@ -37,7 +34,12 @@ export const streamConfig: IStreamConfig = {
     eventRecord.orderno = Number(dbRecord.orderno);
     return eventRecord;
   },
+};
+
+export const paramsConfig: IParamsConfig = {
+  streamFetchIntervalSec: 10,
+  streamBufferMultiplier: 2,
+  streamMaxBufferSize: 65000,
   skipGaps: false,
-  streamSendIntervalMillis: DEFAULTS.STREAM_SEND_INTERVAL_MILLIS,
-  maxRunUpFirstTsVtMillis: DEFAULTS.MAX_RUNUP_FIRST_TS_VT_MILLIS,
+  streamSendIntervalMillis: 10,
 };

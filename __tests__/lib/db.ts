@@ -7,7 +7,6 @@ export const TEST_DB = 'af-streams-test';
 export const TEST_SCHEMA = 'test';
 export const TEST_TABLE = 'test';
 export const ALERT_TABLE = 'alert';
-export const ACTIONS_TABLE = 'alert_actions';
 
 const dbConnectionConfig = require('./local.db.config.json');
 

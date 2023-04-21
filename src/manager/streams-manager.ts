@@ -3,19 +3,19 @@
 
 import EventEmitter from 'events';
 import { echo as echoSimple } from 'af-echo-ts';
-import { cloneDeep, intEnv, millisTo, timeParamRE } from 'af-tools-ts';
 import { green, cyan, lBlue, magenta, yellow } from 'af-color';
 import { Stream } from '../Stream';
-import { VirtualTimeObj, getVirtualTimeObj, IVirtualTimeObjOptions } from '../VirtualTimeObj';
+import { VirtualTimeObj, getVirtualTimeObj } from '../VirtualTimeObj';
 import {
-  ICommonConfig, IEcho, ILoggerEx, IOFnArgs, ISenderConfig, IStartTimeConfig, IStreamConfig, IVirtualTimeConfig, TEventRecord,
+  ICommonConfig, IEcho, ILoggerEx, IOFnArgs, ISenderConfig, IRedisConfig, IStreamConfig, TEventRecord,
 } from '../interfaces';
-import { DEFAULTS, STREAMS_ENV, reloadStreamsEnv, STREAM_ID_FIELD } from '../constants';
-import { IRectifierOptions, Rectifier } from '../classes/applied/Rectifier';
+import { PARAMS, changeParams, IParamsConfig } from '../params';
+import { STREAM_ID_FIELD } from '../constants';
+import { Rectifier } from '../classes/applied/Rectifier';
 import localEventEmitter from '../ee-scoped';
 import { AlertsBuffer } from '../alerts-buffer/AlertsBuffer';
 import { IPrepareAlertsBufferOptions, IPrepareRectifierOptions, IPrepareStreamOptions, ISmStatisticsData } from './i';
-import { changeSmParams } from './change-params';
+import { getStartTimeRedis } from '../StartTimeRedis';
 
 const findLast = require('array.prototype.findlast');
 
@@ -46,7 +46,9 @@ export class StreamsManager {
 
   private statisticsSendIntervalMillis: number = STATISTICS_SEND_INTERVAL.QUICK;
 
-  constructor (public commonConfig: ICommonConfig) {
+  public params: { [paramName: string]: any } = {};
+
+  constructor (public commonConfig: ICommonConfig, params: { [paramName: string]: any } = {}) {
     this.map = {};
     this._locked = true;
     this._connectedSockets = new Set();
@@ -54,6 +56,7 @@ export class StreamsManager {
     this.eventEmitter = this.commonConfig.eventEmitter;
     this.logger = this.commonConfig.logger;
     this.echo = this.commonConfig.echo;
+    this.params = { ...params }; // VVQ
   }
 
   checkCommonConfig (isInit: boolean = false) {
@@ -81,15 +84,11 @@ export class StreamsManager {
     }
   }
 
-  async prepareVirtualTimeObj (
-    args: {
-      virtualTimeConfig: IVirtualTimeConfig,
-      startTimeConfig: IStartTimeConfig,
-    },
-  ): Promise<VirtualTimeObj> {
+  async prepareVirtualTimeObj (redisConfig?: IRedisConfig): Promise<VirtualTimeObj> {
     this.checkCommonConfig();
     const { commonConfig } = this;
-    this.virtualTimeObj = await getVirtualTimeObj({ commonConfig, ...args });
+    await getStartTimeRedis({ commonConfig, redisConfig }).defineStartTime();
+    this.virtualTimeObj = await getVirtualTimeObj(commonConfig);
     return this.virtualTimeObj;
   }
 
@@ -111,16 +110,8 @@ export class StreamsManager {
       optionsArray = [optionsArray];
     }
     if (prepareRectifierOptions) {
-      const { sendIntervalMillis, fieldNameToSort, accumulationTimeMillis, sendFunction } = prepareRectifierOptions;
-      const rectifierOptions: IRectifierOptions = {
-        virtualTimeObj,
-        accumulationTimeMillis: accumulationTimeMillis || intEnv('RECTIFIER_ACCUMULATION_TIME_MILLIS', DEFAULTS.RECTIFIER_ACCUMULATION_TIME_MILLIS),
-        sendIntervalMillis: sendIntervalMillis || intEnv('RECTIFIER_SEND_INTERVAL_MILLIS', DEFAULTS.RECTIFIER_SEND_INTERVAL_MILLIS),
-        fieldNameToSort: fieldNameToSort || DEFAULTS.RECTIFIER_FIELD_NAME_TO_SORT,
-        sendFunction,
-      };
       // Подготавливаем "Выпрямитель". Он будет получать все события потоков
-      this.rectifier = new Rectifier(rectifierOptions);
+      this.rectifier = new Rectifier({ ...prepareRectifierOptions, virtualTimeObj });
     }
     return optionsArray.map((options: IPrepareStreamOptions, index) => {
       if (prepareRectifierOptions) {
@@ -148,6 +139,7 @@ export class StreamsManager {
       const stream = await this.streams[i].init();
       streams.push(stream);
     }
+    PARAMS.saveExactLastTsToRedis = streams.length <= 1;
     return streams;
   }
 
@@ -167,47 +159,19 @@ export class StreamsManager {
     return this.map[streamId];
   }
 
-  changeParams (data: any) {
-    const { virtualTimeObj, rectifier, streams } = this;
-    changeSmParams(virtualTimeObj, rectifier, streams, data);
+  changeParams (paramsConfig: IParamsConfig) {
+    changeParams(paramsConfig, this.virtualTimeObj, this.rectifier);
   }
 
-  getConfigs (): { virtualTimeConfig: IVirtualTimeObjOptions, streamConfigs: { streamConfig: IStreamConfig, senderConfig: ISenderConfig }[] } {
-    const streamConfigs = this.streams.map((stream) => (stream.getActualConfig() as { streamConfig: IStreamConfig, senderConfig: ISenderConfig }));
-    const virtualTimeConfig = cloneDeep<IVirtualTimeObjOptions>(this.virtualTimeObj.options);
-    // @ts-ignore
-    delete virtualTimeConfig.commonConfig;
-    return { virtualTimeConfig, streamConfigs };
+  getConfigs (): { streamConfig: IStreamConfig, senderConfig: ISenderConfig }[] { // VVR
+    return this.streams.map((stream) => (stream.getActualConfig() as { streamConfig: IStreamConfig, senderConfig: ISenderConfig }));
   }
 
   getConfigsParams (): { [paramName: string]: string | number | boolean | undefined } {
-    let streamStartBefore: string | undefined = process.env.STREAM_START_BEFORE;
-    if (!timeParamRE.test(String(streamStartBefore || ''))) {
-      streamStartBefore = undefined;
-    }
-
     return {
+      ...PARAMS,
       isStopped: this.isStopped(),
       isSuspended: this._locked,
-      startFromLastStop: this.virtualTimeObj?.options.startTimeRedis.options.startTimeConfig.useStartTimeFromRedisCache,
-      streamStartTime: millisTo.human.utc._(this.virtualTimeObj?.options.startTimeMillis || 0),
-      streamStartBefore,
-      speed: this.virtualTimeObj?.speed,
-      emailSendRule: STREAMS_ENV.EMAIL_SEND_RULE,
-      processHistoricalAlerts: STREAMS_ENV.PROCESS_HISTORICAL_ALERTS,
-
-      fetchIntervalSec: STREAMS_ENV.FETCH_INTERVAL_SEC,
-      bufferMultiplier: STREAMS_ENV.BUFFER_MULTIPLIER,
-      streamSendIntervalMillis: STREAMS_ENV.STREAM_SEND_INTERVAL_MILLIS,
-      timeFrontUpdateIntervalMillis: STREAMS_ENV.TIME_FRONT_UPDATE_INTERVAL_MILLIS,
-      rectifierSendIntervalMillis: STREAMS_ENV.RECTIFIER_SEND_INTERVAL_MILLIS,
-      rectifierAccumulationTimeMillis: STREAMS_ENV.RECTIFIER_ACCUMULATION_TIME_MILLIS,
-      maxRunUp: STREAMS_ENV.MAX_RUNUP_FIRST_TS_VT_MILLIS,
-
-      loopTimeMillis: STREAMS_ENV.LOOP_TIME_MILLIS,
-      maxBufferSize: STREAMS_ENV.MAX_BUFFER_SIZE,
-      printInfoIntervalSec: STREAMS_ENV.PRINT_INFO_INTERVAL_SEC,
-      skipGaps: STREAMS_ENV.SKIP_GAPS,
     };
   }
 
@@ -230,7 +194,6 @@ export class StreamsManager {
   }
 
   async start (): Promise<Stream[]> {
-    reloadStreamsEnv();
     await this.virtualTimeObj?.resetWithStartTime();
     this.virtualTimeObj?.startUpInfo();
     const streams = await Promise.all(this.streams.map((stream) => stream.start()));
@@ -259,10 +222,10 @@ export class StreamsManager {
         rss,
         vt,
         isCurrentTime,
-        lastSpeed,
+        lastSpeed, // VVQ
         totalSpeed,
         rectifier: {
-          widthMillis: rectifier?.options.accumulationTimeMillis || 0,
+          widthMillis: PARAMS.rectifierAccumulationTimeMillis,
           rectifierItemsCount: length,
         },
         streams: streams.map((stream) => {
