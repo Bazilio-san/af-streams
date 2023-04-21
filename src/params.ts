@@ -71,18 +71,34 @@ export const PARAMS: IParams = {
 
   // Пропуск нерабочего времени. Включается в режиме тестирования при обработке истории
   skipGaps: false,
+  // Скорость течения виртуального времени
   speed: 1,
   // Запрос данных со сдвигом виртуального времени на streamBufferMultiplier интервалов опроса
   streamBufferMultiplier: 2,
+  // Частота запросов в БД для выборки данных для потоков
   streamFetchIntervalSec: 10,
+  // Ограничение на количество записей в буфере. Если буфер пуст, то это же
+  // значение станет ограничением на кол-во записей, выбираемых в одном запросе в БД.
+  // Если буфер не пуст, то условие выборки (TOP/LIMIT) уменьшается на количество записей в буфере.
   streamMaxBufferSize: 65_000,
   // The interval for sending data from the buffer
   streamSendIntervalMillis: 10,
+  // Частота обновления фронта виртуального времени
   timeFrontUpdateIntervalMillis: 5,
+  // Параметр, устанавливающий время старта потоков, в прошлое на указанное
+  // количество миллисекунд. Если указано число больше 0, то этот параметр
+  // имеет приоритет над timeStartMillis
   timeStartBeforeMillis: 0,
+  // Параметр, устанавливающий временную метку времени старта потоков.
+  // Если 0 - то потоки стартуют с текущего времени.
+  // Значение не учитывается, если timeStartTakeFromRedis = true
   timeStartMillis: 0,
+  // Получать время старта потоков из Redis.
+  // Если true, прочие параметры установки начального времени игнорируются
   timeStartTakeFromRedis: true,
+  // Время остановки потоков. Если 0 - считается, что не задано.
   timeStopMillis: 0,
+  //
   printEveryRemovedItemFromKeyedSingleEventTimeWindow: false,
 };
 
@@ -115,7 +131,7 @@ export const setValidatedParam = (paramName: keyof IParams, value: number | bool
   if (numberParams.includes(paramName)) {
     if (typeof value === 'number') {
       type NumberKeys = GetNames<IParams, number>;
-      const minValue = ['timeStartBeforeMillis'].includes(paramName) ? 0 : 1;
+      const minValue = ['loopTimeMillis', 'timeStartBeforeMillis', 'timeStartMillis', 'timeStopMillis'].includes(paramName) ? 0 : 1;
       value = Math.max(minValue, Math.ceil(value));
       PARAMS[paramName as NumberKeys] = value;
       return true;
@@ -169,9 +185,6 @@ export const changeParams = (
     }
     echo(`Новое значение параметра ${m}${paramName}${rs} = ${lBlue}${value}`);
     // Дополнительные действия по парамерам
-    if (paramName === 'timeFrontUpdateIntervalMillis' && virtualTimeObj) {
-      virtualTimeObj.resetTimeFrontUpdateInterval();
-    }
     if (paramName === 'rectifierSendIntervalMillis' && rectifier) {
       rectifier.resetRectifierSendInterval();
     }

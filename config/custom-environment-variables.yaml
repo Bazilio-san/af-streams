@@ -1,0 +1,7 @@
+---
+logger:
+  level: LOGGER_LEVEL
+
+webServer:
+  host: WS_HOST
+  port: WS_PORT

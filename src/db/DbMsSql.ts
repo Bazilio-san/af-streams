@@ -1,4 +1,5 @@
 import * as sql from 'mssql';
+import { millisTo } from 'af-tools-ts';
 import { IDbConstructorOptions, IMsSqlConfig, IPostgresConfig } from '../interfaces';
 import { DbBase } from './DbBase';
 import { MILLIS_IN_HOUR } from '../constants';
@@ -48,6 +49,13 @@ export class DbMsSql extends DbBase {
 
     this.cfg = { ...mssqlDbOptions, ...dbConfig, server: dbConfig.server || dbConfig.host } as IMsSqlConfig;
     this.request = null;
+
+    const { streamConfig } = options;
+    const { millis2dbFn } = streamConfig;
+    this.millis2dbFn = typeof millis2dbFn === 'function'
+      ? millis2dbFn.bind(this)
+      : (millis: number) => millisTo.db.isoZ(millis);
+    streamConfig.millis2dbFn = this.millis2dbFn;
   }
 
   async getPool () {

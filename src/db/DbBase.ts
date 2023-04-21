@@ -32,17 +32,15 @@ export class DbBase {
 
   private readonly recordsetPropName: string;
 
-  public readonly millis2dbFn: Function;
+  public millis2dbFn: Function;
 
   constructor (options: IDbConstructorOptions) {
     this.options = options;
     const { streamConfig } = options;
-    const { src: { dbConfig }, millis2dbFn } = streamConfig;
+    const { fields, src } = streamConfig;
+    const { dbConfig, schema, table, tsField, idFields } = src;
 
-    this.millis2dbFn = typeof millis2dbFn === 'function'
-      ? millis2dbFn.bind(this)
-      : (millis: number) => `'${millisTo.iso._(millis)}'`;
-    streamConfig.millis2dbFn = this.millis2dbFn;
+    this.millis2dbFn = (millis: number) => millisTo.db.isoZ(millis);
 
     let host;
     if (dbConfig.dialect === 'mssql') {
@@ -59,8 +57,6 @@ export class DbBase {
     }
     const { ld, rd } = this;
     this.dbInfo = `${dbConfig.user}@${ld}${host}:${dbConfig.port}${rd}.${ld}${dbConfig.database}${rd}`;
-    const { fields, src } = streamConfig;
-    const { schema, table, tsField, idFields } = src;
     const fieldDefs: string[] = [];
     this.tableFieldNameArray = [];
     if (Array.isArray(fields)) {

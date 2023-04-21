@@ -2,7 +2,7 @@
 
 import { clearInterval } from 'timers';
 import EventEmitter from 'events';
-import { bold, boldOff, c, rs, y } from 'af-color';
+import { bg, bold, boldOff, c, rs, y } from 'af-color';
 import { infoBlock, millisTo } from 'af-tools-ts';
 import { ICommonConfig, IEmVirtualDateChanged, IEmVirtualHourChanged, IStreamLike } from './interfaces';
 import { MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
@@ -70,7 +70,7 @@ export class VirtualTimeObj {
     this.startUpInfo();
   }
 
-  updateRunningTime () {
+  private updateRunningTime () {
     const { prevTs } = this.runningRealTime;
     const now = Date.now();
     if (!this.locked) {
@@ -80,15 +80,9 @@ export class VirtualTimeObj {
     this.runningRealTime.expectedTimeFront = Math.max(this.virtualStartTs + this.runningRealTime.millis * PARAMS.speed, this.timeFront);
   }
 
-  resetTimeFrontUpdateInterval () {
-    if (this._frontUpdateTimer == null) {
-      return;
-    }
-    clearInterval(this._frontUpdateTimer);
-    this._frontUpdateTimer = setInterval(() => {
-      if (this.locked) {
-        return;
-      }
+  private timeFrontLoop () {
+    clearTimeout(this._frontUpdateTimer);
+    if (!this.locked) {
       this.updateRunningTime();
       this.setNextTimeFront();
 
@@ -99,10 +93,14 @@ export class VirtualTimeObj {
         this.lock();
         this.ee.emit('virtual-time-stopped-at', PARAMS.timeStopMillis);
       }
+    }
+
+    this._frontUpdateTimer = setTimeout(() => {
+      this.timeFrontLoop();
     }, PARAMS.timeFrontUpdateIntervalMillis);
   }
 
-  startCyclicSpeedCalc () {
+  private startCyclicSpeedCalc () {
     clearInterval(this._speedCalcTimer);
     const { stat } = this;
     const { arr, maxNumberOfItems } = stat;
@@ -116,25 +114,10 @@ export class VirtualTimeObj {
   }
 
   reset () {
-    const now = Date.now();
     this.timeFront = this.virtualStartTs;
-    this.realStartTs = now; // Переустанавливать при запуске
+    this.realStartTs = Date.now(); // Переустанавливать при запуске
     this.loopNumber = 0;
     this.isCurrentTime = false; // flag: virtual time has caught up with real time
-    this.stat.arr = [];
-    this.resetTimeFrontUpdateInterval();
-    this.startCyclicSpeedCalc();
-  }
-
-  hardStop () {
-    this.lock();
-    clearInterval(this._frontUpdateTimer);
-    this._frontUpdateTimer = undefined;
-    clearInterval(this._speedCalcTimer);
-    const now = Date.now();
-    this.timeFront = now;
-    this.realStartTs = now;
-    this.loopNumber = 0;
     this.stat.arr = [];
   }
 
@@ -150,10 +133,10 @@ export class VirtualTimeObj {
       ['Speed', `${bold}${PARAMS.speed} X`],
     ];
     if (PARAMS.timeStopMillis) {
-      info.push(['Stop at', millisTo.iso.z(PARAMS.timeStopMillis)]);
+      info.push(['Stop at', `${bg.yellow}${millisTo.iso.z(PARAMS.timeStopMillis)}${bg.def}`]);
     }
     if (PARAMS.loopTimeMillis) {
-      info.push(['Cyclic', `${(PARAMS.loopTimeMillis as number) / 1000} sec`]);
+      info.push(['Cyclic', `${bg.yellow}${(PARAMS.loopTimeMillis as number) / 1000} sec${bg.def}`]);
     }
     infoBlock({
       echo,
@@ -163,11 +146,29 @@ export class VirtualTimeObj {
     });
   }
 
-  async resetWithStartTime () {
+  async start () {
     const { commonConfig } = this;
     await getStartTimeRedis({ commonConfig }).defineStartTime();
     this.virtualStartTs = PARAMS.timeStartMillis;
     this.reset();
+    this.startUpInfo();
+    this.timeFrontLoop();
+    this.startCyclicSpeedCalc(); // VVQ вынести в старт
+  }
+
+  hardStop () {
+    this.lock();
+
+    clearTimeout(this._frontUpdateTimer);
+    this._frontUpdateTimer = undefined;
+    clearInterval(this._speedCalcTimer);
+    this._speedCalcTimer = undefined;
+
+    const now = Date.now();
+    this.timeFront = now;
+    this.realStartTs = now;
+    this.loopNumber = 0;
+    this.stat.arr = [];
   }
 
   setNextTimeFront (): [boolean, number] {
@@ -205,7 +206,7 @@ export class VirtualTimeObj {
     if (PARAMS.loopTimeMillis && this.timeFront >= (this.virtualStartTs + PARAMS.loopTimeMillis)) {
       this.timeFront = this.virtualStartTs;
       this.loopNumber++;
-      this.commonConfig.echo(`[af-streams]: New cycle from ${this.virtualTimeString}`);
+      this.commonConfig.echo(`[af-streams]: ${bg.yellow}New cycle from ${this.virtualTimeString}${bg.def}`);
       this.ee.emit('virtual-time-loop-back');
     }
   }

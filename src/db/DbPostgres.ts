@@ -1,5 +1,6 @@
 // @ts-ignore
 import * as pg from 'pg';
+import { millisTo } from 'af-tools-ts';
 import { IDbConstructorOptions, IPostgresConfig } from '../interfaces';
 import { DbBase } from './DbBase';
 
@@ -32,6 +33,13 @@ export class DbPostgres extends DbBase {
     const { dbOptions, dbConfig } = options.streamConfig.src;
     const postgresDbOptions = { ...postgresDefaults, ...(dbOptions || {}) };
     this.cfg = { ...postgresDbOptions, ...dbConfig } as IPostgresConfig;
+
+    const { streamConfig } = options;
+    const { millis2dbFn } = streamConfig;
+    this.millis2dbFn = typeof millis2dbFn === 'function'
+      ? millis2dbFn.bind(this)
+      : (millis: number) => millisTo.db.pgUtc(millis);
+    streamConfig.millis2dbFn = this.millis2dbFn;
   }
 
   async getPool () {

@@ -1,12 +1,14 @@
-import { START_OF_ERA_ISO } from 'af-tools-ts';
 import { initStreams, streamsManager } from './src/init-stream';
 import { initTestDbEnvironment } from './src/init-test-db';
+
+const forceStopISO = '2023-02-02';
 
 const runTestStream = async (): Promise<void> => {
   await streamsManager.start();
   return new Promise((resolve: Function) => {
     const timer = setInterval(() => {
-      if ((streamsManager.virtualTimeObj.virtualTimeISO || START_OF_ERA_ISO) >= '2023-01-02T00:00:10') {
+      const currISO = streamsManager.virtualTimeObj.virtualTimeISO || forceStopISO;
+      if (currISO >= '2023-01-02T00:00:10') {
         clearInterval(timer);
         resolve();
       }

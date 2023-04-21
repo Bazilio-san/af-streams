@@ -1,7 +1,12 @@
 export { IStreamConstructorOptions, Stream } from './Stream';
 export { LastTimeRecords } from './LastTimeRecords';
 export { RecordsBuffer } from './RecordsBuffer';
-export { StartTimeRedis } from './StartTimeRedis';
+export {
+  StartTimeRedis,
+  setStartTimeParamsFromENV,
+  StartTimeRedisConstructorOptions,
+  getStartTimeRedis,
+} from './StartTimeRedis';
 export { getVirtualTimeObj, VirtualTimeObj } from './VirtualTimeObj';
 export {
   TDbRecord, TEventRecord, IDbConfig, TSlot,
@@ -37,7 +42,6 @@ export {
   findSlotFloatBINARY,
   findSlotFloat,
 } from './utils/find-slot-float';
-export { setStartTimeParamsFromENV } from './utils/utils';
 
 export {
   TS_FIELD,

@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { millisTo } from 'af-tools-ts';
 import { EMailSendRule, IParamsConfig, IStreamConfig, TDbRecord, TEventRecord } from '../../../src';
 import { millisToISO } from '../../lib/test-utils';
 
@@ -30,6 +31,15 @@ export const streamConfig: IStreamConfig = {
     eventRecord.tsISO = millisToISO(eventRecord.ts);
     return eventRecord;
   },
+  millis2dbFn: (millis: number) => millisTo.db.pgUtc(millis),
+  tsFieldToMillis: (dt: Date) => {
+    const a = Number(dt);
+    const b = DateTime.fromJSDate(dt).toMillis();
+    if (a !== b) {
+      return a;
+    }
+    return b;
+  },
 };
 export const paramsConfig: IParamsConfig = {
   emailOneTimeSendLimit: 20,
@@ -49,7 +59,7 @@ export const paramsConfig: IParamsConfig = {
   streamSendIntervalMillis: 5,
   timeFrontUpdateIntervalMillis: 5,
   timeStartBeforeMillis: 0,
-  timeStartMillis: DateTime.fromISO('2023-01-01T23:59:55').toMillis(),
+  timeStartMillis: DateTime.fromISO('2023-01-01T23:59:55Z').toMillis(),
   timeStartTakeFromRedis: false,
   timeStopMillis: 0,
 };

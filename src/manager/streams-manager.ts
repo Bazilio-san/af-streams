@@ -194,8 +194,13 @@ export class StreamsManager {
   }
 
   async start (): Promise<Stream[]> {
-    await this.virtualTimeObj?.resetWithStartTime();
-    this.virtualTimeObj?.startUpInfo();
+    if (!this.virtualTimeObj) {
+      const err = `Missing StreamsManager.virtualTimeObj`;
+      localEventEmitter.emit('sm-error', `Missing StreamsManager.virtualTimeObj`);
+      this.logger.error(err);
+      return [];
+    }
+    await this.virtualTimeObj.start();
     const streams = await Promise.all(this.streams.map((stream) => stream.start()));
     this._locked = false;
     this.startIO(true);
@@ -259,9 +264,8 @@ export class StreamsManager {
     this._connectedSockets.add(socketId);
 
     const listeners: { [eventId: string]: (...args: any[]) => any } = {};
-    listeners['sm-statistics'] = (data: any) => {
-      socket.volatile.emit('sm-statistics', data);
-    };
+    listeners['sm-statistics'] = (data: any) => socket.volatile.emit('sm-statistics', data);
+    listeners['sm-error'] = (errMessage: string) => socket.volatile.emit('sm-error', errMessage);
 
     Object.entries(listeners).forEach(([eventId, fn]) => {
       localEventEmitter.on(eventId, fn);
