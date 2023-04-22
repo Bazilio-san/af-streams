@@ -11,7 +11,7 @@ export enum EMailSendRule {
   FORCE = 'FORCE'
 }
 
-export interface IParams {
+export interface IStreamsParams {
   emailOneTimeSendLimit: number,
   emailSendRule: EMailSendRule,
   flushAlertsBufferIntervalSec: number,
@@ -34,12 +34,11 @@ export interface IParams {
   timeStartMillis: number,
   timeStartTakeFromRedis: boolean,
   timeStopMillis: number,
-  printEveryRemovedItemFromKeyedSingleEventTimeWindow: boolean,
 }
 
-export type IParamsConfig = Partial<IParams>;
+export type IStreamsParamsConfig = Partial<IStreamsParams>;
 
-export const PARAMS: IParams = {
+export const PARAMS: IStreamsParams = {
   // Сигналы рассылаются пакетно. Отправляется не более этого количества писем. Остальные теряются.
   emailOneTimeSendLimit: 20,
   // Управление отправкой писем.
@@ -98,8 +97,6 @@ export const PARAMS: IParams = {
   timeStartTakeFromRedis: true,
   // Время остановки потоков. Если 0 - считается, что не задано.
   timeStopMillis: 0,
-  //
-  printEveryRemovedItemFromKeyedSingleEventTimeWindow: false,
 };
 
 const numberParams = [
@@ -127,10 +124,10 @@ const booleanParams = [
   'timeStartTakeFromRedis',
 ];
 
-export const setValidatedParam = (paramName: keyof IParams, value: number | boolean | EMailSendRule): boolean => {
+export const setValidatedParam = (paramName: keyof IStreamsParams, value: number | boolean | EMailSendRule): boolean => {
   if (numberParams.includes(paramName)) {
     if (typeof value === 'number') {
-      type NumberKeys = GetNames<IParams, number>;
+      type NumberKeys = GetNames<IStreamsParams, number>;
       const minValue = ['loopTimeMillis', 'timeStartBeforeMillis', 'timeStartMillis', 'timeStopMillis'].includes(paramName) ? 0 : 1;
       value = Math.max(minValue, Math.ceil(value));
       PARAMS[paramName as NumberKeys] = value;
@@ -140,7 +137,7 @@ export const setValidatedParam = (paramName: keyof IParams, value: number | bool
   }
   if (booleanParams.includes(paramName)) {
     if (typeof value === 'boolean') {
-      type BooleanKeys = GetNames<IParams, boolean>;
+      type BooleanKeys = GetNames<IStreamsParams, boolean>;
       PARAMS[paramName as BooleanKeys] = value;
       return true;
     }
@@ -158,29 +155,29 @@ export const setValidatedParam = (paramName: keyof IParams, value: number | bool
 
 let isParamsConfigApplied = false;
 
-export const applyParamsConfig = (paramsConfig: IParamsConfig) => {
-  Object.entries(paramsConfig).forEach(([paramName, value]) => {
-    setValidatedParam(paramName as keyof IParams, value);
+export const applyParamsConfig = (streamsParamsConfig: IStreamsParamsConfig) => {
+  Object.entries(streamsParamsConfig).forEach(([paramName, value]) => {
+    setValidatedParam(paramName as keyof IStreamsParams, value);
   });
   isParamsConfigApplied = true;
 };
 
-export const applyParamsConfigOnce = (paramsConfig: IParamsConfig) => {
+export const applyParamsConfigOnce = (streamsParamsConfig: IStreamsParamsConfig) => {
   if (!isParamsConfigApplied) {
-    applyParamsConfig(paramsConfig);
+    applyParamsConfig(streamsParamsConfig);
   }
 };
 
 export const changeParams = (
-  paramsConfig: IParamsConfig,
+  streamsParamsConfig: IStreamsParamsConfig,
   virtualTimeObj: VirtualTimeObj,
   rectifier: Rectifier,
 ) => {
-  if (typeof paramsConfig !== 'object') {
+  if (typeof streamsParamsConfig !== 'object') {
     return;
   }
-  Object.entries(paramsConfig).forEach(([paramName, value]: [string, any]) => {
-    if (!setValidatedParam(paramName as keyof IParams, value)) {
+  Object.entries(streamsParamsConfig).forEach(([paramName, value]: [string, any]) => {
+    if (!setValidatedParam(paramName as keyof IStreamsParams, value)) {
       return;
     }
     echo(`Новое значение параметра ${m}${paramName}${rs} = ${lBlue}${value}`);

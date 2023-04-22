@@ -51,9 +51,9 @@ export {
 export {
   PARAMS,
   EMailSendRule,
-  IParams,
+  IStreamsParams,
   changeParams,
-  IParamsConfig,
+  IStreamsParamsConfig,
   applyParamsConfig,
   applyParamsConfigOnce,
   setValidatedParam,

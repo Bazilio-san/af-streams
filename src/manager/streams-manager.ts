@@ -9,7 +9,7 @@ import { VirtualTimeObj, getVirtualTimeObj } from '../VirtualTimeObj';
 import {
   ICommonConfig, IEcho, ILoggerEx, IOFnArgs, ISenderConfig, IRedisConfig, IStreamConfig, TEventRecord,
 } from '../interfaces';
-import { PARAMS, changeParams, IParamsConfig } from '../params';
+import { PARAMS, changeParams, IStreamsParamsConfig } from '../params';
 import { STREAM_ID_FIELD } from '../constants';
 import { Rectifier } from '../classes/applied/Rectifier';
 import localEventEmitter from '../ee-scoped';
@@ -159,8 +159,8 @@ export class StreamsManager {
     return this.map[streamId];
   }
 
-  changeParams (paramsConfig: IParamsConfig) {
-    changeParams(paramsConfig, this.virtualTimeObj, this.rectifier);
+  changeParams (streamsParamsConfig: IStreamsParamsConfig) {
+    changeParams(streamsParamsConfig, this.virtualTimeObj, this.rectifier);
   }
 
   getConfigs (): { streamConfig: IStreamConfig, senderConfig: ISenderConfig }[] { // VVR

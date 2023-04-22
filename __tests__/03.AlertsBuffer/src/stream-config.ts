@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import { millisTo } from 'af-tools-ts';
-import { EMailSendRule, IParamsConfig, IStreamConfig, TDbRecord, TEventRecord } from '../../../src';
+import { EMailSendRule, IStreamsParamsConfig, IStreamConfig, TDbRecord, TEventRecord } from '../../../src';
 import { millisToISO } from '../../lib/test-utils';
 
 const dbConfig = require('../../lib/local.db.config.json');
@@ -41,7 +41,7 @@ export const streamConfig: IStreamConfig = {
     return b;
   },
 };
-export const paramsConfig: IParamsConfig = {
+export const streamsParamsConfig: IStreamsParamsConfig = {
   emailOneTimeSendLimit: 20,
   emailSendRule: EMailSendRule.IF_ALERT_NOT_EXISTS,
   flushAlertsBufferIntervalSec: 1,

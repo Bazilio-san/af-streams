@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { IStreamConfig, TDbRecord, TEventRecord, IParamsConfig } from '../../src';
+import { IStreamConfig, TDbRecord, TEventRecord, IStreamsParamsConfig } from '../../src';
 
 export const streamConfig: IStreamConfig = {
   streamId: 'test-stream',
@@ -36,7 +36,7 @@ export const streamConfig: IStreamConfig = {
   },
 };
 
-export const paramsConfig: IParamsConfig = {
+export const streamsParamsConfig: IStreamsParamsConfig = {
   streamFetchIntervalSec: 10,
   streamBufferMultiplier: 2,
   streamMaxBufferSize: 65000,

@@ -6,7 +6,7 @@ dotenv.config();
 import { echo, exitOnError, logger } from '../../lib/logger';
 import eventEmitter from '../../lib/ee';
 import { ICommonConfig, StreamsManager, Stream, IRedisConfig, ISenderConfig, applyParamsConfigOnce } from '../../../src';
-import { streamConfig, paramsConfig } from './stream-config';
+import { streamConfig, streamsParamsConfig } from './stream-config';
 import { checkAlertExists, mergeAlerts } from '../../lib/db-alerts';
 import { TestAlgo } from './TestAlgo';
 
@@ -25,7 +25,7 @@ export const streamsManager = new StreamsManager(commonConfig);
 
 export const initStreams = async (): Promise<Stream[]> => {
   // Инициализация параметров (происходит только один раз)
-  applyParamsConfigOnce(paramsConfig);
+  applyParamsConfigOnce(streamsParamsConfig);
 
   const redisConfig: IRedisConfig = { host: process.env.REDIS_HOST || 'localhost' };
   // Инициализация объекта VirtualTimeObj
