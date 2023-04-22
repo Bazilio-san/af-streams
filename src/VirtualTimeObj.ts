@@ -125,8 +125,11 @@ export class VirtualTimeObj {
     const { echo } = this.commonConfig;
 
     let startFrom = millisTo.iso.z(PARAMS.timeStartMillis);
-    if (PARAMS.timeStartTakeFromRedis) {
-      startFrom += `${y}${bold} ${PARAMS.isUsedSavedStartTime ? `TAKEN FROM CACHE` : 'NOW'}${boldOff}`;
+    if (PARAMS.isUsedSavedStartTime) {
+      startFrom += `${y}${bold} TAKEN FROM CACHE${boldOff}`;
+    }
+    if (Date.now() - PARAMS.timeStartMillis < 100) {
+      startFrom += `${y}${bold} NOW${boldOff}`;
     }
     const info: [string, any][] = [
       ['Start from', startFrom],

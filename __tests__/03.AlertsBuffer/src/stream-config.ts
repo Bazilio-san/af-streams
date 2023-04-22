@@ -60,6 +60,5 @@ export const streamsParamsConfig: IStreamsParamsConfig = {
   timeFrontUpdateIntervalMillis: 5,
   timeStartBeforeMillis: 0,
   timeStartMillis: DateTime.fromISO('2023-01-01T23:59:55Z').toMillis(),
-  timeStartTakeFromRedis: false,
   timeStopMillis: 0,
 };

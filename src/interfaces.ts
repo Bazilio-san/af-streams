@@ -196,7 +196,7 @@ export interface IStreamConfig {
 }
 
 export interface IRedisConfig {
-  host: string,
+  host?: string,
   port?: string | number
 }
 

@@ -139,7 +139,6 @@ export class StreamsManager {
       const stream = await this.streams[i].init();
       streams.push(stream);
     }
-    PARAMS.saveExactLastTimeToRedis = streams.length <= 1;
     return streams;
   }
 
@@ -160,14 +159,14 @@ export class StreamsManager {
   }
 
   changeParams (streamsParamsConfig: IStreamsParamsConfig) {
-    changeParams(streamsParamsConfig, this.virtualTimeObj, this.rectifier);
+    changeParams(streamsParamsConfig, this.rectifier);
   }
 
   getConfigs (): { streamConfig: IStreamConfig, senderConfig: ISenderConfig }[] { // VVR
     return this.streams.map((stream) => (stream.getActualConfig() as { streamConfig: IStreamConfig, senderConfig: ISenderConfig }));
   }
 
-  getConfigsParams (): { [paramName: string]: string | number | boolean | undefined } {
+  getConfigsParams (): IStreamsParamsConfig {
     return {
       ...PARAMS,
       isStopped: this.isStopped(),

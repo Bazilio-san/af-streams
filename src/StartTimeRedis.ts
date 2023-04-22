@@ -98,25 +98,21 @@ export class StartTimeRedis {
     await this.getRedisClient();
     let startTimeMillis = 0;
     PARAMS.isUsedSavedStartTime = false;
-
-    if (PARAMS.timeStartTakeFromRedis) {
-      startTimeMillis = await this.getStartTimeFromRedis();
+    if (PARAMS.timeStartBeforeMillis) {
+      PARAMS.timeStartMillis = Date.now() - PARAMS.timeStartBeforeMillis;
+      return;
     }
-
+    if (PARAMS.timeStartMillis) {
+      return;
+    }
+    startTimeMillis = await this.getStartTimeFromRedis();
     if (startTimeMillis) {
       PARAMS.timeStartBeforeMillis = 0;
       PARAMS.timeStartMillis = startTimeMillis;
       PARAMS.isUsedSavedStartTime = true;
       return;
     }
-    // timeStartBeforeMillis - приоритет
-    if (PARAMS.timeStartBeforeMillis) {
-      PARAMS.timeStartMillis = Date.now() - PARAMS.timeStartBeforeMillis;
-      return;
-    }
-    if (!PARAMS.timeStartMillis) {
-      PARAMS.timeStartMillis = Date.now();
-    }
+    PARAMS.timeStartMillis = Date.now();
   }
 
   destroy () {

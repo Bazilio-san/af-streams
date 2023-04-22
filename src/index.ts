@@ -52,11 +52,10 @@ export {
   PARAMS,
   EMailSendRule,
   IStreamsParams,
-  changeParams,
   IStreamsParamsConfig,
   applyParamsConfig,
   applyParamsConfigOnce,
-  setValidatedParam,
+  changeParamByValidatedValue,
 } from './params';
 
 // =============================== CLASSES =====================================

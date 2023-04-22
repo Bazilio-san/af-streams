@@ -2,7 +2,6 @@ import { echo } from 'af-echo-ts';
 import { lBlue, m, rs } from 'af-color';
 import { GetNames } from './interfaces';
 import { Rectifier } from './classes/applied/Rectifier';
-import { VirtualTimeObj } from './VirtualTimeObj';
 
 // eslint-disable-next-line no-shadow
 export enum EMailSendRule {
@@ -32,11 +31,13 @@ export interface IStreamsParams {
   timeFrontUpdateIntervalMillis: number,
   timeStartBeforeMillis: number,
   timeStartMillis: number,
-  timeStartTakeFromRedis: boolean,
   timeStopMillis: number,
 }
 
-export type IStreamsParamsConfig = Partial<IStreamsParams>;
+export type IStreamsParamsConfig = Partial<IStreamsParams> & {
+  isStopped?: boolean,
+  isSuspended?: boolean,
+};
 
 export const PARAMS: IStreamsParams = {
   // Сигналы рассылаются пакетно. Отправляется не более этого количества писем. Остальные теряются.
@@ -61,10 +62,13 @@ export const PARAMS: IStreamsParams = {
   rectifierSendIntervalMillis: 10,
 
   // Режим сохранения последнего достигнутого потоками времени в Redis.
-  // true - сохранение метки времени последнего события в пакете после обработки
-  // очередного пакета событий потока. С частотой streamSendIntervalMillis (часто).
-  // false - сохранение временного фронта перед обработкой очередной загруженной
-  // порции данных каждым из потоков. Происходит с частотой streamFetchIntervalSec * кол-во потоков (редко)
+  // true - С частотой streamSendIntervalMillis (часто) производится сохранение
+  // метки времени последнего события в пакете,
+  // ПОСЛЕ обработки ОЧЕРЕДНОГО ПАКЕТА событий потока.
+  //
+  // false - С частотой streamFetchIntervalSec * кол-во потоков (редко)
+  // производится сохранение ВРЕМЕННОГО ФРОНТА
+  // перед обработкой очередной загруженной порции данных каждым из потоков
   // Режим true нужно использовать осторожно и только в случае, если поток один.
   saveExactLastTimeToRedis: false,
 
@@ -90,11 +94,8 @@ export const PARAMS: IStreamsParams = {
   timeStartBeforeMillis: 0,
   // Параметр, устанавливающий временную метку времени старта потоков.
   // Если 0 - то потоки стартуют с текущего времени.
-  // Значение не учитывается, если timeStartTakeFromRedis = true
+  // Если 0 и timeStartBeforeMillis = 0, время берется из redis. А если там нет, то берется текущее время
   timeStartMillis: 0,
-  // Получать время старта потоков из Redis.
-  // Если true, прочие параметры установки начального времени игнорируются
-  timeStartTakeFromRedis: true,
   // Время остановки потоков. Если 0 - считается, что не задано.
   timeStopMillis: 0,
 };
@@ -121,15 +122,18 @@ const numberParams = [
 const booleanParams = [
   'processHistoricalAlerts',
   'skipGaps',
-  'timeStartTakeFromRedis',
 ];
 
-export const setValidatedParam = (paramName: keyof IStreamsParams, value: number | boolean | EMailSendRule): boolean => {
+export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, value: number | boolean | EMailSendRule): boolean => {
   if (numberParams.includes(paramName)) {
     if (typeof value === 'number') {
       type NumberKeys = GetNames<IStreamsParams, number>;
       const minValue = ['loopTimeMillis', 'timeStartBeforeMillis', 'timeStartMillis', 'timeStopMillis'].includes(paramName) ? 0 : 1;
       value = Math.max(minValue, Math.ceil(value));
+      const prevValue = PARAMS[paramName as NumberKeys];
+      if (prevValue === value) {
+        return false;
+      }
       PARAMS[paramName as NumberKeys] = value;
       return true;
     }
@@ -138,6 +142,10 @@ export const setValidatedParam = (paramName: keyof IStreamsParams, value: number
   if (booleanParams.includes(paramName)) {
     if (typeof value === 'boolean') {
       type BooleanKeys = GetNames<IStreamsParams, boolean>;
+      const prevValue = PARAMS[paramName as BooleanKeys];
+      if (prevValue === value) {
+        return false;
+      }
       PARAMS[paramName as BooleanKeys] = value;
       return true;
     }
@@ -145,11 +153,22 @@ export const setValidatedParam = (paramName: keyof IStreamsParams, value: number
   }
   if (paramName === 'emailSendRule') {
     if (Object.values(EMailSendRule).includes(value as EMailSendRule)) {
+      const prevValue = PARAMS.emailSendRule;
+      if (prevValue === value) {
+        return false;
+      }
       PARAMS.emailSendRule = value as EMailSendRule;
       return true;
     }
     return false;
   }
+  // Остальные, расширенные параметры, сохраняем "как есть"
+  // @ts-ignore
+  if (JSON.stringify(PARAMS[paramName]) === JSON.stringify(PARAMS[value])) {
+    return false;
+  }
+  // @ts-ignore
+  PARAMS[paramName] = value;
   return false;
 };
 
@@ -157,7 +176,7 @@ let isParamsConfigApplied = false;
 
 export const applyParamsConfig = (streamsParamsConfig: IStreamsParamsConfig) => {
   Object.entries(streamsParamsConfig).forEach(([paramName, value]) => {
-    setValidatedParam(paramName as keyof IStreamsParams, value);
+    changeParamByValidatedValue(paramName as keyof IStreamsParams, value);
   });
   isParamsConfigApplied = true;
 };
@@ -170,17 +189,16 @@ export const applyParamsConfigOnce = (streamsParamsConfig: IStreamsParamsConfig)
 
 export const changeParams = (
   streamsParamsConfig: IStreamsParamsConfig,
-  virtualTimeObj: VirtualTimeObj,
   rectifier: Rectifier,
 ) => {
   if (typeof streamsParamsConfig !== 'object') {
     return;
   }
   Object.entries(streamsParamsConfig).forEach(([paramName, value]: [string, any]) => {
-    if (!setValidatedParam(paramName as keyof IStreamsParams, value)) {
+    if (!changeParamByValidatedValue(paramName as keyof IStreamsParams, value)) {
       return;
     }
-    echo(`Новое значение параметра ${m}${paramName}${rs} = ${lBlue}${value}`);
+    echo(`Новое значение параметра ${m}${paramName}${rs} = ${lBlue}${JSON.stringify(value)}`);
     // Дополнительные действия по парамерам
     if (paramName === 'rectifierSendIntervalMillis' && rectifier) {
       rectifier.resetRectifierSendInterval();
