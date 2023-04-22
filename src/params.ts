@@ -169,7 +169,7 @@ export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, val
   }
   // @ts-ignore
   PARAMS[paramName] = value;
-  return false;
+  return true;
 };
 
 let isParamsConfigApplied = false;
