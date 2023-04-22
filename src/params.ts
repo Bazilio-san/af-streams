@@ -164,7 +164,7 @@ export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, val
   }
   // Остальные, расширенные параметры, сохраняем "как есть"
   // @ts-ignore
-  if (JSON.stringify(PARAMS[paramName]) === JSON.stringify(PARAMS[value])) {
+  if (JSON.stringify(PARAMS[paramName]) === JSON.stringify(value)) {
     return false;
   }
   // @ts-ignore
