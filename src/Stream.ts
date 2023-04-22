@@ -517,7 +517,7 @@ export class Stream {
 
       ([isCurrentTime, virtualTs] = virtualTimeObj.setNextTimeFront());
 
-      if (!PARAMS.saveExactLastTsToRedis) {
+      if (!PARAMS.saveExactLastTimeToRedis) {
         ee?.emit('save-last-ts', { streamId, lastTs: virtualTs });
       }
 
@@ -651,7 +651,7 @@ export class Stream {
       };
       sender.sendEvents(recordsComposite).then(() => {
         const { last, sendCount = 0, sentBufferLength } = recordsComposite;
-        if (PARAMS.saveExactLastTsToRedis) {
+        if (PARAMS.saveExactLastTimeToRedis) {
           const lastTs = last?.[TS_FIELD];
           if (lastTs) {
             eventEmitter.emit('save-last-ts', { streamId, lastTs });

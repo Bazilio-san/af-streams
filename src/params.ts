@@ -22,7 +22,7 @@ export interface IParams {
   processHistoricalAlerts: boolean,
   rectifierAccumulationTimeMillis: number,
   rectifierSendIntervalMillis: number,
-  saveExactLastTsToRedis: boolean,
+  saveExactLastTimeToRedis: boolean,
   skipGaps: boolean,
   speed: number,
   streamBufferMultiplier: number,
@@ -67,7 +67,7 @@ export const PARAMS: IParams = {
   // false - сохранение временного фронта перед обработкой очередной загруженной
   // порции данных каждым из потоков. Происходит с частотой streamFetchIntervalSec * кол-во потоков (редко)
   // Режим true нужно использовать осторожно и только в случае, если поток один.
-  saveExactLastTsToRedis: false,
+  saveExactLastTimeToRedis: false,
 
   // Пропуск нерабочего времени. Включается в режиме тестирования при обработке истории
   skipGaps: false,

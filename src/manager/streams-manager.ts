@@ -139,7 +139,7 @@ export class StreamsManager {
       const stream = await this.streams[i].init();
       streams.push(stream);
     }
-    PARAMS.saveExactLastTsToRedis = streams.length <= 1;
+    PARAMS.saveExactLastTimeToRedis = streams.length <= 1;
     return streams;
   }
 
