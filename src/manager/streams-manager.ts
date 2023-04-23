@@ -86,6 +86,7 @@ export class StreamsManager {
 
   async prepareVirtualTimeObj (redisConfig?: IRedisConfig): Promise<VirtualTimeObj> {
     this.checkCommonConfig();
+    console.log('timeStartType', PARAMS.timeStartType); // VVR
     this.redisConfig = redisConfig;
     const { commonConfig } = this;
     await getStartTimeRedis({ commonConfig, redisConfig }).defineStartTime();
@@ -164,12 +165,19 @@ export class StreamsManager {
     await changeParams(streamsParamsConfig, rectifier, getStartTimeRedis({ commonConfig, redisConfig }));
   }
 
-  getConfigsParams (): IStreamsParamsConfig {
-    return {
+  getConfigsParams (removeTimeStartStopMillis?: boolean): IStreamsParamsConfig {
+    const params = {
       ...PARAMS,
       isStopped: this.isStopped(),
       isSuspended: this._locked,
-    };
+    } as IStreamsParamsConfig;
+    delete params._timeStartBeforeUnit;
+    if (removeTimeStartStopMillis) {
+      delete params.timeStartMillis;
+      delete params.timeStopMillis;
+      delete params.timeStartBeforeMillis;
+    }
+    return params;
   }
 
   suspend () {
