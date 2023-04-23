@@ -175,6 +175,13 @@ const booleanParams = [
   'skipGaps',
 ];
 
+const readOnlyParams = [
+  'timeStartBeforeValue',
+  'timeStartBeforeUnit',
+  'timeStartISO',
+  'timeStopISO',
+];
+
 export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, value: number | boolean | EMailSendRule | ETimeStartTypes): boolean => {
   if (numberParams.includes(paramName)) {
     if (typeof value === 'number') {
@@ -222,6 +229,9 @@ export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, val
       PARAMS.timeStartType = value as ETimeStartTypes;
       return true;
     }
+    return false;
+  }
+  if (readOnlyParams.includes(paramName)) {
     return false;
   }
   // Остальные, расширенные параметры, сохраняем "как есть"
