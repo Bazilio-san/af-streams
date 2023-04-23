@@ -270,6 +270,7 @@ export class StreamsManager {
     this.startIO();
 
     socket.on('disconnect', () => {
+      socket.removeAllListeners();
       echoSimple.warn(`SOCKET DISCONNECTED: ${socketId}`);
       this._connectedSockets.delete(socketId);
       if (!this._connectedSockets.size) {
