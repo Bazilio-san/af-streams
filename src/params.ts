@@ -276,17 +276,22 @@ export const changeParams = (
     return;
   }
 
-  const { timeStartBeforeValue: v, timeStartBeforeUnit: u, timeStartISO: startISO, timeStopISO: stopISO } = streamsParamsConfig;
-  if (v != null && u != null && timeUnits.includes(u)) {
+  let { timeStartBeforeValue: v, timeStartBeforeUnit: u } = streamsParamsConfig;
+  if (v != null || timeUnits.includes(u || '')) {
+    v = v != null ? v : PARAMS.timeStartBeforeValue;
+    u = timeUnits.includes(u || '') ? u : PARAMS.timeStartBeforeUnit;
     streamsParamsConfig.timeStartBeforeMillis = getTimeParamMillis(`${v} ${u}`);
-    PARAMS._timeStartBeforeUnit = u;
+    PARAMS._timeStartBeforeUnit = u as TTimeUnit;
   }
-  if (startISO != null) {
-    streamsParamsConfig.timeStartMillis = isoToMillis(startISO) || 0;
+
+  const { timeStartISO, timeStopISO } = streamsParamsConfig;
+  if (timeStartISO != null) {
+    streamsParamsConfig.timeStartMillis = isoToMillis(timeStartISO) || 0;
   }
-  if (stopISO != null) {
-    streamsParamsConfig.timeStopMillis = isoToMillis(stopISO) || 0;
+  if (timeStopISO != null) {
+    streamsParamsConfig.timeStopMillis = isoToMillis(timeStopISO) || 0;
   }
+
   Object.entries(streamsParamsConfig).forEach(([paramName, value]: [string, any]) => {
     if (!changeParamByValidatedValue(paramName as keyof IStreamsParams, value)) {
       delete streamsParamsConfig[paramName as keyof IStreamsParams];
