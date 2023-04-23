@@ -2,14 +2,40 @@
 
 c='\033[0;35m'
 y='\033[0;33m'
+r='\033[0;31m'
 c0='\033[0;0m'
 g='\033[0;32m'
-set -e
+
+echo_r() { /bin/echo -e ${r}"$1"${c0};  };
+
+# shellcheck disable=SC2120
+exit_on_error(){
+  if [[ $? -ne 0 ]] ; then
+    if [[ -n "$1" ]]; then
+      echo_r "$1";
+    else
+      echo -e "${r}**** ERROR ****${c0}"
+    fi;
+    read -p "Press any key to resume ..."
+    exit 0
+  fi
+}
+
+set +e
+
+branch_name=$(git symbolic-ref --short HEAD)
+exit_on_error "$y**** Version will not be bumped since retcode is not equals 0 ****$c0"
+
+expected_branch="master"
+if [[ "$branch_name" != "$expected_branch" ]] ; then
+  echo -e "${y}**** git ветка должна быть ${c}{$expected_branch}${y}, текущая: ${c}${branch_name}${y}  ****$c0"
+  read -p "Press any key to resume ..."
+  exit 0
+fi
 
 npm run cb
+exit_on_error "$y**** Typescript build failed ****$c0"
 
-echo 'END===================='
-exit 0;
 
 old_version=''
 new_version=''
@@ -32,34 +58,21 @@ update_version(){
     echo -e "$c0"
 }
 
-branch_name=$(git symbolic-ref --short HEAD)
-retcode=$?
-
-if [[ $retcode -ne 0 ]] ; then
-    echo -e "$y**** Version will not be bumped since retcode is not equals 0 ****$c0"
-    exit 0
-fi
-
-if [[ $branch_name == *"_nap" ]] ; then
-    echo -e "$y**** Version will not be bumped since branch name ends with '_nap'. ****$c0"
-    exit 0
-fi
-
-if [[ $branch_name == *"_local" ]] ; then
-    echo -e "$y**** Version will not be bumped since branch name ends with '_local'. ****$c0"
-    exit 0
-fi
-
-if [[ "$DONT_BUMP_VERSION" -eq "1" ]] ; then
-    echo -e "$y**** Version will not be bumped since variable DONT_BUMP_VERSION is set. ****$c0"
-    exit 0
-fi
 
 update_version
-git add package.json
-git commit -m "$new_version"
+exit_on_error
+
+git add --all
+exit_on_error
+
+git commit --no-verify -m "$new_version"
+exit_on_error
 
 git push github refs/heads/master:master
+exit_on_error
+
 git push fa refs/heads/master:master
+exit_on_error
 
 npm publish
+read -p "Press any key to resume ..."

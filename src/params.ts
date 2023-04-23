@@ -1,6 +1,6 @@
 import { echo } from 'af-echo-ts';
 import { lBlue, m, rs } from 'af-color';
-import { getTimeParamFromMillis, millisTo, TTimeUnit } from 'af-tools-ts';
+import { getTimeParamFromMillis, getTimeParamMillis, isoToMillis, millisTo, TTimeUnit } from 'af-tools-ts';
 import { GetNames } from './interfaces';
 import { Rectifier } from './classes/applied/Rectifier';
 import { setStartTimeParams } from './StartTimeRedis';
@@ -266,6 +266,16 @@ export const changeParams = (
     return;
   }
 
+  const { timeStartBeforeValue: v, timeStartBeforeUnit: u, timeStartISO: startISO, timeStopISO: stopISO } = streamsParamsConfig;
+  if (v != null && u != null) {
+    streamsParamsConfig.timeStartBeforeMillis = getTimeParamMillis(`${v} ${u}`);
+  }
+  if (startISO != null) {
+    streamsParamsConfig.timeStartMillis = isoToMillis(startISO) || 0;
+  }
+  if (stopISO != null) {
+    streamsParamsConfig.timeStopMillis = isoToMillis(stopISO) || 0;
+  }
   Object.entries(streamsParamsConfig).forEach(([paramName, value]: [string, any]) => {
     if (!changeParamByValidatedValue(paramName as keyof IStreamsParams, value)) {
       delete streamsParamsConfig[paramName as keyof IStreamsParams];
@@ -277,6 +287,7 @@ export const changeParams = (
       rectifier.resetRectifierSendInterval();
     }
   });
+
   const wasTimeStartParams = ['timeStartType', 'timeStartBeforeMillis', 'timeStartMillis']
     .some((paramName) => streamsParamsConfig[paramName as keyof IStreamsParams] != null);
 
