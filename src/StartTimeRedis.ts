@@ -29,7 +29,7 @@ export const setStartTimeParams = () => {
       return;
     default:
       PARAMS.timeStartType = ETimeStartTypes.LAST;
-      PARAMS.timeStartMillis = Date.now();
+      PARAMS.timeStartMillis = PARAMS.timeStartMillis || Date.now();
   }
 };
 
