@@ -114,7 +114,6 @@ export class StartTimeRedis {
     setStartTimeParams();
     if (PARAMS.timeStartType === ETimeStartTypes.LAST) {
       await this.getRedisClient();
-      PARAMS.timeStartBeforeMillis = 0;
       PARAMS.timeStartMillis = await this.getStartTimeFromRedis();
     }
   }

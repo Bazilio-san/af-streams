@@ -6,10 +6,8 @@ import { echo as echoSimple } from 'af-echo-ts';
 import { green, cyan, lBlue, magenta, yellow } from 'af-color';
 import { Stream } from '../Stream';
 import { VirtualTimeObj, getVirtualTimeObj } from '../VirtualTimeObj';
-import {
-  ICommonConfig, IEcho, ILoggerEx, IOFnArgs, ISenderConfig, IRedisConfig, IStreamConfig, TEventRecord,
-} from '../interfaces';
-import { PARAMS, changeParams, IStreamsParamsConfig } from '../params';
+import { ICommonConfig, IEcho, ILoggerEx, IOFnArgs, IRedisConfig, TEventRecord } from '../interfaces';
+import { PARAMS, changeParams, IStreamsParamsConfig, applyParamsConfigOnce } from '../params';
 import { STREAM_ID_FIELD } from '../constants';
 import { Rectifier } from '../classes/applied/Rectifier';
 import localEventEmitter from '../ee-scoped';
@@ -46,9 +44,9 @@ export class StreamsManager {
 
   private statisticsSendIntervalMillis: number = STATISTICS_SEND_INTERVAL.QUICK;
 
-  public params: { [paramName: string]: any } = {};
+  private redisConfig: IRedisConfig | undefined;
 
-  constructor (public commonConfig: ICommonConfig, params: { [paramName: string]: any } = {}) {
+  constructor (public commonConfig: ICommonConfig, streamsParamsConfig?: IStreamsParamsConfig) {
     this.map = {};
     this._locked = true;
     this._connectedSockets = new Set();
@@ -56,7 +54,9 @@ export class StreamsManager {
     this.eventEmitter = this.commonConfig.eventEmitter;
     this.logger = this.commonConfig.logger;
     this.echo = this.commonConfig.echo;
-    this.params = { ...params }; // VVQ
+    if (streamsParamsConfig) {
+      applyParamsConfigOnce(streamsParamsConfig);
+    }
   }
 
   checkCommonConfig (isInit: boolean = false) {
@@ -86,6 +86,7 @@ export class StreamsManager {
 
   async prepareVirtualTimeObj (redisConfig?: IRedisConfig): Promise<VirtualTimeObj> {
     this.checkCommonConfig();
+    this.redisConfig = redisConfig;
     const { commonConfig } = this;
     await getStartTimeRedis({ commonConfig, redisConfig }).defineStartTime();
     this.virtualTimeObj = await getVirtualTimeObj(commonConfig);
@@ -158,12 +159,9 @@ export class StreamsManager {
     return this.map[streamId];
   }
 
-  changeParams (streamsParamsConfig: IStreamsParamsConfig) {
-    changeParams(streamsParamsConfig, this.rectifier);
-  }
-
-  getConfigs (): { streamConfig: IStreamConfig, senderConfig: ISenderConfig }[] { // VVR
-    return this.streams.map((stream) => (stream.getActualConfig() as { streamConfig: IStreamConfig, senderConfig: ISenderConfig }));
+  async changeParams (streamsParamsConfig: IStreamsParamsConfig) {
+    const { commonConfig, redisConfig, rectifier } = this;
+    await changeParams(streamsParamsConfig, rectifier, getStartTimeRedis({ commonConfig, redisConfig }));
   }
 
   getConfigsParams (): IStreamsParamsConfig {

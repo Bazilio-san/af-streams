@@ -3,7 +3,7 @@ import { lBlue, m, rs } from 'af-color';
 import { getTimeParamFromMillis, getTimeParamMillis, isoToMillis, millisTo, TTimeUnit } from 'af-tools-ts';
 import { GetNames } from './interfaces';
 import { Rectifier } from './classes/applied/Rectifier';
-import { setStartTimeParams } from './StartTimeRedis';
+import { setStartTimeParams, StartTimeRedis } from './StartTimeRedis';
 
 // eslint-disable-next-line no-shadow
 export enum EMailSendRule {
@@ -268,33 +268,34 @@ export const applyParamsConfigOnce = (streamsParamsConfig: IStreamsParamsConfig)
   }
 };
 
-export const changeParams = (
-  streamsParamsConfig: IStreamsParamsConfig,
+export const changeParams = async (
+  params: IStreamsParamsConfig,
   rectifier: Rectifier,
+  startTimeRedis: StartTimeRedis,
 ) => {
-  if (typeof streamsParamsConfig !== 'object') {
+  if (typeof params !== 'object') {
     return;
   }
 
-  let { timeStartBeforeValue: v, timeStartBeforeUnit: u } = streamsParamsConfig;
+  let { timeStartBeforeValue: v, timeStartBeforeUnit: u } = params;
   if (v != null || timeUnits.includes(u || '')) {
     v = v != null ? v : PARAMS.timeStartBeforeValue;
     u = timeUnits.includes(u || '') ? u : PARAMS.timeStartBeforeUnit;
-    streamsParamsConfig.timeStartBeforeMillis = getTimeParamMillis(`${v} ${u}`);
+    params.timeStartBeforeMillis = getTimeParamMillis(`${v} ${u}`);
     PARAMS._timeStartBeforeUnit = u as TTimeUnit;
   }
 
-  const { timeStartISO, timeStopISO } = streamsParamsConfig;
+  const { timeStartISO, timeStopISO } = params;
   if (timeStartISO != null) {
-    streamsParamsConfig.timeStartMillis = isoToMillis(timeStartISO) || 0;
+    params.timeStartMillis = isoToMillis(timeStartISO) || 0;
   }
   if (timeStopISO != null) {
-    streamsParamsConfig.timeStopMillis = isoToMillis(timeStopISO) || 0;
+    params.timeStopMillis = isoToMillis(timeStopISO) || 0;
   }
 
-  Object.entries(streamsParamsConfig).forEach(([paramName, value]: [string, any]) => {
+  Object.entries(params).forEach(([paramName, value]: [string, any]) => {
     if (!changeParamByValidatedValue(paramName as keyof IStreamsParams, value)) {
-      delete streamsParamsConfig[paramName as keyof IStreamsParams];
+      delete params[paramName as keyof IStreamsParams];
       return;
     }
     echo(`Новое значение параметра ${m}${paramName}${rs} = ${lBlue}${JSON.stringify(value)}`);
@@ -303,18 +304,13 @@ export const changeParams = (
       rectifier.resetRectifierSendInterval();
     }
   });
-  const wasTimeStartParams = [
-    'timeStartType',
-    'timeStartBeforeMillis',
-    'timeStartMillis',
-    'timeStartBeforeValue',
-    'timeStartBeforeUnit',
-    'timeStartISO',
-    'timeStopISO',
-  ]
-    .some((paramName) => streamsParamsConfig[paramName as keyof IStreamsParams] != null);
+  const wasTimeStartParams = Object.entries(params).some(([paramName, paramValue]) => paramName.startsWith('timeSt') && paramValue != null);
 
   if (wasTimeStartParams) {
-    setStartTimeParams();
+    if (startTimeRedis) {
+      await startTimeRedis.defineStartTime();
+    } else {
+      setStartTimeParams();
+    }
   }
 };
