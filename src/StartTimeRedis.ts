@@ -17,34 +17,20 @@ export interface StartTimeRedisConstructorOptions {
 }
 
 export const setStartTimeParams = () => {
-  if (!PARAMS.timeStartType) {
-    PARAMS.timeStartType = ETimeStartTypes.LAST;
-  }
-
-  if (PARAMS.timeStartType === ETimeStartTypes.NOW) {
-    PARAMS.timeStartBeforeMillis = 0;
-    PARAMS.timeStartMillis = Date.now();
-    return;
-  }
-
-  if (PARAMS.timeStartType === ETimeStartTypes.TIME) {
-    if (!PARAMS.timeStartMillis) {
+  switch (PARAMS.timeStartType) {
+    case ETimeStartTypes.NOW:
       PARAMS.timeStartMillis = Date.now();
-    }
-    PARAMS.timeStartBeforeMillis = 0;
-    return;
-  }
-
-  if (PARAMS.timeStartType === ETimeStartTypes.BEFORE) {
-    if (!PARAMS.timeStartBeforeMillis) {
-      PARAMS.timeStartType = ETimeStartTypes.LAST;
-    } else {
+      return;
+    case ETimeStartTypes.TIME:
+      PARAMS.timeStartMillis = PARAMS.timeStartMillis || Date.now();
+      return;
+    case ETimeStartTypes.BEFORE:
       PARAMS.timeStartMillis = Date.now() - PARAMS.timeStartBeforeMillis;
       return;
-    }
+    default:
+      PARAMS.timeStartType = ETimeStartTypes.LAST;
+      PARAMS.timeStartMillis = Date.now();
   }
-  PARAMS.timeStartType = ETimeStartTypes.LAST;
-  PARAMS.timeStartMillis = Date.now();
 };
 
 export class StartTimeRedis {
