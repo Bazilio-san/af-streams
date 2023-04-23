@@ -1,5 +1,6 @@
 import { echo } from 'af-echo-ts';
 import { lBlue, m, rs } from 'af-color';
+import { getTimeParamFromMillis, millisTo, TTimeUnit } from 'af-tools-ts';
 import { GetNames } from './interfaces';
 import { Rectifier } from './classes/applied/Rectifier';
 import { setStartTimeParams } from './StartTimeRedis';
@@ -39,8 +40,14 @@ export interface IStreamsParams {
   timeFrontUpdateIntervalMillis: number,
 
   timeStartBeforeMillis: number,
+  readonly timeStartBeforeValue: number,
+  readonly timeStartBeforeUnit: TTimeUnit,
+
   timeStartMillis: number,
+  readonly timeStartISO: string | null,
+
   timeStartType: ETimeStartTypes,
+  readonly timeStopISO: string | null,
 
   timeStopMillis: number,
 }
@@ -103,6 +110,25 @@ export const PARAMS: IStreamsParams = {
   // Если указано 0, то timeStartType сбрасывается в LAST
   // Если timeStartType != BEFORE, сбрасывается в 0
   timeStartBeforeMillis: 0,
+  get timeStartBeforeValue () {
+    const v = this.timeStartBeforeMillis;
+    if (!v) {
+      return 0;
+    }
+    const duration = getTimeParamFromMillis(v, 'biggest');
+    const value = duration.split(' ')[0];
+    return Number(value) || 0;
+  },
+  get timeStartBeforeUnit () {
+    const v = this.timeStartBeforeMillis;
+    if (!v) {
+      return 'h';
+    }
+    const duration = getTimeParamFromMillis(v, 'biggest');
+    const unit = duration.split(' ')[1] as TTimeUnit;
+    return ['d', 'h', 'm', 's'].includes(unit) ? unit : 'h';
+  },
+
   // Параметр, устанавливающий временную метку времени старта потоков.
   // Используется, если timeStartType = TIME
   // Если указано 0, то timeStartType сбрасывается в LAST
@@ -110,11 +136,19 @@ export const PARAMS: IStreamsParams = {
   // - Если timeStartType = LAST, устанавливается на время, полученное из REDIS
   // - Если timeStartType = BEFORE, сбрасывается в 0
   timeStartMillis: 0,
+  get timeStartISO () {
+    const v = this.timeStartMillis;
+    return v ? millisTo.iso.z(v) : null;
+  },
   // Тип старта
   timeStartType: ETimeStartTypes.LAST,
 
   // Время остановки потоков. Если 0 - считается, что не задано.
   timeStopMillis: 0,
+  get timeStopISO () {
+    const v = this.timeStopMillis;
+    return v ? millisTo.iso.z(v) : null;
+  },
 };
 
 const numberParams = [
@@ -144,14 +178,14 @@ const booleanParams = [
 export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, value: number | boolean | EMailSendRule | ETimeStartTypes): boolean => {
   if (numberParams.includes(paramName)) {
     if (typeof value === 'number') {
-      type NumberKeys = GetNames<IStreamsParams, number>;
       const minValue = ['loopTimeMillis', 'timeStartBeforeMillis', 'timeStartMillis', 'timeStopMillis'].includes(paramName) ? 0 : 1;
       value = Math.max(minValue, Math.ceil(value));
-      const prevValue = PARAMS[paramName as NumberKeys];
+      const prevValue = PARAMS[paramName as keyof IStreamsParams];
       if (prevValue === value) {
         return false;
       }
-      PARAMS[paramName as NumberKeys] = value;
+      // @ts-ignore
+      PARAMS[paramName] = value;
       return true;
     }
     return false;
@@ -191,7 +225,6 @@ export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, val
     return false;
   }
   // Остальные, расширенные параметры, сохраняем "как есть"
-  // @ts-ignore
   if (JSON.stringify(PARAMS[paramName]) === JSON.stringify(value)) {
     return false;
   }
@@ -204,7 +237,7 @@ let isParamsConfigApplied = false;
 
 export const applyParamsConfig = (streamsParamsConfig: IStreamsParamsConfig) => {
   Object.entries(streamsParamsConfig).forEach(([paramName, value]) => {
-    changeParamByValidatedValue(paramName as keyof IStreamsParams, value);
+    changeParamByValidatedValue(paramName as keyof IStreamsParams, value as any);
   });
   isParamsConfigApplied = true;
 };
