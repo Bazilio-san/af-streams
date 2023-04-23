@@ -265,6 +265,7 @@ export const changeParams = (
   if (typeof streamsParamsConfig !== 'object') {
     return;
   }
+
   Object.entries(streamsParamsConfig).forEach(([paramName, value]: [string, any]) => {
     if (!changeParamByValidatedValue(paramName as keyof IStreamsParams, value)) {
       delete streamsParamsConfig[paramName as keyof IStreamsParams];
