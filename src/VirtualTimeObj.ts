@@ -124,15 +124,8 @@ export class VirtualTimeObj {
   startUpInfo () {
     const { echo } = this.commonConfig;
 
-    let startFrom = millisTo.iso.z(PARAMS.timeStartMillis);
-    if (PARAMS.isUsedSavedStartTime) {
-      startFrom += `${y}${bold} TAKEN FROM CACHE${boldOff}`;
-    }
-    if (Date.now() - PARAMS.timeStartMillis < 100) {
-      startFrom += `${y}${bold} NOW${boldOff}`;
-    }
     const info: [string, any][] = [
-      ['Start from', startFrom],
+      ['Start from', `${millisTo.iso.z(PARAMS.timeStartMillis)} ${y}${bold}${PARAMS.timeStartType}${boldOff}`],
       ['Speed', `${bold}${PARAMS.speed} X`],
     ];
     if (PARAMS.timeStopMillis) {

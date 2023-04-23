@@ -3,9 +3,9 @@ export { LastTimeRecords } from './LastTimeRecords';
 export { RecordsBuffer } from './RecordsBuffer';
 export {
   StartTimeRedis,
-  setStartTimeParamsFromENV,
   StartTimeRedisConstructorOptions,
   getStartTimeRedis,
+  setStartTimeParams,
 } from './StartTimeRedis';
 export { getVirtualTimeObj, VirtualTimeObj } from './VirtualTimeObj';
 export {

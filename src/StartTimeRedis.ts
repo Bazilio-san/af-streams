@@ -4,11 +4,10 @@
 import { createClient, RedisClientType, RedisDefaultModules, RedisModules, RedisScripts } from 'redis';
 import { DateTime } from 'luxon';
 import { RedisFunctions } from '@redis/client';
-import { getTimeParamMillis, intEnv, millisTo, strEnv, timeParamRE } from 'af-tools-ts';
-import { echo } from 'af-echo-ts';
+import { intEnv, millisTo, strEnv } from 'af-tools-ts';
 import { getStreamKey } from './utils/utils';
 import { ICommonConfig, IEmSaveLastTs, IRedisConfig } from './interfaces';
-import { PARAMS } from './params';
+import { ETimeStartTypes, PARAMS } from './params';
 
 const prefix = '[af-streams:redis]: ';
 
@@ -16,6 +15,37 @@ export interface StartTimeRedisConstructorOptions {
   commonConfig: ICommonConfig,
   redisConfig?: IRedisConfig
 }
+
+export const setStartTimeParams = () => {
+  if (!PARAMS.timeStartType) {
+    PARAMS.timeStartType = ETimeStartTypes.LAST;
+  }
+
+  if (PARAMS.timeStartType === ETimeStartTypes.NOW) {
+    PARAMS.timeStartBeforeMillis = 0;
+    PARAMS.timeStartMillis = Date.now();
+    return;
+  }
+
+  if (PARAMS.timeStartType === ETimeStartTypes.TIME) {
+    if (!PARAMS.timeStartMillis) {
+      PARAMS.timeStartMillis = Date.now();
+    }
+    PARAMS.timeStartBeforeMillis = 0;
+    return;
+  }
+
+  if (PARAMS.timeStartType === ETimeStartTypes.BEFORE) {
+    if (!PARAMS.timeStartBeforeMillis) {
+      PARAMS.timeStartType = ETimeStartTypes.LAST;
+    } else {
+      PARAMS.timeStartMillis = Date.now() - PARAMS.timeStartBeforeMillis;
+      return;
+    }
+  }
+  PARAMS.timeStartType = ETimeStartTypes.LAST;
+  PARAMS.timeStartMillis = Date.now();
+};
 
 export class StartTimeRedis {
   private readonly client: RedisClientType<RedisDefaultModules & RedisModules, RedisFunctions, RedisScripts>;
@@ -95,24 +125,12 @@ export class StartTimeRedis {
   }
 
   async defineStartTime (): Promise<void> {
-    await this.getRedisClient();
-    let startTimeMillis = 0;
-    PARAMS.isUsedSavedStartTime = false;
-    if (PARAMS.timeStartBeforeMillis) {
-      PARAMS.timeStartMillis = Date.now() - PARAMS.timeStartBeforeMillis;
-      return;
-    }
-    if (PARAMS.timeStartMillis) {
-      return;
-    }
-    startTimeMillis = await this.getStartTimeFromRedis();
-    if (startTimeMillis) {
+    setStartTimeParams();
+    if (PARAMS.timeStartType === ETimeStartTypes.LAST) {
+      await this.getRedisClient();
       PARAMS.timeStartBeforeMillis = 0;
-      PARAMS.timeStartMillis = startTimeMillis;
-      PARAMS.isUsedSavedStartTime = true;
-      return;
+      PARAMS.timeStartMillis = await this.getStartTimeFromRedis();
     }
-    PARAMS.timeStartMillis = Date.now();
   }
 
   destroy () {
@@ -130,29 +148,4 @@ export const getStartTimeRedis = (options: StartTimeRedisConstructorOptions): St
     startTimeRedis = new StartTimeRedis(options);
   }
   return startTimeRedis;
-};
-
-// !!!Attention!!! STREAM_TIME_START - time in GMT
-export const setStartTimeParamsFromENV = () => {
-  const { STREAM_TIME_START = '', STREAM_TIME_START_BEFORE = '' } = process.env;
-  if (STREAM_TIME_START_BEFORE) {
-    if (timeParamRE.test(STREAM_TIME_START_BEFORE)) {
-      PARAMS.timeStartBeforeMillis = getTimeParamMillis(STREAM_TIME_START_BEFORE);
-      PARAMS.timeStartMillis = Date.now() - PARAMS.timeStartBeforeMillis;
-      return;
-    }
-    echo.error(`Start time is incorrect. STREAM_TIME_START_BEFORE: ${STREAM_TIME_START_BEFORE}`);
-  }
-
-  if (STREAM_TIME_START) {
-    const dt = DateTime.fromISO(STREAM_TIME_START, { zone: 'GMT' });
-    if (dt.isValid) {
-      PARAMS.timeStartBeforeMillis = 0;
-      PARAMS.timeStartMillis = dt.toMillis();
-      return;
-    }
-    echo.error(`Start time is incorrect. STREAM_TIME_START: ${STREAM_TIME_START}`);
-  }
-  PARAMS.timeStartBeforeMillis = 0;
-  PARAMS.timeStartMillis = 0;
 };

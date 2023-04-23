@@ -2,19 +2,27 @@ import { echo } from 'af-echo-ts';
 import { lBlue, m, rs } from 'af-color';
 import { GetNames } from './interfaces';
 import { Rectifier } from './classes/applied/Rectifier';
+import { setStartTimeParams } from './StartTimeRedis';
 
 // eslint-disable-next-line no-shadow
 export enum EMailSendRule {
   IF_ALERT_NOT_EXISTS = 'IF_ALERT_NOT_EXISTS',
   BLOCK = 'BLOCK',
-  FORCE = 'FORCE'
+  FORCE = 'FORCE',
+}
+
+// eslint-disable-next-line no-shadow
+export enum ETimeStartTypes {
+  LAST = 'LAST',
+  TIME = 'TIME',
+  BEFORE = 'BEFORE',
+  NOW = 'NOW'
 }
 
 export interface IStreamsParams {
   emailOneTimeSendLimit: number,
   emailSendRule: EMailSendRule,
   flushAlertsBufferIntervalSec: number,
-  isUsedSavedStartTime: boolean,
   loopTimeMillis: number,
   maxRunUpFirstTsVtMillis: number,
   printInfoIntervalSec: number,
@@ -29,8 +37,11 @@ export interface IStreamsParams {
   streamMaxBufferSize: number,
   streamSendIntervalMillis: number,
   timeFrontUpdateIntervalMillis: number,
+
   timeStartBeforeMillis: number,
   timeStartMillis: number,
+  timeStartType: ETimeStartTypes,
+
   timeStopMillis: number,
 }
 
@@ -46,8 +57,6 @@ export const PARAMS: IStreamsParams = {
   emailSendRule: EMailSendRule.IF_ALERT_NOT_EXISTS,
   // Период вывода сигналов из буфера на отправку по Email и сохранение в БД.
   flushAlertsBufferIntervalSec: 3,
-  // Информационный параметр, который устанавливается в классе StartTimeRedis
-  isUsedSavedStartTime: false,
   // Время, через который виртуальное время возвращается к начальному. Используется при циклическом тестировании.
   loopTimeMillis: 0,
   // Не допускаем увеличение разницы между ts первого элемента и виртуальным временем боле, чем на это значение
@@ -88,14 +97,22 @@ export const PARAMS: IStreamsParams = {
   streamSendIntervalMillis: 10,
   // Частота обновления фронта виртуального времени
   timeFrontUpdateIntervalMillis: 5,
-  // Параметр, устанавливающий время старта потоков, в прошлое на указанное
-  // количество миллисекунд. Если указано число больше 0, то этот параметр
-  // имеет приоритет над timeStartMillis
+
+  // Параметр, устанавливающий время старта потоков, в прошлое на указанное количество миллисекунд.
+  // Используется, если timeStartType = BEFORE
+  // Если указано 0, то timeStartType сбрасывается в LAST
+  // Если timeStartType != BEFORE, сбрасывается в 0
   timeStartBeforeMillis: 0,
   // Параметр, устанавливающий временную метку времени старта потоков.
-  // Если 0 - то потоки стартуют с текущего времени.
-  // Если 0 и timeStartBeforeMillis = 0, время берется из redis. А если там нет, то берется текущее время
+  // Используется, если timeStartType = TIME
+  // Если указано 0, то timeStartType сбрасывается в LAST
+  // - Если timeStartType = NOW, устанавливается в текущее время
+  // - Если timeStartType = LAST, устанавливается на время, полученное из REDIS
+  // - Если timeStartType = BEFORE, сбрасывается в 0
   timeStartMillis: 0,
+  // Тип старта
+  timeStartType: ETimeStartTypes.LAST,
+
   // Время остановки потоков. Если 0 - считается, что не задано.
   timeStopMillis: 0,
 };
@@ -124,7 +141,7 @@ const booleanParams = [
   'skipGaps',
 ];
 
-export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, value: number | boolean | EMailSendRule): boolean => {
+export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, value: number | boolean | EMailSendRule | ETimeStartTypes): boolean => {
   if (numberParams.includes(paramName)) {
     if (typeof value === 'number') {
       type NumberKeys = GetNames<IStreamsParams, number>;
@@ -158,6 +175,17 @@ export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, val
         return false;
       }
       PARAMS.emailSendRule = value as EMailSendRule;
+      return true;
+    }
+    return false;
+  }
+  if (paramName === 'timeStartType') {
+    if (Object.values(ETimeStartTypes).includes(value as ETimeStartTypes)) {
+      const prevValue = PARAMS.timeStartType;
+      if (prevValue === value) {
+        return false;
+      }
+      PARAMS.timeStartType = value as ETimeStartTypes;
       return true;
     }
     return false;
@@ -196,6 +224,7 @@ export const changeParams = (
   }
   Object.entries(streamsParamsConfig).forEach(([paramName, value]: [string, any]) => {
     if (!changeParamByValidatedValue(paramName as keyof IStreamsParams, value)) {
+      delete streamsParamsConfig[paramName as keyof IStreamsParams];
       return;
     }
     echo(`Новое значение параметра ${m}${paramName}${rs} = ${lBlue}${JSON.stringify(value)}`);
@@ -204,4 +233,10 @@ export const changeParams = (
       rectifier.resetRectifierSendInterval();
     }
   });
+  const wasTimeStartParams = ['timeStartType', 'timeStartBeforeMillis', 'timeStartMillis']
+    .some((paramName) => streamsParamsConfig[paramName as keyof IStreamsParams] != null);
+
+  if (wasTimeStartParams) {
+    setStartTimeParams();
+  }
 };
