@@ -241,7 +241,9 @@ export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, val
       if (prevValue === value) {
         return false;
       }
-      PARAMS.emailSendRule = value as EMailSendRule;
+      if (PARAMS.emailSendRule !== value) {
+        PARAMS.emailSendRule = value as EMailSendRule;
+      }
       return true;
     }
     return false;
@@ -252,7 +254,9 @@ export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, val
       if (prevValue === value) {
         return false;
       }
-      PARAMS.timeStartType = value as ETimeStartTypes;
+      if (PARAMS.timeStartType !== value) {
+        PARAMS.timeStartType = value as ETimeStartTypes;
+      }
       return true;
     }
     return false;
