@@ -41,6 +41,7 @@ export interface IStreamsParams {
 
   timeStartBeforeMillis: number,
   readonly timeStartBeforeValue: number,
+  _timeStartBeforeUnit: TTimeUnit,
   readonly timeStartBeforeUnit: TTimeUnit,
 
   timeStartMillis: number,
@@ -56,6 +57,8 @@ export type IStreamsParamsConfig = Partial<IStreamsParams> & {
   isStopped?: boolean,
   isSuspended?: boolean,
 };
+
+const timeUnits = ['d', 'h', 'm', 's'];
 
 export const PARAMS: IStreamsParams = {
   // Сигналы рассылаются пакетно. Отправляется не более этого количества писем. Остальные теряются.
@@ -119,14 +122,21 @@ export const PARAMS: IStreamsParams = {
     const value = duration.split(' ')[0];
     return Number(value) || 0;
   },
+  _timeStartBeforeUnit: 'h',
   get timeStartBeforeUnit () {
     const v = this.timeStartBeforeMillis;
     if (!v) {
-      return 'h';
+      return this._timeStartBeforeUnit;
     }
-    const duration = getTimeParamFromMillis(v, 'biggest');
-    const unit = duration.split(' ')[1] as TTimeUnit;
-    return ['d', 'h', 'm', 's'].includes(unit) ? unit : 'h';
+    const duration = getTimeParamFromMillis(v, 'biggest').split(' ');
+    const value = Number(duration[0]) || 0;
+    if (!value) {
+      return this._timeStartBeforeUnit;
+    }
+    let unit = duration[1] as TTimeUnit;
+    unit = timeUnits.includes(unit) ? unit : 'h';
+    this._timeStartBeforeUnit = unit;
+    return unit;
   },
 
   // Параметр, устанавливающий временную метку времени старта потоков.
@@ -267,8 +277,9 @@ export const changeParams = (
   }
 
   const { timeStartBeforeValue: v, timeStartBeforeUnit: u, timeStartISO: startISO, timeStopISO: stopISO } = streamsParamsConfig;
-  if (v != null && u != null) {
+  if (v != null && u != null && timeUnits.includes(u)) {
     streamsParamsConfig.timeStartBeforeMillis = getTimeParamMillis(`${v} ${u}`);
+    PARAMS._timeStartBeforeUnit = u;
   }
   if (startISO != null) {
     streamsParamsConfig.timeStartMillis = isoToMillis(startISO) || 0;
@@ -287,8 +298,15 @@ export const changeParams = (
       rectifier.resetRectifierSendInterval();
     }
   });
-
-  const wasTimeStartParams = ['timeStartType', 'timeStartBeforeMillis', 'timeStartMillis']
+  const wasTimeStartParams = [
+    'timeStartType',
+    'timeStartBeforeMillis',
+    'timeStartMillis',
+    'timeStartBeforeValue',
+    'timeStartBeforeUnit',
+    'timeStartISO',
+    'timeStopISO',
+  ]
     .some((paramName) => streamsParamsConfig[paramName as keyof IStreamsParams] != null);
 
   if (wasTimeStartParams) {
