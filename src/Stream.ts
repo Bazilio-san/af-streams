@@ -298,6 +298,7 @@ export class Stream {
     this._fetchLoop().then(() => 0);
     this._printInfoLoop();
     // Additional external call loop in case of interruption of the chain of internal calls _sendLoop()
+    clearInterval(this._sendInterval);
     this._sendInterval = setInterval(() => {
       this._sendLoop().then(() => null);
     }, 1000);
@@ -809,7 +810,9 @@ export class Stream {
     }
     this.prepareEvent = (dbRecord: TDbRecord) => dbRecord;
     this.tsFieldToMillis = () => 0;
-    this.sender.eventCallback = () => null;
+    if (this.sender) {
+      this.sender.eventCallback = () => null;
+    }
 
     this.stop();
 
@@ -827,7 +830,9 @@ export class Stream {
     this.lastTimeRecords = undefined;
     // @ts-ignore
     this.virtualTimeObj = undefined;
-    destroySender(this.sender);
+    if (this.sender) {
+      destroySender(this.sender);
+    }
     // @ts-ignore
     this.sender = undefined;
     // @ts-ignore
