@@ -5,7 +5,6 @@ export {
   StartTimeRedis,
   StartTimeRedisConstructorOptions,
   getStartTimeRedis,
-  setStartTimeParams,
 } from './StartTimeRedis';
 export { getVirtualTimeObj, VirtualTimeObj } from './VirtualTimeObj';
 export {

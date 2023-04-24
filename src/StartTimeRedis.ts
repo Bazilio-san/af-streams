@@ -16,26 +16,6 @@ export interface StartTimeRedisConstructorOptions {
   redisConfig?: IRedisConfig
 }
 
-export const setStartTimeParams = () => {
-  let v = Date.now();
-  switch (PARAMS.timeStartType) {
-    case ETimeStartTypes.NOW:
-      break;
-    case ETimeStartTypes.TIME:
-      v = PARAMS.timeStartMillis || v;
-      break;
-    case ETimeStartTypes.BEFORE:
-      v -= (PARAMS.timeStartBeforeMillis || 0);
-      break;
-    default:
-      PARAMS.timeStartType = ETimeStartTypes.LAST;
-      v = PARAMS.timeStartMillis || v;
-  }
-  if (PARAMS.timeStartMillis !== v) {
-    PARAMS.timeStartMillis = v;
-  }
-};
-
 export class StartTimeRedis {
   private readonly client: RedisClientType<RedisDefaultModules & RedisModules, RedisFunctions, RedisScripts>;
 
@@ -114,13 +94,25 @@ export class StartTimeRedis {
   }
 
   async defineStartTime (): Promise<void> {
-    setStartTimeParams();
-    if (PARAMS.timeStartType === ETimeStartTypes.LAST) {
-      await this.getRedisClient();
-      const lastStartTime = await this.getStartTimeFromRedis();
-      if (PARAMS.timeStartMillis !== lastStartTime) {
-        PARAMS.timeStartMillis = lastStartTime;
-      }
+    let v = Date.now();
+    if (!Object.values(ETimeStartTypes).includes(PARAMS.timeStartType)) {
+      PARAMS.timeStartType = ETimeStartTypes.LAST;
+    }
+    switch (PARAMS.timeStartType) {
+      case ETimeStartTypes.NOW:
+        break;
+      case ETimeStartTypes.TIME:
+        v = PARAMS.timeStartMillis || v;
+        break;
+      case ETimeStartTypes.BEFORE:
+        v -= (PARAMS.timeStartBeforeMillis || 0);
+        break;
+      case ETimeStartTypes.LAST:
+        v = (await this.getStartTimeFromRedis()) || v;
+        break;
+    }
+    if (PARAMS.timeStartMillis !== v) {
+      PARAMS.timeStartMillis = v;
     }
   }
 

@@ -3,7 +3,7 @@ import { lBlue, m, rs } from 'af-color';
 import { getTimeParamFromMillis, getTimeParamMillis, isoToMillis, millisTo, TTimeUnit } from 'af-tools-ts';
 import { GetNames } from './interfaces';
 import { Rectifier } from './classes/applied/Rectifier';
-import { setStartTimeParams, StartTimeRedis } from './StartTimeRedis';
+import { StartTimeRedis } from './StartTimeRedis';
 
 // eslint-disable-next-line no-shadow
 export enum EMailSendRule {
@@ -157,9 +157,9 @@ export const PARAMS: IStreamsParams = {
     // @ts-ignore
     const o = millisTo.iso.z(this.t);
     const n = millisTo.iso.z(v);
+    console.log('timeStartMillis', o, n, this.timeStartType);
     // @ts-ignore
     this.t = v;
-    console.log('timeStartMillis', o, n);
   },
 
   get timeStartISO () {
@@ -275,7 +275,20 @@ export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, val
 
 let isParamsConfigApplied = false;
 
+const firstOrderParams = [
+  'timeStartType',
+];
+
 export const applyParamsConfig = (streamsParamsConfig: IStreamsParamsConfig) => {
+  firstOrderParams.forEach((paramName) => {
+    const pn = paramName as keyof IStreamsParams;
+    const value = streamsParamsConfig[pn];
+    if (value != null) {
+      changeParamByValidatedValue(pn, value as any);
+      delete streamsParamsConfig[pn];
+    }
+  });
+
   Object.entries(streamsParamsConfig).forEach(([paramName, value]) => {
     changeParamByValidatedValue(paramName as keyof IStreamsParams, value as any);
   });
@@ -313,6 +326,14 @@ export const changeParams = async (
     params.timeStopMillis = isoToMillis(timeStopISO) || 0;
   }
 
+  firstOrderParams.forEach((paramName) => {
+    const pn = paramName as keyof IStreamsParams;
+    const value = params[pn];
+    if (value != null) {
+      changeParamByValidatedValue(pn, value as any);
+      delete params[pn];
+    }
+  });
   Object.entries(params).forEach(([paramName, value]: [string, any]) => {
     if (!changeParamByValidatedValue(paramName as keyof IStreamsParams, value)) {
       delete params[paramName as keyof IStreamsParams];
@@ -327,10 +348,6 @@ export const changeParams = async (
   const wasTimeStartParams = Object.entries(params).some(([paramName, paramValue]) => paramName.startsWith('timeSt') && paramValue != null);
 
   if (wasTimeStartParams) {
-    if (startTimeRedis) {
-      await startTimeRedis.defineStartTime();
-    } else {
-      setStartTimeParams();
-    }
+    await startTimeRedis.defineStartTime();
   }
 };
