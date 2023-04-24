@@ -27,6 +27,7 @@ export interface IStreamsParams {
   loopTimeMillis: number,
   maxRunUpFirstTsVtMillis: number,
   printInfoIntervalSec: number,
+  prepareEventTimeoutMillis: number,
   processHistoricalAlerts: boolean,
   rectifierAccumulationTimeMillis: number,
   rectifierSendIntervalMillis: number,
@@ -73,6 +74,8 @@ export const PARAMS: IStreamsParams = {
   maxRunUpFirstTsVtMillis: 2_000,
   // Периодичность печати минимальной статистики потоков в консоль
   printInfoIntervalSec: 60,
+  // Время ожидания выполнения асинхронной функции Stream.prepareEvent(). После которого возвращается null и выводится сообщение в консоль.
+  prepareEventTimeoutMillis: 30_000,
   // false - НЕ Записывать исторические сигналы в БД и не отправлять по ним EMAIL
   processHistoricalAlerts: false,
   // Время, в пределах которого происходит аккумуляция и выпрямление событий.
@@ -145,7 +148,23 @@ export const PARAMS: IStreamsParams = {
   // - Если timeStartType = NOW, устанавливается в текущее время
   // - Если timeStartType = LAST, устанавливается на время, полученное из REDIS
   // - Если timeStartType = BEFORE, сбрасывается в 0
-  timeStartMillis: 0,
+  // timeStartMillis: 0,
+
+  // @ts-ignore
+  t: 0, // VVR
+  get timeStartMillis () {
+    // @ts-ignore
+    return this.t;
+  },
+  set timeStartMillis (v) {
+    // @ts-ignore
+    const o = millisTo.iso.z(this.t);
+    const n = millisTo.iso.z(v);
+    console.log('timeStartMillis', o, n, this.timeStartType);
+    // @ts-ignore
+    this.t = v;
+  },
+
   get timeStartISO () {
     const v = this.timeStartMillis;
     return v ? millisTo.iso.z(v) : null;
@@ -168,6 +187,7 @@ const numberParams = [
   'loopTimeMillis',
   'maxRunUpFirstTsVtMillis',
   'printInfoIntervalSec',
+  'prepareEventTimeoutMillis',
   'rectifierAccumulationTimeMillis',
   'rectifierSendIntervalMillis',
   'speed',

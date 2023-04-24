@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 // noinspection JSUnusedGlobalSymbols
 
 import { DateTime } from 'luxon';
@@ -52,8 +53,6 @@ const getInitStat = (obj?: any): IStreamStat => ({
   queryDurationMillis: 0,
   ...obj,
 });
-
-const TIMEOUT_TO_PREPARE_EVENT = 10_000;
 
 // noinspection JSConstantReassignment
 export class Stream {
@@ -336,7 +335,8 @@ export class Stream {
     if (this.destroyed) {
       return [];
     }
-    const { options: { streamConfig: { streamId, src: { tsField } } }, prepareEvent, isPrepareEventAsync, tsFieldToMillis } = this;
+    const { options, prepareEvent, isPrepareEventAsync, tsFieldToMillis } = this;
+    const { commonConfig: { echo }, streamConfig: { streamId, src: { tsField } } } = options;
     if (!Array.isArray(dbRecordOrRecordset)) {
       if (!dbRecordOrRecordset || typeof dbRecordOrRecordset !== 'object') {
         return [];
@@ -344,31 +344,36 @@ export class Stream {
       dbRecordOrRecordset = [dbRecordOrRecordset];
     }
 
-    const eventRecords = await Promise.all(dbRecordOrRecordset.map((record, index) => {
-      if (!record) {
-        return null;
-      }
-      dbRecordOrRecordset[index] = null;
-
-      record[TS_FIELD] = tsFieldToMillis(record[tsField]);
-      record[STREAM_ID_FIELD] = streamId;
-
-      return new Promise((resolve: (_arg: TEventRecord | null) => void) => {
-        const timerId = setTimeout(() => {
-          resolve(null);
-        }, TIMEOUT_TO_PREPARE_EVENT);
+    const eventRecords: TEventRecord[] = [];
+    for (let i = 0; i < dbRecordOrRecordset.length; i++) {
+      const record = dbRecordOrRecordset[i];
+      dbRecordOrRecordset[i] = null;
+      if (record) {
+        record[TS_FIELD] = tsFieldToMillis(record[tsField]);
+        record[STREAM_ID_FIELD] = streamId;
+        let eventRecord: TEventRecord | null;
         if (isPrepareEventAsync) {
-          prepareEvent(record).then((eventRecord: TEventRecord) => {
-            resolve(eventRecord);
-            clearTimeout(timerId);
+          eventRecord = await new Promise((resolve: (_arg: TEventRecord | null) => void) => {
+            const timerId = setTimeout(() => {
+              clearTimeout(timerId);
+              resolve(null);
+              echo.warn(`Завершение функции prepareEvent() по таймауту ${PARAMS.prepareEventTimeoutMillis} ms`);
+            }, PARAMS.prepareEventTimeoutMillis);
+            prepareEvent(record).then((eventRecord_: TEventRecord) => {
+              resolve(eventRecord_);
+              clearTimeout(timerId);
+            }).catch((err: any) => {
+              echo.error(err);
+            });
           });
         } else {
-          const eventRecord = prepareEvent(record);
-          resolve(eventRecord);
-          clearTimeout(timerId);
+          eventRecord = prepareEvent(record);
         }
-      });
-    }));
+        if (eventRecord) {
+          eventRecords.push(eventRecord);
+        }
+      }
+    }
     return eventRecords.filter(Boolean) as TEventRecord[];
   }
 
