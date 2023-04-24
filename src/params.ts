@@ -1,7 +1,6 @@
 import { echo } from 'af-echo-ts';
 import { lBlue, m, rs } from 'af-color';
-import { getTimeParamFromMillis, getTimeParamMillis, millisTo, TTimeUnit } from 'af-tools-ts';
-import { DateTime } from 'luxon';
+import { getTimeParamFromMillis, getTimeParamMillis, isoToMillis, millisTo, TTimeUnit } from 'af-tools-ts';
 import { GetNames } from './interfaces';
 import { Rectifier } from './classes/applied/Rectifier';
 import { StartTimeRedis } from './StartTimeRedis';
@@ -146,27 +145,12 @@ export const PARAMS: IStreamsParams = {
   // - Если timeStartType = NOW, устанавливается в текущее время
   // - Если timeStartType = LAST, устанавливается на время, полученное из REDIS
   // - Если timeStartType = BEFORE, сбрасывается в 0
-  // timeStartMillis: 0,
-
-  // @ts-ignore
-  t: 0, // VVR
-  get timeStartMillis () {
-    // @ts-ignore
-    return this.t;
-  },
-  set timeStartMillis (v) {
-    // @ts-ignore
-    const o = millisTo.iso.z(this.t);
-    const n = millisTo.iso.z(v);
-    console.log('timeStartMillis', o, n, this.timeStartType);
-    // @ts-ignore
-    this.t = v;
-  },
-
+  timeStartMillis: 0,
   get timeStartISO () {
     const v = this.timeStartMillis;
     return v ? millisTo.iso.z(v) : null;
   },
+
   // Тип старта
   timeStartType: ETimeStartTypes.LAST,
 
@@ -209,6 +193,10 @@ const readOnlyParams = [
   'timeStopISO',
 ];
 
+const firstOrderParams = [
+  'timeStartType',
+];
+
 export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, value: number | boolean | EMailSendRule | ETimeStartTypes): boolean => {
   if (numberParams.includes(paramName)) {
     if (typeof value === 'number') {
@@ -224,6 +212,7 @@ export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, val
     }
     return false;
   }
+
   if (booleanParams.includes(paramName)) {
     if (typeof value === 'boolean') {
       type BooleanKeys = GetNames<IStreamsParams, boolean>;
@@ -236,6 +225,7 @@ export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, val
     }
     return false;
   }
+
   if (paramName === 'emailSendRule') {
     if (Object.values(EMailSendRule).includes(value as EMailSendRule)) {
       const prevValue = PARAMS.emailSendRule;
@@ -249,6 +239,7 @@ export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, val
     }
     return false;
   }
+
   if (paramName === 'timeStartType') {
     if (Object.values(ETimeStartTypes).includes(value as ETimeStartTypes)) {
       const prevValue = PARAMS.timeStartType;
@@ -262,9 +253,11 @@ export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, val
     }
     return false;
   }
+
   if (readOnlyParams.includes(paramName)) {
     return false;
   }
+
   // Остальные, расширенные параметры, сохраняем "как есть"
   if (JSON.stringify(PARAMS[paramName]) === JSON.stringify(value)) {
     return false;
@@ -275,10 +268,6 @@ export const changeParamByValidatedValue = (paramName: keyof IStreamsParams, val
 };
 
 let isParamsConfigApplied = false;
-
-const firstOrderParams = [
-  'timeStartType',
-];
 
 export const applyParamsConfig = (streamsParamsConfig: IStreamsParamsConfig) => {
   firstOrderParams.forEach((paramName) => {
@@ -319,17 +308,6 @@ export const changeParams = async (
     PARAMS._timeStartBeforeUnit = u as TTimeUnit;
   }
 
-  const isoToMillis = (str: string, zone: string = 'UTC') => {
-    if (!str) {
-      return null;
-    }
-    const dt = DateTime.fromISO(str, { zone });
-    if (!dt.isValid) {
-      return null;
-    }
-    return dt.toMillis();
-  };
-
   const timeStartType = params.timeStartType || PARAMS.timeStartType;
   const { timeStartISO, timeStopISO } = params;
   if (timeStartISO !== undefined) {
@@ -351,6 +329,7 @@ export const changeParams = async (
       delete params[pn];
     }
   });
+
   Object.entries(params).forEach(([paramName, value]: [string, any]) => {
     if (!changeParamByValidatedValue(paramName as keyof IStreamsParams, value)) {
       delete params[paramName as keyof IStreamsParams];
