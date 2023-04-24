@@ -1,6 +1,7 @@
 import { echo } from 'af-echo-ts';
 import { lBlue, m, rs } from 'af-color';
-import { getTimeParamFromMillis, getTimeParamMillis, isoToMillis, millisTo, TTimeUnit } from 'af-tools-ts';
+import { getTimeParamFromMillis, getTimeParamMillis, millisTo, TTimeUnit } from 'af-tools-ts';
+import { DateTime } from 'luxon';
 import { GetNames } from './interfaces';
 import { Rectifier } from './classes/applied/Rectifier';
 import { StartTimeRedis } from './StartTimeRedis';
@@ -318,17 +319,28 @@ export const changeParams = async (
     PARAMS._timeStartBeforeUnit = u as TTimeUnit;
   }
 
+  const isoToMillis = (str: string, zone: string = 'UTC') => {
+    if (!str) {
+      return null;
+    }
+    const dt = DateTime.fromISO(str, { zone });
+    if (!dt.isValid) {
+      return null;
+    }
+    return dt.toMillis();
+  };
+
   const timeStartType = params.timeStartType || PARAMS.timeStartType;
   const { timeStartISO, timeStopISO } = params;
-  if (timeStartISO != null) {
+  if (timeStartISO !== undefined) {
     if (timeStartType === ETimeStartTypes.TIME) {
-      delete params.timeStartMillis;
+      params.timeStartMillis = timeStartISO ? (isoToMillis(timeStartISO) || 0) : 0;
     } else {
-      params.timeStartMillis = isoToMillis(timeStartISO) || 0;
+      delete params.timeStartMillis;
     }
   }
-  if (timeStopISO != null) {
-    params.timeStopMillis = isoToMillis(timeStopISO) || 0;
+  if (timeStopISO !== undefined) {
+    params.timeStopMillis = timeStopISO ? (isoToMillis(timeStopISO) || 0) : 0;
   }
 
   firstOrderParams.forEach((paramName) => {

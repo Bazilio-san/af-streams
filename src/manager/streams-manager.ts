@@ -86,7 +86,6 @@ export class StreamsManager {
 
   async prepareVirtualTimeObj (redisConfig?: IRedisConfig): Promise<VirtualTimeObj> {
     this.checkCommonConfig();
-    console.log('timeStartType', PARAMS.timeStartType); // VVR
     this.redisConfig = redisConfig;
     const { commonConfig } = this;
     await getStartTimeRedis({ commonConfig, redisConfig }).defineStartTime();
