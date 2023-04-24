@@ -318,9 +318,14 @@ export const changeParams = async (
     PARAMS._timeStartBeforeUnit = u as TTimeUnit;
   }
 
+  const timeStartType = params.timeStartType || PARAMS.timeStartType;
   const { timeStartISO, timeStopISO } = params;
   if (timeStartISO != null) {
-    params.timeStartMillis = isoToMillis(timeStartISO) || 0;
+    if (timeStartType === ETimeStartTypes.TIME) {
+      delete params.timeStartMillis;
+    } else {
+      params.timeStartMillis = isoToMillis(timeStartISO) || 0;
+    }
   }
   if (timeStopISO != null) {
     params.timeStopMillis = isoToMillis(timeStopISO) || 0;
