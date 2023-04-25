@@ -371,7 +371,7 @@ export class StreamsManager {
         alertsBuffer.destroy();
         this.alertsBuffer = null as unknown as AlertsBuffer;
       }
-      this.logger.warn(`DESTROYED: [StreamsManager]`);
+      this.echo.warn(`DESTROYED: [StreamsManager]`);
       return true;
     } catch (err) {
       this.logger.error(err);
