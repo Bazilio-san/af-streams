@@ -353,31 +353,37 @@ export class StreamsManager {
       );
   }
 
-  async atopAndDestroy (processRemainingAlerts?: boolean) {
-    this._locked = true;
-    this.slowDownStatistics();
-    await Promise.all(this.streams.map((stream) => stream.destroy()));
-    this.map = {};
-    if (this.rectifier) {
-      this.rectifier.destroy();
-      this.rectifier = null as unknown as Rectifier;
-    }
-    const { virtualTimeObj, alertsBuffer } = this;
-    if (virtualTimeObj) {
-      virtualTimeObj.lock();
-      virtualTimeObj.reset();
-    }
-    if (alertsBuffer) {
-      alertsBuffer.lock();
-      if (processRemainingAlerts) {
-        const alertsProcessed = await alertsBuffer.flushBuffer(true);
-        if (alertsProcessed) {
-          this.echo(`Processed: ${alertsProcessed} remaining alerts`);
-        }
+  async atopAndDestroy (processRemainingAlerts?: boolean): Promise<boolean> {
+    try {
+      this._locked = true;
+      this.slowDownStatistics();
+      await Promise.all(this.streams.map((stream) => stream.destroy()));
+      this.map = {};
+      if (this.rectifier) {
+        this.rectifier.destroy();
+        this.rectifier = null as unknown as Rectifier;
       }
-      alertsBuffer.destroy();
-      this.alertsBuffer = null as unknown as AlertsBuffer;
+      const { virtualTimeObj, alertsBuffer } = this;
+      if (virtualTimeObj) {
+        virtualTimeObj.lock();
+        virtualTimeObj.reset();
+      }
+      if (alertsBuffer) {
+        alertsBuffer.lock();
+        if (processRemainingAlerts) {
+          const alertsProcessed = await alertsBuffer.flushBuffer(true);
+          if (alertsProcessed) {
+            this.echo(`Processed: ${alertsProcessed} remaining alerts`);
+          }
+        }
+        alertsBuffer.destroy();
+        this.alertsBuffer = null as unknown as AlertsBuffer;
+      }
+      this.logger.warn(`DESTROYED: [StreamsManager]`);
+      return true;
+    } catch (err) {
+      this.logger.error(err);
+      return false;
     }
-    this.logger.warn(`DESTROYED: [StreamsManager]`);
   }
 }
