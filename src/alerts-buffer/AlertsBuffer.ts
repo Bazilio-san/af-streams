@@ -200,7 +200,7 @@ export class AlertsBuffer {
       });
 
       const result = await Promise.all(recipients.map(fn));
-      this.alertsStat.oneSentByEmail(alert.eventName);
+      this.alertsStat?.oneSentByEmail(alert.eventName);
       return result;
     } catch (err) {
       logger.error(err);
@@ -304,7 +304,7 @@ export class AlertsBuffer {
       // MERGE
       const mergeResult = await this.options.mergeAlerts(alertsOfTypeToSave);
       // STAT
-      this.alertsStat.anySavedToDb(eventName, mergeResult);
+      this.alertsStat?.anySavedToDb(eventName, mergeResult);
       if (DEBUG_ALERTS_BUFFER) {
         const { total, inserted, updated } = mergeResult;
         this.options.echo.debug(`${green}ALERTS MERGED: t/i/u: ${total}/${inserted}/${updated} / ${eventName}`);
