@@ -8,7 +8,6 @@ import { ICommonConfig, IEmVirtualDateChanged, IEmVirtualHourChanged, IStreamLik
 import { MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
 import { PARAMS } from './params';
 import { getStartTimeRedis } from './StartTimeRedis';
-import localEventEmitter from './ee-scoped';
 
 export interface IVirtualTimeStat {
   arr: [number, number][],
@@ -92,8 +91,10 @@ export class VirtualTimeObj {
       this._detectHourChange();
       if (PARAMS.timeStopMillis && this.timeFront >= PARAMS.timeStopMillis) {
         this.lock();
+        this.commonConfig.logger.info(`[af-streams:VT]: ${bg.yellow}Streams stopping at "stop time" ${millisTo.iso.z(PARAMS.timeStopMillis)}${bg.def}`);
+        // Следует слушать событие 'virtual-time-stopped-at' в родительском сервисе и
+        // вызвать функцию остановки, в том числе StreamsManager.stopAndDestroy(true)
         this.ee.emit('virtual-time-stopped-at', PARAMS.timeStopMillis);
-        localEventEmitter.emit('virtual-time-stopped-at', PARAMS.timeStopMillis);
       }
     }
 

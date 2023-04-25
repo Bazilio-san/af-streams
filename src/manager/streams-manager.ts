@@ -4,7 +4,6 @@
 import EventEmitter from 'events';
 import { echo as echoSimple } from 'af-echo-ts';
 import { green, cyan, lBlue, magenta, yellow, bg } from 'af-color';
-import { millisTo } from 'af-tools-ts';
 import { Stream } from '../Stream';
 import { VirtualTimeObj, getVirtualTimeObj } from '../VirtualTimeObj';
 import { ICommonConfig, IEcho, ILoggerEx, IOFnArgs, IRedisConfig, TEventRecord } from '../interfaces';
@@ -59,13 +58,6 @@ export class StreamsManager {
     if (streamsParamsConfig) {
       applyParamsConfigOnce(streamsParamsConfig);
     }
-    localEventEmitter.on('virtual-time-stopped-at', (timeStopMillis) => {
-      logger.info(`${bg.yellow}Streams stopping at "stop time" ${millisTo.iso.z(timeStopMillis)}${bg.def
-      }. Alerts in buffer: ${this.alertsBuffer.length}`);
-      this.atopAndDestroy(true).then(() => {
-        logger.info(`${bg.yellow}STREAMS STOPPED${bg.def}`);
-      });
-    });
   }
 
   checkCommonConfig (isInit: boolean = false) {
@@ -353,7 +345,7 @@ export class StreamsManager {
       );
   }
 
-  async atopAndDestroy (processRemainingAlerts?: boolean): Promise<boolean> {
+  async stopAndDestroy (processRemainingAlerts?: boolean): Promise<boolean> {
     try {
       this._locked = true;
       this.slowDownStatistics();
