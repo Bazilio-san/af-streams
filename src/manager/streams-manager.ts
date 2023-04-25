@@ -3,7 +3,7 @@
 
 import EventEmitter from 'events';
 import { echo as echoSimple } from 'af-echo-ts';
-import { green, cyan, lBlue, magenta, yellow } from 'af-color';
+import { green, cyan, lBlue, magenta, yellow, bg } from 'af-color';
 import { Stream } from '../Stream';
 import { VirtualTimeObj, getVirtualTimeObj } from '../VirtualTimeObj';
 import { ICommonConfig, IEcho, ILoggerEx, IOFnArgs, IRedisConfig, TEventRecord } from '../interfaces';
@@ -185,7 +185,7 @@ export class StreamsManager {
     this.streams.forEach((stream) => {
       stream.lock(true);
     });
-    this.logger.info(`Streams manager suspended`);
+    this.logger.info(`\n${bg.yellow}STREAMS SUSPENDED${bg.def}`);
   }
 
   continue () {
@@ -231,7 +231,7 @@ export class StreamsManager {
         rss,
         vt,
         isCurrentTime,
-        lastSpeed, // VVQ
+        lastSpeed,
         totalSpeed,
         rectifier: {
           widthMillis: PARAMS.rectifierAccumulationTimeMillis,

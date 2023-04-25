@@ -148,22 +148,7 @@ export const PARAMS: IStreamsParams = {
   // - Если timeStartType = NOW, устанавливается в текущее время
   // - Если timeStartType = LAST, устанавливается на время, полученное из REDIS
   // - Если timeStartType = BEFORE, сбрасывается в 0
-  // timeStartMillis: 0,
-
-  // @ts-ignore
-  t: 0, // VVR
-  get timeStartMillis () {
-    // @ts-ignore
-    return this.t;
-  },
-  set timeStartMillis (v) {
-    // @ts-ignore
-    const o = millisTo.iso.z(this.t);
-    const n = millisTo.iso.z(v);
-    console.log('timeStartMillis', o, n, this.timeStartType);
-    // @ts-ignore
-    this.t = v;
-  },
+  timeStartMillis: 0,
 
   get timeStartISO () {
     const v = this.timeStartMillis;
