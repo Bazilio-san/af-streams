@@ -67,6 +67,8 @@ export class AlertsBuffer {
 
   private busy: number = 0;
 
+  private _locked: boolean = false;
+
   constructor (public options: IAlertsBufferConstructorOptions) {
     const { virtualTimeObj, trackAlertsStateMillis, removeExpiredItemsFromAlertsStatesCacheIntervalMillis } = options;
     const classOptions: IKeyedSingleEventTimeWindowConstructorOptions<TAlertSentFlags> = {
@@ -129,6 +131,9 @@ export class AlertsBuffer {
   }
 
   async add (alert: TAlert): Promise<TAlert> {
+    if (this._locked) {
+      return alert;
+    }
     this.alertsStat.oneAddedToBuffer(alert.eventName);
     const { guid } = alert;
     if (!guid) {
@@ -330,17 +335,22 @@ export class AlertsBuffer {
     }
   }
 
-  private async flushBuffer () {
+  async flushBuffer (awaitSend?: boolean): Promise<number> {
     const buffer = { ...this.buffer };
     this.buffer = {};
     const alerts: TAlert[] = Object.values(buffer).map(({ alert }) => alert);
-    if (!alerts.length) {
-      return;
+    const { length } = alerts;
+    if (!length) {
+      return 0;
     }
-    // Рассылка сигналов по EMail
-    this.sendAlertsToEmail(alerts).then(() => 0);
-    // Сохранение сигналов в БД
-    this.saveAlertsToDb(alerts).then(() => 0);
+    const promise = Promise.all([
+      this.sendAlertsToEmail(alerts),
+      this.saveAlertsToDb(alerts),
+    ]);
+    if (awaitSend) {
+      await promise;
+    }
+    return length;
   }
 
   async loop () {
@@ -378,6 +388,15 @@ export class AlertsBuffer {
 
   getDiagnostics (eventNames?: string[]): { data: { [key: string]: unknown[] }, headers: string[][] } {
     return this.alertsStat.getDiagnostics(eventNames);
+  }
+
+  get length (): number {
+    return Object.keys(this.buffer).length;
+  }
+
+  lock () {
+    this._locked = true;
+    clearTimeout(this._loopTimer);
   }
 
   destroy () {

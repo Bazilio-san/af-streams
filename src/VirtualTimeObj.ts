@@ -8,6 +8,7 @@ import { ICommonConfig, IEmVirtualDateChanged, IEmVirtualHourChanged, IStreamLik
 import { MILLIS_IN_DAY, MILLIS_IN_HOUR } from './constants';
 import { PARAMS } from './params';
 import { getStartTimeRedis } from './StartTimeRedis';
+import localEventEmitter from './ee-scoped';
 
 export interface IVirtualTimeStat {
   arr: [number, number][],
@@ -92,6 +93,7 @@ export class VirtualTimeObj {
       if (PARAMS.timeStopMillis && this.timeFront >= PARAMS.timeStopMillis) {
         this.lock();
         this.ee.emit('virtual-time-stopped-at', PARAMS.timeStopMillis);
+        localEventEmitter.emit('virtual-time-stopped-at', PARAMS.timeStopMillis);
       }
     }
 

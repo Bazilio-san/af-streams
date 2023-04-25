@@ -4,6 +4,7 @@
 import EventEmitter from 'events';
 import { echo as echoSimple } from 'af-echo-ts';
 import { green, cyan, lBlue, magenta, yellow, bg } from 'af-color';
+import { millisTo } from 'af-tools-ts';
 import { Stream } from '../Stream';
 import { VirtualTimeObj, getVirtualTimeObj } from '../VirtualTimeObj';
 import { ICommonConfig, IEcho, ILoggerEx, IOFnArgs, IRedisConfig, TEventRecord } from '../interfaces';
@@ -47,16 +48,24 @@ export class StreamsManager {
   private redisConfig: IRedisConfig | undefined;
 
   constructor (public commonConfig: ICommonConfig, streamsParamsConfig?: IStreamsParamsConfig) {
+    const { echo, logger, eventEmitter } = commonConfig;
     this.map = {};
     this._locked = true;
     this._connectedSockets = new Set();
     this.checkCommonConfig(true);
-    this.eventEmitter = this.commonConfig.eventEmitter;
-    this.logger = this.commonConfig.logger;
-    this.echo = this.commonConfig.echo;
+    this.eventEmitter = eventEmitter;
+    this.logger = logger;
+    this.echo = echo;
     if (streamsParamsConfig) {
       applyParamsConfigOnce(streamsParamsConfig);
     }
+    localEventEmitter.on('virtual-time-stopped-at', (timeStopMillis) => {
+      logger.info(`${bg.yellow}Streams stopping at "stop time" ${millisTo.iso.z(timeStopMillis)}${bg.def
+      }. Alerts in buffer: ${this.alertsBuffer.length}`);
+      this.atopAndDestroy(true).then(() => {
+        logger.info(`${bg.yellow}STREAMS STOPPED${bg.def}`);
+      });
+    });
   }
 
   checkCommonConfig (isInit: boolean = false) {
@@ -220,7 +229,7 @@ export class StreamsManager {
     if (isStopped) {
       data = { isSuspended, isStopped, heapUsed, rss };
     } else {
-      const { rectifier, virtualTimeObj, streams } = this;
+      const { rectifier, virtualTimeObj, streams, alertsBuffer } = this;
       const { virtualTs: vt, isCurrentTime, lastSpeed, totalSpeed } = virtualTimeObj || {};
       const { accumulator } = rectifier || {};
       const { length = 0 } = accumulator || {};
@@ -233,6 +242,7 @@ export class StreamsManager {
         isCurrentTime,
         lastSpeed,
         totalSpeed,
+        alertsBufferLength: alertsBuffer.length,
         rectifier: {
           widthMillis: PARAMS.rectifierAccumulationTimeMillis,
           rectifierItemsCount: length,
@@ -343,17 +353,31 @@ export class StreamsManager {
       );
   }
 
-  async destroy () {
+  async atopAndDestroy (processRemainingAlerts?: boolean) {
     this._locked = true;
     this.slowDownStatistics();
     await Promise.all(this.streams.map((stream) => stream.destroy()));
     this.map = {};
-    this.rectifier?.destroy();
-    this.rectifier = null as unknown as Rectifier;
-    this.virtualTimeObj?.lock();
-    this.virtualTimeObj?.reset();
-    this.alertsBuffer?.destroy();
-    this.alertsBuffer = null as unknown as AlertsBuffer;
+    if (this.rectifier) {
+      this.rectifier.destroy();
+      this.rectifier = null as unknown as Rectifier;
+    }
+    const { virtualTimeObj, alertsBuffer } = this;
+    if (virtualTimeObj) {
+      virtualTimeObj.lock();
+      virtualTimeObj.reset();
+    }
+    if (alertsBuffer) {
+      alertsBuffer.lock();
+      if (processRemainingAlerts) {
+        const alertsProcessed = await alertsBuffer.flushBuffer(true);
+        if (alertsProcessed) {
+          this.echo(`Processed: ${alertsProcessed} remaining alerts`);
+        }
+      }
+      alertsBuffer.destroy();
+      this.alertsBuffer = null as unknown as AlertsBuffer;
+    }
     this.logger.warn(`DESTROYED: [StreamsManager]`);
   }
 }

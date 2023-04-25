@@ -60,6 +60,7 @@ export interface ISmStatisticsData {
   lastSpeed?: number,
   totalSpeed?: number,
 
+  alertsBufferLength?: number,
   rectifier?: {
     widthMillis: number,
     rectifierItemsCount: number,
