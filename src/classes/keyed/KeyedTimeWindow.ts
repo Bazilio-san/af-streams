@@ -6,6 +6,7 @@ import { Debug, getTimeParamFromMillis, millisTo } from 'af-tools-ts';
 import { ITimeWindowItem, ITimeWindowSetStatOptions, TimeWindow } from '../base/TimeWindow';
 import { MILLIS_IN_HOUR, MIN_WINDOW_MILLIS } from '../../constants';
 import { VirtualTimeObj } from '../../VirtualTimeObj';
+import { EWinInsertType } from '../../interfaces';
 
 const debug = Debug('KeyedTimeWindow');
 
@@ -145,31 +146,33 @@ export class KeyedTimeWindow<T, S = any> {
 
   removeExpired (virtualTs: number): number {
     const { hash } = this;
-    const removed: ITimeWindowItem<T>[] = [];
+    const removedFromAllTW: ITimeWindowItem<T>[] = [];
     Object.entries(hash).forEach(([key, timeWindow]) => {
-      removed.push(...timeWindow.removeExpired(virtualTs));
+      const removed = timeWindow.removeExpired(virtualTs);
+      timeWindow.setStat({ timeWindow, winInsertType: EWinInsertType.REMOVE, removed });
+      removedFromAllTW.push(...removed);
       if (!timeWindow.win.length) {
         delete hash[key];
       }
     });
 
-    if (debug.enabled && removed.length) {
+    if (debug.enabled && removedFromAllTW.length) {
       const winWidth = getTimeParamFromMillis(this.widthMillis, 'biggest');
-      echo(`${m}Удалены устаревшее события (${lBlue}${removed.length}${m} шт) из окна [KeyedTimeWindow] winName: ${lBlue
+      echo(`${m}Удалены устаревшее события (${lBlue}${removedFromAllTW.length}${m} шт) из окна [KeyedTimeWindow] winName: ${lBlue
       }${this.options.winName}${m} (width: ${winWidth})`);
-      const inputTimes = removed.map(({ ts }) => ts);
+      const inputTimes = removedFromAllTW.map(({ ts }) => ts);
       const minInputTs = Math.min(...inputTimes);
       const maxInputTs = Math.max(...inputTimes);
       const minInterval = getTimeParamFromMillis(virtualTs - minInputTs, 'biggest');
       echo(`${m}\t min ts: ${lBlue}${millisTo.human.utc.z(minInputTs)}${m} / max ts: ${lBlue}${millisTo.human.utc.z(maxInputTs)}${m
       } /  vt: ${lBlue}${millisTo.human.utc.z(virtualTs)}${m} / period: ${lBlue}${minInterval}${m}`);
     }
-    removed.forEach((timeWindowItem) => {
+    removedFromAllTW.forEach((timeWindowItem) => {
       timeWindowItem.data = undefined;
       // @ts-ignore
       timeWindowItem.ts = undefined;
     });
-    return removed.length;
+    return removedFromAllTW.length;
   }
 
   /**
