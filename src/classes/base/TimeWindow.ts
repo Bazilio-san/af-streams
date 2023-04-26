@@ -129,7 +129,7 @@ export class TimeWindow<T, S = any> {
    * Но если при создании экземпляра класса в опциях передано свойство getStat (функция),
    * оно замещает метод класса this.getStat и управление передается этой кастомной функции.
    */
-  public getStat: (_arg?: TimeWindow<T, S>) => any;
+  public getStat: (_arg?: TimeWindow<T, S>, ...args: any[]) => any;
 
   _removeExpiredTimer: any;
 

@@ -1,6 +1,6 @@
 {
   "name": "af-streams",
-  "version": "3.1.36",
+  "version": "3.1.37",
   "description": "Data stream from database table",
   "main": "./dist/cjs/src/index.js",
   "module": "./dist/esm/index.js",

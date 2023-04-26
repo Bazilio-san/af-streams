@@ -182,9 +182,9 @@ export class KeyedTimeWindow<T, S = any> {
     return this.hash[key];
   }
 
-  getStatByKey (key: string | number): any {
+  getStatByKey (key: string | number, ...args: any[]): any {
     const timeWindow = this.getWindowByKey(key);
-    return timeWindow?.getStat(timeWindow);
+    return timeWindow?.getStat(timeWindow, ...args);
   }
 
   getCount (key: string | number): number {
