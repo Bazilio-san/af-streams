@@ -30,7 +30,7 @@ export interface IKeyedNumberWindowOptions<T> {
    * Кастомная функция для получения статистики. Она подменит метод окна NumberWindow.getStat()
    * Если не передана, то метод this.getStatByKey() будет возвращать свойство окна NumberWindow.stat
    */
-  getStat?: <ST = any>(numberWindow: NumberWindow<T>, ...args: any[]) => ST,
+  getStat?: (numberWindow: NumberWindow<T>, ...args: any[]) => any,
 
   /**
    * Параметры удаления устаревших окон и событий в них.
