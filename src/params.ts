@@ -113,8 +113,6 @@ export const PARAMS: IStreamsParams = {
 
   // Параметр, устанавливающий время старта потоков, в прошлое на указанное количество миллисекунд.
   // Используется, если timeStartType = BEFORE
-  // Если указано 0, то timeStartType сбрасывается в LAST
-  // Если timeStartType != BEFORE, сбрасывается в 0
   timeStartBeforeMillis: 0,
   get timeStartBeforeValue () {
     const v = this.timeStartBeforeMillis;
@@ -144,10 +142,7 @@ export const PARAMS: IStreamsParams = {
 
   // Параметр, устанавливающий временную метку времени старта потоков.
   // Используется, если timeStartType = TIME
-  // Если указано 0, то timeStartType сбрасывается в LAST
-  // - Если timeStartType = NOW, устанавливается в текущее время
-  // - Если timeStartType = LAST, устанавливается на время, полученное из REDIS
-  // - Если timeStartType = BEFORE, сбрасывается в 0
+  // Если 0 - то потоки стартуют с текущего времени.
   timeStartMillis: 0,
 
   get timeStartISO () {

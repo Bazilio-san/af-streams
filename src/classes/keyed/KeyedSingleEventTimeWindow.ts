@@ -110,7 +110,7 @@ export class KeyedSingleEventTimeWindow<T, S = any> {
     return this.hash[key];
   }
 
-  getStatByKey (key: string, ...args: any[]): any {
+  getStatByKey<ST = any> (key: string, ...args: any[]): ST | undefined {
     const singleEventTimeWindow = this.getWindowByKey(key);
     return singleEventTimeWindow?.getStat(singleEventTimeWindow, ...args);
   }

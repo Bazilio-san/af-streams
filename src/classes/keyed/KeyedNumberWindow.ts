@@ -30,7 +30,7 @@ export interface IKeyedNumberWindowOptions<T> {
    * Кастомная функция для получения статистики. Она подменит метод окна NumberWindow.getStat()
    * Если не передана, то метод this.getStatByKey() будет возвращать свойство окна NumberWindow.stat
    */
-  getStat?: (numberWindow: NumberWindow<T>, ...args: any[]) => any,
+  getStat?: <ST = any>(numberWindow: NumberWindow<T>, ...args: any[]) => ST,
 
   /**
    * Параметры удаления устаревших окон и событий в них.
@@ -153,7 +153,7 @@ export class KeyedNumberWindow<T> {
     return this.hash[key];
   }
 
-  getStatByKey (key: number, ...args: any[]): number {
+  getStatByKey<ST = any> (key: number, ...args: any[]): ST | undefined {
     const numberWindow = this.getWindowByKey(key);
     return numberWindow?.getStat(numberWindow, ...args);
   }

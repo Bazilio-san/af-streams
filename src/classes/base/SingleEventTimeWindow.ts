@@ -51,7 +51,7 @@ export interface ISingleEventTimeWindowConstructorOptions<T, S = any> {
    * Кастомная функция для получения статистики. Она подменит метод окна this.getStat()
    * Если не передана, то метод this.getStat() будет возвращать свойство окна stat
    */
-  getStat?: (singleEventTimeWindow: SingleEventTimeWindow<T, S>, ...args: any[]) => any,
+  getStat?: <ST = any>(singleEventTimeWindow: SingleEventTimeWindow<T, S>, ...args: any[]) => ST,
   /**
    * Опциональная кастомная функция добавления сведений из поступившего события в свойство this.event.
    * Если не передана, то новое событие просто заменяет свойство this.event.
@@ -122,7 +122,7 @@ export class SingleEventTimeWindow<T, S = any> {
    * Но если при создании экземпляра класса в опциях передано свойство getStat (функция),
    * оно замещает метод класса this.getStat и управление передается этой кастомной функции.
    */
-  public getStat: (singleEventTimeWindow: SingleEventTimeWindow<T, S>, ...args: any[]) => any;
+  public getStat: <ST = any>(singleEventTimeWindow: SingleEventTimeWindow<T, S>, ...args: any[]) => ST;
 
   /**
    * Время поступления первого события в окно. Устанавливается единожды.
@@ -144,7 +144,7 @@ export class SingleEventTimeWindow<T, S = any> {
       options.initStat(this);
     }
     this.setStat = options.setStat || (() => null);
-    this.getStat = getStat ? (singleEventTimeWindow: SingleEventTimeWindow<T, S>, ...args: any[]) => getStat(singleEventTimeWindow, ...args) : () => this.stat;
+    this.getStat = getStat ? (singleEventTimeWindow: SingleEventTimeWindow<T, S>, ...args: any[]) => getStat(singleEventTimeWindow, ...args) : () => this.stat as any;
     // ------------------------------------------
 
     if (virtualTimeObj && options.removeExpiredIntervalMillis) {
