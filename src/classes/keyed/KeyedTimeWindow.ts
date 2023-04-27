@@ -47,7 +47,7 @@ export interface IKeyedTimeWindowOptions<T, S = any> {
    * Кастомная функция для получения статистики. Она подменит метод окна NumberWindow.getStat()
    * Если не передана, то метод this.getStatByKey() будет возвращать свойство окна NumberWindow.stat
    */
-  getStat?: (_timeWindow: TimeWindow<T, S>) => any,
+  getStat?: (timeWindow: TimeWindow<T, S>, ...args: any[]) => any,
 }
 
 export interface IKeyedTimeWindowHash<T, S = any> {

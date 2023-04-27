@@ -21,7 +21,7 @@ export interface IKeyedSingleEventTimeWindowConstructorOptions<T, S = any> exten
   removeEmptyIntervalMillis?: number,
   // removeExpiredIntervalMillis?: number,
   // setStat?: (arg: ITimeWindowSetStatOptions<T>) => void,
-  // getStat?: (arg: TimeWindow<T>) => any,
+  // getStat?: (arg: TimeWindow<T>, ...args: any[]) => any,
   assignData?: (_instance: SingleEventTimeWindow<T, S>, _event: ITimeWindowItem<T>) => void,
 }
 
@@ -110,9 +110,9 @@ export class KeyedSingleEventTimeWindow<T, S = any> {
     return this.hash[key];
   }
 
-  getStatByKey (key: string): any {
+  getStatByKey (key: string, ...args: any[]): any {
     const singleEventTimeWindow = this.getWindowByKey(key);
-    return singleEventTimeWindow?.getStat(singleEventTimeWindow);
+    return singleEventTimeWindow?.getStat(singleEventTimeWindow, ...args);
   }
 
   /**

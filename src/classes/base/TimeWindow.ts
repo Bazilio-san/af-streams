@@ -59,7 +59,7 @@ export interface ITimeWindowConstructorOptions<T, S = any> {
    * Кастомная функция для получения статистики. Она подменит метод окна this.getStat()
    * Если не передана, то метод this.getStat() будет возвращать свойство окна stat
    */
-  getStat?: (_timeWindow: TimeWindow<T, S>) => any,
+  getStat?: (timeWindow: TimeWindow<T, S>, ...args: any[]) => any,
   /**
    * Первое событие, которое можно передать в момент создания экземпляра класса.
    * Это может быть удобно, когда окна создаются по мере поступления событий определенного класса.
@@ -129,7 +129,7 @@ export class TimeWindow<T, S = any> {
    * Но если при создании экземпляра класса в опциях передано свойство getStat (функция),
    * оно замещает метод класса this.getStat и управление передается этой кастомной функции.
    */
-  public getStat: (_arg?: TimeWindow<T, S>, ...args: any[]) => any;
+  public getStat: (timeWindow: TimeWindow<T, S>, ...args: any[]) => any;
 
   _removeExpiredTimer: any;
 
@@ -147,7 +147,7 @@ export class TimeWindow<T, S = any> {
       options.initStat(this);
     }
     this.setStat = options.setStat || (() => null);
-    this.getStat = getStat ? () => getStat(this) : () => this.stat;
+    this.getStat = getStat ? (timeWindow: TimeWindow<T, S>, ...args: any[]) => getStat(timeWindow, ...args) : () => this.stat;
     // ------------------------------------------
 
     if (item) {
