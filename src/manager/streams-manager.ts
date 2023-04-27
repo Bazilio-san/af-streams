@@ -36,6 +36,8 @@ export class StreamsManager {
 
   public echo: IEcho;
 
+  public isInitProcess: boolean = false;
+
   private _statLoopTimerId: any;
 
   private _locked: boolean = true;
@@ -219,15 +221,16 @@ export class StreamsManager {
     const { heapUsed, rss } = process.memoryUsage();
     let data: ISmStatisticsData;
     if (isStopped) {
-      data = { isSuspended, isStopped, heapUsed, rss };
+      data = { isSuspended, isStopped, heapUsed, rss, isInitProcess: this.isInitProcess };
     } else {
-      const { rectifier, virtualTimeObj, streams, alertsBuffer } = this;
+      const { rectifier, virtualTimeObj, streams, alertsBuffer, isInitProcess } = this;
       const { virtualTs: vt, isCurrentTime, lastSpeed, totalSpeed } = virtualTimeObj || {};
       const { accumulator } = rectifier || {};
       const { length = 0 } = accumulator || {};
       data = {
         isSuspended,
         isStopped,
+        isInitProcess,
         heapUsed,
         rss,
         vt,
@@ -346,8 +349,8 @@ export class StreamsManager {
   }
 
   async stopAndDestroy (processRemainingAlerts?: boolean): Promise<boolean> {
+    this._locked = true;
     try {
-      this._locked = true;
       this.slowDownStatistics();
       await Promise.all(this.streams.map((stream) => stream.destroy()));
       this.map = {};
@@ -371,6 +374,7 @@ export class StreamsManager {
         alertsBuffer.destroy();
         this.alertsBuffer = null as unknown as AlertsBuffer;
       }
+      this.isInitProcess = false;
       this.echo.warn(`DESTROYED: [StreamsManager]`);
       return true;
     } catch (err) {
