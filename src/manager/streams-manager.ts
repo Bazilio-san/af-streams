@@ -205,6 +205,7 @@ export class StreamsManager {
   }
 
   async start (): Promise<Stream[]> {
+    this.isShutdownProcess = false;
     if (!this.virtualTimeObj) {
       const err = `Missing StreamsManager.virtualTimeObj`;
       localEventEmitter.emit('sm-error', `Missing StreamsManager.virtualTimeObj`);
@@ -380,7 +381,6 @@ export class StreamsManager {
         this.alertsBuffer = null as unknown as AlertsBuffer;
       }
       this.isInitProcess = false;
-      this.isShutdownProcess = false;
       this.echo.warn(`DESTROYED: [StreamsManager]`);
       return true;
     } catch (err) {
