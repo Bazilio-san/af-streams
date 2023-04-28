@@ -174,6 +174,8 @@ export class StreamsManager {
       ...PARAMS,
       isStopped: this.isStopped(),
       isSuspended: this._locked,
+      isInitProcess: this.isInitProcess,
+      isShutdownProcess: this.isShutdownProcess,
     } as IStreamsParamsConfig;
     delete params._timeStartBeforeUnit;
     if (removeTimeStartStopMillis) {

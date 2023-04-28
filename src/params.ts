@@ -57,6 +57,8 @@ export interface IStreamsParams {
 export type IStreamsParamsConfig = Partial<IStreamsParams> & {
   isStopped?: boolean,
   isSuspended?: boolean,
+  isInitProcess?: boolean,
+  isShutdownProcess?: boolean,
 };
 
 const timeUnits = ['d', 'h', 'm', 's'];
