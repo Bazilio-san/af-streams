@@ -52,6 +52,7 @@ export interface ISmStatisticsData {
   isSuspended: boolean,
   isStopped: boolean,
   isInitProcess: boolean,
+  isShutdownProcess: boolean,
   heapUsed: number,
   rss: number,
 

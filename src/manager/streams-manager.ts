@@ -38,6 +38,8 @@ export class StreamsManager {
 
   public isInitProcess: boolean = false;
 
+  public isShutdownProcess: boolean = false;
+
   private _statLoopTimerId: any;
 
   private _locked: boolean = true;
@@ -221,9 +223,9 @@ export class StreamsManager {
     const { heapUsed, rss } = process.memoryUsage();
     let data: ISmStatisticsData;
     if (isStopped) {
-      data = { isSuspended, isStopped, heapUsed, rss, isInitProcess: this.isInitProcess };
+      data = { isSuspended, isStopped, heapUsed, rss, isInitProcess: this.isInitProcess, isShutdownProcess: this.isShutdownProcess };
     } else {
-      const { rectifier, virtualTimeObj, streams, alertsBuffer, isInitProcess } = this;
+      const { rectifier, virtualTimeObj, streams, alertsBuffer, isInitProcess, isShutdownProcess } = this;
       const { virtualTs: vt, isCurrentTime, lastSpeed, totalSpeed } = virtualTimeObj || {};
       const { accumulator } = rectifier || {};
       const { length = 0 } = accumulator || {};
@@ -231,6 +233,7 @@ export class StreamsManager {
         isSuspended,
         isStopped,
         isInitProcess,
+        isShutdownProcess,
         heapUsed,
         rss,
         vt,
@@ -375,6 +378,7 @@ export class StreamsManager {
         this.alertsBuffer = null as unknown as AlertsBuffer;
       }
       this.isInitProcess = false;
+      this.isShutdownProcess = false;
       this.echo.warn(`DESTROYED: [StreamsManager]`);
       return true;
     } catch (err) {
