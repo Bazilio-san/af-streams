@@ -3,7 +3,7 @@
 
 import EventEmitter from 'events';
 import { echo as echoSimple } from 'af-echo-ts';
-import { green, cyan, lBlue, magenta, yellow, bg } from 'af-color';
+import { green, cyan, lBlue, magenta, yellow, bg, red } from 'af-color';
 import { Stream } from '../Stream';
 import { VirtualTimeObj, getVirtualTimeObj } from '../VirtualTimeObj';
 import { ICommonConfig, IEcho, ILoggerEx, IOFnArgs, IRedisConfig, TEventRecord } from '../interfaces';
@@ -20,6 +20,8 @@ const findLast = require('array.prototype.findlast');
 const streamsColors = [lBlue, magenta, cyan, yellow, green];
 
 const STATISTICS_SEND_INTERVAL = { SLOW: 1000, QUICK: 100 };
+
+const PFX = '[STREAMS MANAGER]: ';
 
 export class StreamsManager {
   public map: { [streamId: string]: Stream };
@@ -192,7 +194,8 @@ export class StreamsManager {
     this.streams.forEach((stream) => {
       stream.lock(true);
     });
-    this.logger.info(`\n${bg.yellow}STREAMS SUSPENDED${bg.def}`);
+    localEventEmitter.emit('sm-suspended');
+    this.logger.info(`\n${PFX}${bg.yellow}STREAMS SUSPENDED${bg.def}`);
   }
 
   continue () {
@@ -201,7 +204,8 @@ export class StreamsManager {
     });
     this._locked = false;
     this.startIO(true);
-    this.logger.info(`Streams manager continued`);
+    localEventEmitter.emit('sm-continued');
+    this.logger.info(`${PFX}${bg.green}STREAMS CONTINUED${bg.def}`);
   }
 
   async start (): Promise<Stream[]> {
@@ -216,7 +220,8 @@ export class StreamsManager {
     const streams = await Promise.all(this.streams.map((stream) => stream.start()));
     this._locked = false;
     this.startIO(true);
-    this.logger.info(`Streams manager started`);
+    localEventEmitter.emit('sm-started');
+    this.logger.info(`${PFX}${bg.green}STREAMS STARTED${bg.def}`);
     return streams;
   }
 
@@ -382,6 +387,7 @@ export class StreamsManager {
       }
       this.isInitProcess = false;
       this.echo.warn(`DESTROYED: [StreamsManager]`);
+      this.logger.info(`\n${PFX}${bg.yellow}STREAMS ${red}STOPPED${bg.def}`);
       return true;
     } catch (err) {
       this.logger.error(err);
