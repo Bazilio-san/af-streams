@@ -70,7 +70,7 @@ export class VirtualTimeObj {
     this.startUpInfo();
   }
 
-  private updateRunningTime () {
+  _updateRunningTime () {
     const { prevTs } = this.runningRealTime;
     const now = Date.now();
     if (!this.locked) {
@@ -80,10 +80,10 @@ export class VirtualTimeObj {
     this.runningRealTime.expectedTimeFront = Math.max(this.virtualStartTs + this.runningRealTime.millis * PARAMS.speed, this.timeFront);
   }
 
-  private timeFrontLoop () {
+  _timeFrontLoop () {
     clearTimeout(this._frontUpdateTimer);
     if (!this.locked) {
-      this.updateRunningTime();
+      this._updateRunningTime();
       this.setNextTimeFront();
 
       this._loopIfNeed();
@@ -99,11 +99,11 @@ export class VirtualTimeObj {
     }
 
     this._frontUpdateTimer = setTimeout(() => {
-      this.timeFrontLoop();
+      this._timeFrontLoop();
     }, PARAMS.timeFrontUpdateIntervalMillis);
   }
 
-  private startCyclicSpeedCalc () {
+  _startCyclicSpeedCalc () {
     clearInterval(this._speedCalcTimer);
     const { stat } = this;
     const { arr, maxNumberOfItems } = stat;
@@ -112,7 +112,7 @@ export class VirtualTimeObj {
       if (arr.length > maxNumberOfItems) {
         arr.splice(0, maxNumberOfItems - arr.length);
       }
-      this.updateRunningTime();
+      this._updateRunningTime();
     }, 500);
   }
 
@@ -151,8 +151,8 @@ export class VirtualTimeObj {
     this.virtualStartTs = PARAMS.timeStartMillis;
     this.reset();
     this.startUpInfo();
-    this.timeFrontLoop();
-    this.startCyclicSpeedCalc(); // VVQ вынести в старт
+    this._timeFrontLoop();
+    this._startCyclicSpeedCalc(); // VVQ вынести в старт
   }
 
   hardStop () {
