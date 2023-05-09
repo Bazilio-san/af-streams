@@ -98,6 +98,9 @@ export class AlertsBuffer {
   }
 
   markAlertAsSentByEmail (alert: TAlert) {
+    if (!alert.alertAlreadySent) {
+      alert.alertAlreadySent = {};
+    }
     alert.alertAlreadySent.byEmail = true;
     const { guid } = alert;
     const item = this.sentAlertsFlags.getItem(guid);
@@ -109,6 +112,9 @@ export class AlertsBuffer {
   }
 
   private markAlertAsSavedToDb (alert: TAlert, isSaved: boolean) {
+    if (!alert.alertAlreadySent) {
+      alert.alertAlreadySent = {};
+    }
     alert.alertAlreadySent.toDb = isSaved;
     const { guid } = alert;
     const item = this.sentAlertsFlags.getItem(guid);
@@ -123,22 +129,25 @@ export class AlertsBuffer {
   }
 
   private isAlertSavedToDb (alert: TAlert): boolean {
-    return alert.alertAlreadySent.byEmail || !!this.sentAlertsFlags.getItem(alert.guid)?.data?.byEmail;
+    return alert.alertAlreadySent?.byEmail || !!this.sentAlertsFlags.getItem(alert.guid)?.data?.byEmail;
   }
 
   private isAlertSentByEmail (alert: TAlert): boolean {
-    return alert.alertAlreadySent.toDb || !!this.sentAlertsFlags.getItem(alert.guid)?.data?.toDb;
+    return alert.alertAlreadySent?.toDb || !!this.sentAlertsFlags.getItem(alert.guid)?.data?.toDb;
   }
 
   async add (alert: TAlert): Promise<TAlert> {
     if (this._locked) {
       return alert;
     }
-    this.alertsStat.oneAddedToBuffer(alert.eventName);
     const { guid } = alert;
     if (!guid) {
       this.options.logger.error(`Отсутствует alert.guid`);
       return alert;
+    }
+    this.alertsStat.oneAddedToBuffer(alert.eventName);
+    if (!alert.alertAlreadySent) {
+      alert.alertAlreadySent = {};
     }
     if (!this.buffer[guid]) {
       this.buffer[guid] = { alert, updatesCount: 0 };

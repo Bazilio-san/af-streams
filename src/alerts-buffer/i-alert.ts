@@ -31,7 +31,7 @@ export interface TAlertsBufferRequired {
   eventName: string,
 
   // Технический атрибут.  Содержит признаки отправки по Email и сохранения в БД. Используется на этапе фильтрации алертов в буфере.
-  alertAlreadySent: TAlertSentFlags,
+  alertAlreadySent?: TAlertSentFlags,
 
   // Теги в теле письма
   hashTags?: string[],
