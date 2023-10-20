@@ -56,7 +56,7 @@ export interface ILoggerEx {
   info: Function,
   debug: Function,
   silly: Function,
-  isLevel: Function,
+  isLevel?: Function,
 }
 
 export interface TAccessPoint {
