@@ -636,7 +636,7 @@ export class Stream {
 
   // #################################  SEND  ##################################
 
-  private async _sendPacket (eventsPacket: TEventRecord[]): Promise<{ debugMessage: string, isError?: boolean }> {
+  public async _sendPacket (eventsPacket: TEventRecord[]): Promise<{ debugMessage: string, isError?: boolean }> {
     const { sender, sessionId, options: { commonConfig: { eventEmitter, logger }, streamConfig: { streamId } } } = this;
     return new Promise((resolve: Function) => {
       let debugMessage = '';
