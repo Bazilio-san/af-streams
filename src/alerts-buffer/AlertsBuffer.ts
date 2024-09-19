@@ -145,7 +145,9 @@ export class AlertsBuffer {
       this.options.logger.error(`Отсутствует alert.guid`);
       return alert;
     }
-    this.alertsStat.oneAddedToBuffer(alert.eventName);
+    if (!alert.payload?.noStat) {
+      this.alertsStat.oneAddedToBuffer(alert.eventName);
+    }
     if (!alert.alertAlreadySent) {
       alert.alertAlreadySent = {};
     }
