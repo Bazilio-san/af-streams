@@ -71,8 +71,5 @@ exit_on_error
 git push github refs/heads/master:master
 exit_on_error
 
-git push fa refs/heads/master:master
-exit_on_error
-
 npm publish
 read -p "Press any key to resume ..."
