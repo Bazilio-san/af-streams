@@ -150,7 +150,11 @@ export class KeyedTimeWindow<T, S = any> {
     Object.entries(hash).forEach(([key, timeWindow]) => {
       const removed = timeWindow.removeExpired(virtualTs);
       timeWindow.setStat({ timeWindow, winInsertType: EWinInsertType.REMOVE, removed });
-      removedFromAllTW.push(...removed);
+      // Fix: use for-loop instead of spread to avoid stack overflow on large arrays
+      // See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply#using_apply_and_built-in_functions
+      for (let i = 0; i < removed.length; i++) {
+        removedFromAllTW.push(removed[i]);
+      }
       if (!timeWindow.win.length) {
         delete hash[key];
       }
