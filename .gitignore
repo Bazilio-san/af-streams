@@ -27,3 +27,4 @@ local*.*
 /**/.env*
 **/dist
 
+/.npmrc
