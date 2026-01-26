@@ -252,7 +252,7 @@ export class AlertsBuffer {
       }
     }
 
-    const allowedSendByEmailMap = await Promise.all(alerts.map((alert) => {
+    const allowedSendByEmailMap = await Promise.all(alertsToSend.map((alert) => {
       if (!alert.canSendByEmail) {
         return true;
       }

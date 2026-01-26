@@ -1,0 +1,86 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash(chmod:*)",
+      "Bash(claude config:*)",
+      "Bash(claude cache clear)",
+      "Bash(curl:*)",
+      "Bash(dir:*)",
+      "Bash(echo:*)",
+      "Bash(export:*)",
+      "Bash(fd:*)",
+      "Bash(find:*)",
+      "Bash(git:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(jest:*)",
+      "Bash(jobs)",
+      "Bash(mkdir:*)",
+      "Bash(move:*)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(npm start)",
+      "Bash(npm test:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(pkill:*)",
+      "Bash(playwright:*)",
+      "Bash(powershell:*)",
+      "Bash(python:*)",
+      "Bash(rm:*)",
+      "Bash(set:*)",
+      "Bash(taskkill:*)",
+      "Bash(tasklist:*)",
+      "Bash(timeout:*)",
+      "Bash(turbo run:*)",
+      "Bash(unset http_proxy)",
+      "Bash(wc:*)",
+      "Bash(where:*)",
+      "Edit",
+      "MultiEdit",
+      "Read",
+      "Write",
+      "WebSearch",
+      "WebFetch"
+    ],
+    "deny": [
+      "Read(./.idea/**)",
+      "Read(./dist/**)",
+      "Read(./.run/**)",
+      "Read(./_misc/**)",
+      "Read(./config/__servers__/**)",
+      "Read(./**/_tmp/**)",
+      "Read(./**/*.private.*)",
+      "Read(./**/*local.*)",
+      "Read(./**/*local-*)"
+    ]
+  },
+  "env": {
+    "NODE_TLS_REJECT_UNAUTHORIZED": "0",
+    "BASH_DEFAULT_TIMEOUT_MS": "120000",
+    "BASH_MAX_TIMEOUT_MS": "600000",
+    "BASH_MAX_OUTPUT_LENGTH": "5000000",
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "true",
+    "DISABLE_COST_WARNINGS": "0",
+    "DISABLE_TELEMETRY": "0"
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/eslint-fix.cjs"
+          }
+        ]
+      }
+    ]
+  },
+  "hasCompletedOnboarding": true,
+  "hasTrustDialogAccepted": true,
+  "hasCompletedProjectOnboarding": true,
+  "shiftEnterKeyBindingInstalled": true
+}
